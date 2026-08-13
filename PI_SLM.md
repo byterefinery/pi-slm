@@ -146,6 +146,91 @@ On `message_end` for assistant messages:
 - `selectedTools` may be an array of tool names or tool objects. Handle both shapes.
 - `toolSnippets` maps tool names to one-line descriptions.
 
+## Feature 6: Explicit Skill Invocation
+
+Handle `/skill:<SKILL_NAME>` directives in user input. Load the skill's SKILL.md and execute the task per its instructions.
+
+### Syntax
+
+```
+/skill:<SKILL_NAME> [user_message]
+```
+
+- `SKILL_NAME` -- required. Must match the skill's `name` field in frontmatter exactly.
+- `user_message` -- optional. The task or question to pass to the skill. If omitted, use the skill for the current context.
+
+### Mechanism
+
+Use the `input` event to detect and handle `/skill:` directives.
+
+On `input`:
+- Check if `event.text` starts with `/skill:`.
+- Extract `SKILL_NAME` (everything between `/skill:` and the first space or end of string).
+- Extract `user_message` (everything after the first space following `SKILL_NAME`, trimmed).
+- Find the matching skill in `knownSkills` by name (case-sensitive exact match).
+- If no match, return `{ action: "transform", text: "Skill not found: " + SKILL_NAME + ". Available skills: " + knownSkills.map(s => s.name).join(", ") }`.
+- If match found, load the skill's SKILL.md file content.
+- Build a transformed prompt that includes:
+  - The skill's full SKILL.md body.
+  - The user_message appended at the end (if provided).
+  - Instructions to load reference files on demand via the `read` tool.
+- Return `{ action: "transform", text: <transformed prompt> }`.
+
+### Reference file handling
+
+Reference files are not loaded automatically. The transformed prompt instructs the model to use the `read` tool to load only the references needed for the task. References live in `<skill>/references/NN-topic.md` and are linked from the `## References` section of SKILL.md.
+
+### Notes
+
+- Skills are resolved from `knownSkills` captured in `before_agent_start`.
+- The skill's `location` field from `systemPromptOptions.skills` gives the full path to SKILL.md.
+- Do not create, edit, or delete skills. Use them as-is.
+- If the skill file cannot be read, return an error message to the user.
+
+## Feature 7: Tool Definition Retry
+
+When a tool call fails, inject the tool's definition back into the context so the SLM can see the correct signature. This helps small models recover from schema errors without wasting turns.
+
+### Mechanism
+
+Use the `tool_result` event to detect failed tool calls and the `context` event to inject tool definitions.
+
+#### Failure detection
+
+On `tool_result`:
+- Check if `event.isError` is true.
+- Check if the error is schema-related (parameter validation error, missing required field, wrong type, etc.).
+- If schema-related, record the tool name in a `failedToolSchemas` set.
+
+#### Definition injection
+
+On `context` (before each LLM call):
+- If `failedToolSchemas` is not empty, build a tool definition reminder block.
+- For each tool name in the set, look up its schema from `pi.getAllTools()` or from the captured `knownTools` data.
+- Append a structured reminder to the last user message or inject as a custom message.
+- The reminder format: `Tool definition reminder for <tool_name>: <schema description>`.
+- Clear the `failedToolSchemas` set after injection (one-time reminder).
+
+### Loop safety
+
+- The loop detection (Feature 2) still applies. Injecting tool definitions does not bypass loop detection.
+- If the same tool fails N times with schema errors, loop detection will abort.
+- The tool definition is only injected once per failure, not on every turn.
+
+### Error patterns detected
+
+- `Invalid tool arguments` or `Tool call validation failed`
+- `Missing required parameter`
+- `Expected type` mismatches
+- `Unknown parameter`
+- Any error message containing `schema`, `parameter`, `argument`, or `validation`
+
+### Notes
+
+- Use `pi.getAllTools()` to get the full tool schema for the reminder.
+- The reminder should be concise. Include tool name, required params, and param descriptions.
+- Do not inject definitions for non-schema errors (file not found, permission denied, etc.).
+
 ## Module Structure
 
 Single file: `pi-slm.ts`. No submodules. No external dependencies beyond `@earendil-works/pi-coding-agent` and `node:fs` / `node:path`.
@@ -155,15 +240,18 @@ Single file: `pi-slm.ts`. No submodules. No external dependencies beyond `@earen
 Module-level variables:
 - `loopThreshold: number` -- read from `PI_LOOP_THRESHOLD` or default 3.
 - `callWindow: Array<{ toolName: string; signature: string }>` -- sliding window for loop detection.
-- `knownSkills: Array<{ name: string; description: string }>` -- captured from `before_agent_start`.
+- `knownSkills: Array<{ name: string; description: string; location?: string }>` -- captured from `before_agent_start`.
 - `knownTools: Array<{ name: string; description: string }>` -- captured from `before_agent_start`.
+- `failedToolSchemas: Set<string>` -- tool names that had schema errors, for Feature 7.
 
 ### Event handlers
 
 - `session_start` -- read `PI_LOOP_THRESHOLD`, initialize state.
 - `before_agent_start` -- capture skills and tools from `systemPromptOptions`.
+- `input` -- explicit skill invocation (Feature 6).
 - `tool_call` -- write guard (Feature 1), loop detection (Feature 2).
-- `tool_result` -- EISDIR conversion (Feature 3).
+- `tool_result` -- EISDIR conversion (Feature 3), schema failure detection (Feature 7).
+- `context` -- tool definition injection (Feature 7).
 - `turn_end` -- reset call window.
 - `message_end` -- skills guard (Feature 4), tools guard (Feature 5).
 
@@ -174,3 +262,9 @@ Module-level variables:
 - EISDIR: nested directory paths. `readdir` works on any valid directory path.
 - Skills/tools guard: messages that mention skills or tools in passing (not as a listing). The regex should require a list structure (bullets, numbers, or a header line) to trigger.
 - Skills/tools guard: the model asks a follow-up question in the same message as the listing. Replace only the listing portion, keep the question. This is handled by replacing the full message text with the corrected listing plus any non-listing content preserved.
+- Skill invocation: skill name not found. Return a helpful error with the list of available skills.
+- Skill invocation: skill file unreadable. Return an error message, do not crash.
+- Skill invocation: `/skill:` with no name after colon. Treat as invalid, return error.
+- Tool retry: non-schema errors (file not found, permission denied). Do not inject tool definitions for these.
+- Tool retry: loop detection still applies. Schema reminder does not bypass loop threshold.
+- Tool retry: definition injected only once per failure. Clear the set after injection.

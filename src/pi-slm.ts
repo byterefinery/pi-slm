@@ -7,11 +7,13 @@
  * 3. EISDIR handling - converts directory read errors to listings.
  * 4. Skills listing guard - replaces hallucinated skill lists with real ones.
  * 5. Tools listing guard - replaces hallucinated tool lists with real ones.
+ * 6. Explicit skill invocation - handles /skill:<NAME> directives.
+ * 7. Tool definition retry - injects schema on validation failure.
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
-import { access, readdir } from "fs/promises";
+import { access, readdir, readFile } from "fs/promises";
 import { constants } from "fs";
 import { resolve } from "path";
 
@@ -22,8 +24,11 @@ let loopThreshold = 3;
 let callWindow: Array<{ toolName: string; signature: string }> = [];
 
 // Captured skills and tools from system prompt options.
-let knownSkills: Array<{ name: string; description: string }> = [];
+let knownSkills: Array<{ name: string; description: string; location?: string }> = [];
 let knownTools: Array<{ name: string; description: string }> = [];
+
+// Tool names that had schema errors, for Feature 7.
+let failedToolSchemas: Set<string> = new Set();
 
 // Build a signature for loop detection.
 function buildSignature(toolName: string, input: Record<string, unknown>): string {
@@ -176,6 +181,7 @@ export default function (pi: ExtensionAPI) {
             }
         }
         callWindow = [];
+        failedToolSchemas = new Set();
     });
 
     // Capture skills and tools from system prompt options.
@@ -190,6 +196,7 @@ export default function (pi: ExtensionAPI) {
                     knownSkills.push({
                         name: (skill.name as string) ?? "unknown",
                         description: (skill.description as string) ?? "",
+                        location: skill.location as string | undefined,
                     });
                 }
             }
@@ -220,6 +227,57 @@ export default function (pi: ExtensionAPI) {
                 }
             }
         }
+    });
+
+    // Feature 6: Explicit skill invocation.
+    pi.on("input", async (event, _ctx) => {
+        const skillMatch = event.text.match(/^\/skill:(\S+)(?:\s+(.+))?$/s);
+        if (!skillMatch) return;
+
+        const skillName = skillMatch[1];
+        const userMessage = skillMatch[2]?.trim();
+
+        // Find matching skill.
+        const skill = knownSkills.find((s) => s.name === skillName);
+        if (!skill) {
+            const available = knownSkills.map((s) => s.name).join(", ");
+            return {
+                action: "transform" as const,
+                text: `Skill not found: "${skillName}". Available skills: ${available}`,
+            };
+        }
+
+        // Load skill file.
+        if (!skill.location) {
+            return {
+                action: "transform" as const,
+                text: `Skill "${skillName}" has no file location. Cannot load.`,
+            };
+        }
+
+        let skillContent: string;
+        try {
+            skillContent = await readFile(skill.location, "utf-8");
+        } catch (err) {
+            return {
+                action: "transform" as const,
+                text: `Failed to read skill "${skillName}": ${err instanceof Error ? err.message : String(err)}`,
+            };
+        }
+
+        // Build transformed prompt.
+        const dir = resolve(skill.location, "..");
+        let prompt = `---\nSkill: ${skill.name}\n---\n\n${skillContent}`;
+        prompt += `\n\n---\nInstructions:\n---\nFollow the skill's instructions above to complete the task.`;
+        prompt += `\nReference files are NOT loaded automatically. Use the read tool to load only the references you need from: ${dir}/references/`;
+        if (userMessage) {
+            prompt += `\n\n---\nTask:\n---\n${userMessage}`;
+        }
+
+        return {
+            action: "transform" as const,
+            text: prompt,
+        };
     });
 
     // Feature 1: Write guard. Feature 2: Loop detection.
@@ -274,40 +332,108 @@ export default function (pi: ExtensionAPI) {
         }
     });
 
-    // Feature 3: EISDIR to directory listing.
-    pi.on("tool_result", async (event, ctx) => {
-        if (event.toolName !== "read" || !event.isError) return;
+    // Feature 3: EISDIR to directory listing. Feature 7: Schema failure detection.
+    pi.on("tool_result", async (event, _ctx) => {
+        // Feature 3: EISDIR handling.
+        if (event.toolName === "read" && event.isError) {
+            const contentText = event.content
+                .map((c) => (typeof c === "object" && "text" in c ? (c.text as string) : ""))
+                .join("");
 
-        const contentText = event.content
-            .map((c) => (typeof c === "object" && "text" in c ? (c.text as string) : ""))
-            .join("");
+            if (contentText.includes("EISDIR")) {
+                const inputPath = event.input.path as string;
+                const resolvedPath = resolve(_ctx.cwd, inputPath);
 
-        if (!contentText.includes("EISDIR")) return;
+                try {
+                    const entries = await readdir(resolvedPath, { withFileTypes: true });
+                    const lines = entries
+                        .map((e) => {
+                            const type = e.isDirectory() ? "d" : e.isSymbolicLink() ? "l" : "-";
+                            return `${type} ${e.name}`;
+                        })
+                        .sort();
 
-        const inputPath = event.input.path as string;
-        const resolvedPath = resolve(ctx.cwd, inputPath);
-
-        try {
-            const entries = await readdir(resolvedPath, { withFileTypes: true });
-            const lines = entries
-                .map((e) => {
-                    const type = e.isDirectory() ? "d" : e.isSymbolicLink() ? "l" : "-";
-                    return `${type} ${e.name}`;
-                })
-                .sort();
-
-            return {
-                content: [{ type: "text", text: lines.join("\n") }],
-                isError: false,
-            };
-        } catch {
-            return undefined;
+                    return {
+                        content: [{ type: "text", text: lines.join("\n") }],
+                        isError: false,
+                    };
+                } catch {
+                    // readdir failed, keep original error.
+                }
+            }
         }
+
+        // Feature 7: Detect schema-related failures.
+        if (event.isError) {
+            const contentText = event.content
+                .map((c) => (typeof c === "object" && "text" in c ? (c.text as string) : ""))
+                .join("");
+
+            const isSchemaError =
+                /invalid\s+(tool\s+)?argument/i.test(contentText) ||
+                /validation\s+fail/i.test(contentText) ||
+                /missing\s+required\s+param/i.test(contentText) ||
+                /expected\s+type/i.test(contentText) ||
+                /unknown\s+param/i.test(contentText) ||
+                /schema/i.test(contentText) ||
+                /parameter.*error/i.test(contentText);
+
+            if (isSchemaError) {
+                failedToolSchemas.add(event.toolName);
+            }
+        }
+    });
+
+    // Feature 7: Inject tool definition reminders on schema failures.
+    pi.on("context", async (event, _ctx) => {
+        if (failedToolSchemas.size === 0) return;
+
+        // Get all available tools for schema lookup.
+        const allTools = pi.getAllTools();
+        const toolMap = new Map(allTools.map((t) => [t.name, t]));
+
+        // Build reminder text.
+        const reminders = Array.from(failedToolSchemas).map((toolName) => {
+            const tool = toolMap.get(toolName);
+            if (!tool) return null;
+
+            // Build a concise schema reminder.
+            const lines = [`Tool definition reminder for "${toolName}":`];
+            if (tool.description) {
+                lines.push(`  Description: ${tool.description}`);
+            }
+            lines.push(`  Usage: Call "${toolName}" with the parameters defined below.`);
+
+            return lines.join("\n");
+        }).filter(Boolean);
+
+        if (reminders.length === 0) {
+            failedToolSchemas.clear();
+            return;
+        }
+
+        const reminderText = "\n\n" + reminders.join("\n\n") + "\n";
+
+        // Append reminder to the last user message.
+        const userMessages = event.messages.filter((m) => m.role === "user");
+        if (userMessages.length > 0) {
+            const lastUserMsg = userMessages[userMessages.length - 1];
+            if (Array.isArray(lastUserMsg.content)) {
+                const lastContent = lastUserMsg.content[lastUserMsg.content.length - 1];
+                if (lastContent && typeof lastContent === "object" && "text" in lastContent) {
+                    lastContent.text = (lastContent.text as string) + reminderText;
+                }
+            }
+        }
+
+        // Clear after one-time injection.
+        failedToolSchemas.clear();
     });
 
     // Reset loop window on turn end.
     pi.on("turn_end", async (_event, _ctx) => {
         callWindow = [];
+        failedToolSchemas = new Set();
     });
 
     // Feature 4 and 5: Skills and tools listing guards.
