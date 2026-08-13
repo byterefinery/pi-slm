@@ -30,6 +30,49 @@ let knownTools: Array<{ name: string; description: string }> = [];
 // Tool names that had schema errors, for Feature 7.
 let failedToolSchemas: Set<string> = new Set();
 
+// Discover skills from filesystem by scanning known skill directories.
+// Used when knownSkills is empty (input fires before before_agent_start).
+async function discoverSkills(cwd: string): Promise<Array<{ name: string; description: string; location?: string }>> {
+    const home = process.env.HOME ?? "/";
+    const dirs = [
+        resolve(home, ".pi/agent/skills"),
+        resolve(home, ".agents/skills"),
+        resolve(cwd, ".pi/skills"),
+        resolve(cwd, ".agents/skills"),
+    ];
+
+    const seen = new Set<string>();
+    const results: Array<{ name: string; description: string; location?: string }> = [];
+
+    for (const dir of dirs) {
+        try {
+            const entries = await readdir(dir, { withFileTypes: true });
+            for (const entry of entries) {
+                if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
+                if (seen.has(entry.name)) continue;
+
+                const skillMd = resolve(dir, entry.name, "SKILL.md");
+                try {
+                    const content = await readFile(skillMd, "utf-8");
+                    // Parse frontmatter name and description.
+                    const nameMatch = content.match(/^---\s*\nname:\s*(.+?)\n/);
+                    const descMatch = content.match(/^---\s*\n[^\n]*\ndescription:\s*(.+?)\n/);
+                    const name = nameMatch ? nameMatch[1].trim() : entry.name;
+                    const desc = descMatch ? descMatch[1].trim() : "";
+                    seen.add(name);
+                    results.push({ name, description: desc, location: skillMd });
+                } catch {
+                    // No SKILL.md or unreadable, skip.
+                }
+            }
+        } catch {
+            // Directory doesn't exist, skip.
+        }
+    }
+
+    return results;
+}
+
 // Build a signature for loop detection.
 function buildSignature(toolName: string, input: Record<string, unknown>): string {
     if (toolName === "bash") {
@@ -64,9 +107,8 @@ function detectBashBypass(command: string): string | null {
     // dd writing to a file.
     if (/\bdd\b.*\bof=\S+/.test(command)) return "dd write command";
 
-    // cp overwriting a file.
-    if (/\bcp\b\s+.*\s+\S+$/.test(command) && !/\bcp\b.*--backup/.test(command)) {
-        // cp without backup flag, writing to a path.
+    // cp overwriting a file (cp source dest, no flags, no --backup).
+    if (/^\s*cp\s+[^-\s]\S*\s+\S+/.test(command) && !/\bcp\b.*--backup/.test(command)) {
         return "cp overwrite command";
     }
 
@@ -78,11 +120,14 @@ function isSkillsListing(text: string): boolean {
     const hasHeader =
         /available\s+skill/i.test(text) ||
         /installed\s+skill/i.test(text) ||
+        /skill\s+installed/i.test(text) ||
         /list\s+of\s+skill/i.test(text) ||
         /here are the.*skill/i.test(text) ||
         /i have access to.*skill/i.test(text) ||
         /i can use.*skill/i.test(text) ||
-        /skill\s*(list|catalog|options)/i.test(text);
+        /skill\s*(list|catalog|options)/i.test(text) ||
+        /\b\d+\s+skill/i.test(text) ||
+        /skill\s+available/i.test(text);
 
     const hasList =
         /[-*]\s+\S+/.test(text) ||
@@ -230,17 +275,25 @@ export default function (pi: ExtensionAPI) {
     });
 
     // Feature 6: Explicit skill invocation.
-    pi.on("input", async (event, _ctx) => {
+    // Note: input fires before before_agent_start, so knownSkills may be empty.
+    // We discover skills from filesystem on-demand when needed.
+    pi.on("input", async (event, ctx) => {
         const skillMatch = event.text.match(/^\/skill:(\S+)(?:\s+(.+))?$/s);
         if (!skillMatch) return;
 
         const skillName = skillMatch[1];
         const userMessage = skillMatch[2]?.trim();
 
+        // Resolve skills: use knownSkills if populated, otherwise discover from filesystem.
+        let skills = knownSkills;
+        if (skills.length === 0) {
+            skills = await discoverSkills(ctx.cwd);
+        }
+
         // Find matching skill.
-        const skill = knownSkills.find((s) => s.name === skillName);
+        const skill = skills.find((s) => s.name === skillName);
         if (!skill) {
-            const available = knownSkills.map((s) => s.name).join(", ");
+            const available = skills.map((s) => s.name).join(", ");
             return {
                 action: "transform" as const,
                 text: `Skill not found: "${skillName}". Available skills: ${available}`,
@@ -364,6 +417,10 @@ export default function (pi: ExtensionAPI) {
         }
 
         // Feature 7: Detect schema-related failures.
+        // Note: tool definitions are model-native (encoded in system prompt per model format).
+        // We can only detect schema errors and advise the model — we cannot reliably
+        // re-inject the exact schema the model expects. Clear the set after detection
+        // so the model gets a hint message via tool_result error context.
         if (event.isError) {
             const contentText = event.content
                 .map((c) => (typeof c === "object" && "text" in c ? (c.text as string) : ""))
@@ -371,12 +428,12 @@ export default function (pi: ExtensionAPI) {
 
             const isSchemaError =
                 /invalid\s+(tool\s+)?argument/i.test(contentText) ||
-                /validation\s+fail/i.test(contentText) ||
-                /missing\s+required\s+param/i.test(contentText) ||
+                /tool\s+call\s+validation/i.test(contentText) ||
+                /missing\s+required\s+(parameter|field|param)/i.test(contentText) ||
                 /expected\s+type/i.test(contentText) ||
-                /unknown\s+param/i.test(contentText) ||
-                /schema/i.test(contentText) ||
-                /parameter.*error/i.test(contentText);
+                /unknown\s+(parameter|param|argument)/i.test(contentText) ||
+                /tool.*schema.*error/i.test(contentText) ||
+                /parameter\s+validation\s+error/i.test(contentText);
 
             if (isSchemaError) {
                 failedToolSchemas.add(event.toolName);
@@ -384,44 +441,26 @@ export default function (pi: ExtensionAPI) {
         }
     });
 
-    // Feature 7: Inject tool definition reminders on schema failures.
+    // Feature 7: Inject tool usage hints on schema failures.
+    // Tool definitions are model-native (encoded differently per model in system prompt).
+    // We inject a plain-language hint reminding the model to check the tool's parameter names.
     pi.on("context", async (event, _ctx) => {
         if (failedToolSchemas.size === 0) return;
 
-        // Get all available tools for schema lookup.
-        const allTools = pi.getAllTools();
-        const toolMap = new Map(allTools.map((t) => [t.name, t]));
+        const toolNames = Array.from(failedToolSchemas);
+        const hintText =
+            "\n\nNote: The following tool(s) had parameter validation errors on the last call. " +
+            `Check the tool definitions in your instructions for correct parameter names and types: ` +
+            toolNames.join(", ") + ".";
 
-        // Build reminder text.
-        const reminders = Array.from(failedToolSchemas).map((toolName) => {
-            const tool = toolMap.get(toolName);
-            if (!tool) return null;
-
-            // Build a concise schema reminder.
-            const lines = [`Tool definition reminder for "${toolName}":`];
-            if (tool.description) {
-                lines.push(`  Description: ${tool.description}`);
-            }
-            lines.push(`  Usage: Call "${toolName}" with the parameters defined below.`);
-
-            return lines.join("\n");
-        }).filter(Boolean);
-
-        if (reminders.length === 0) {
-            failedToolSchemas.clear();
-            return;
-        }
-
-        const reminderText = "\n\n" + reminders.join("\n\n") + "\n";
-
-        // Append reminder to the last user message.
+        // Append hint to the last user message.
         const userMessages = event.messages.filter((m) => m.role === "user");
         if (userMessages.length > 0) {
             const lastUserMsg = userMessages[userMessages.length - 1];
             if (Array.isArray(lastUserMsg.content)) {
                 const lastContent = lastUserMsg.content[lastUserMsg.content.length - 1];
                 if (lastContent && typeof lastContent === "object" && "text" in lastContent) {
-                    lastContent.text = (lastContent.text as string) + reminderText;
+                    lastContent.text = (lastContent.text as string) + hintText;
                 }
             }
         }

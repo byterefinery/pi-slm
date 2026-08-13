@@ -231,6 +231,99 @@ On `context` (before each LLM call):
 - The reminder should be concise. Include tool name, required params, and param descriptions.
 - Do not inject definitions for non-schema errors (file not found, permission denied, etc.).
 
+## Feature 8: Tool Call Hallucination Guard
+
+Block tool calls that reference tools which do not exist in the active tool set. SLMs frequently invent tool names (`search_file`, `run_command`, `file_write`, `execute`) or use wrong parameter shapes for real tools.
+
+### Mechanism
+
+Use the `tool_call` event to validate every tool call against the known tool registry.
+
+#### Validation
+
+On `tool_call`:
+- Check if `event.toolName` exists in `knownTools` (captured in `before_agent_start`).
+- If the tool name is not found in `knownTools`, return `{ block: true, reason: ... }`.
+- The reason message lists the actual available tool names so the model can self-correct.
+
+#### Parameter shape validation
+
+For known tools, validate that required parameters are present and non-empty:
+- `read` requires `path` (non-empty string).
+- `write` requires `path` and `content` (non-empty strings).
+- `edit` requires `path` and `edits` (non-empty array).
+- `bash` requires `command` (non-empty string).
+- For extension tools, check that the input object has at least one non-empty string value (heuristic — extension tool schemas vary).
+
+If a required parameter is missing or empty, return `{ block: true, reason: ... }` with the correct parameter name.
+
+#### Fuzzy match suggestion
+
+When a tool name is not found, check for a close match using Levenshtein distance or simple prefix/suffix similarity against `knownTools`. If a close match exists (distance <= 2 or shares a prefix of length >= 3), include the suggestion in the reason message:
+- `Unknown tool "search_file". Did you mean "read"?` → no, too different
+- `Unknown tool "filewrite". Did you mean "write"?` → yes, close enough
+
+For the suggestion, compare the unknown name against each known tool name using:
+- Case-insensitive exact match (catch `Write` vs `write`).
+- Case-insensitive contains (catch `file_write` contains `write`).
+- Character-level edit distance <= 2.
+
+If multiple matches exist, pick the one with the smallest distance. If tied, pick the shortest name.
+
+### Notes
+
+- Built-in tools (`read`, `write`, `edit`, `bash`) are always in `knownTools` when not excluded via `--exclude-tools`. The guard handles excluded tools correctly because `knownTools` reflects what's actually active.
+- Extension tools from `pi.getAllTools()` or `systemPromptOptions.selectedTools` are included.
+- Do not block on tool names that start with `$` or `_` — these may be internal pi conventions.
+- The guard fires before write guard (Feature 1) and loop detection (Feature 2) in the `tool_call` handler.
+
+
+## Feature 9: Skill Reference Hallucination Guard
+
+Intercept assistant messages that reference skills by name, capability, or command when those skills do not exist. SLMs invent skill names (`code-review`, `debug-helper`, `test-runner`) or attribute capabilities to real skills that they don't have.
+
+### Mechanism
+
+Use the `message_end` event to scan assistant messages for skill references.
+
+#### Detection
+
+On `message_end` for assistant messages, scan the text for skill references using these patterns:
+- Named reference: backtick-wrapped or bold skill names that look like skill identifiers (`code-review`, `debug-helper`, `my-skill`). Detection via regex: `\b[a-z][a-z0-9_-]{2,}[a-z0-9]\b` appearing in a context that suggests a skill reference (near words like "skill", "use", "invoke", "load", "run", or in a list).
+- Capability claim: phrases like "I can use the X skill to", "The X skill will", "Using skill X", "Skill X provides".
+- Command reference: phrases like "run npx skills add X", "install skill X", "load skill X" where X is not a known skill.
+- Invocation suggestion: the model suggests using `/skill:X` where X is not a known skill.
+
+For each detected reference, check if the skill name exists in `knownSkills`.
+
+#### Replacement
+
+If hallucinated skill references are found:
+- Replace the referenced skill name(s) with the closest matching real skill name (if any), or remove the reference.
+- If the model claims a capability that no loaded skill provides, replace the claim with a factual statement about what skills are actually available.
+- If the model suggests installing a skill via `npx skills add`, allow it (installation is a valid action). Only block references to skills presented as already available.
+- Preserve the surrounding message text. Only replace the hallucinated portions.
+
+#### Replacement strategy
+
+Build the replacement by:
+1. Find each hallucinated skill reference in the text.
+2. For each, check if a close match exists in `knownSkills` (same fuzzy matching as Feature 8).
+3. If a close match exists, replace the hallucinated name with the real name.
+4. If no close match exists, replace the reference with a note: `[no such skill loaded]`.
+5. If the entire message is a skill recommendation or capability claim based on hallucinated skills, replace the full message with a factual statement about available skills (reuse `buildSkillsListing()` from Feature 4).
+
+### Distinction from Feature 4
+
+Feature 4 (Skills Listing Guard) replaces full listing messages. Feature 9 catches inline skill references throughout any message — a single mention of a non-existent skill in the middle of a paragraph, a wrong skill name in a code example, or a fabricated skill capability claim.
+
+### Notes
+
+- The reference detection regex must not trigger on generic words that happen to match the skill name pattern. Require proximity to skill-related keywords or structural context (backticks, bold, list items, `/skill:` prefix).
+- Do not block mentions of skills in the context of installation or discovery ("you could install a skill for X"). Only block references presented as already available.
+- The `find-skills` skill itself is a real skill for discovery. References to it should not be flagged.
+- If `knownSkills` is empty (e.g., `input` event before `before_agent_start`), skip the guard — there's nothing to validate against.
+
 ## Module Structure
 
 Single file: `pi-slm.ts`. No submodules. No external dependencies beyond `@earendil-works/pi-coding-agent` and `node:fs` / `node:path`.
@@ -249,11 +342,23 @@ Module-level variables:
 - `session_start` -- read `PI_LOOP_THRESHOLD`, initialize state.
 - `before_agent_start` -- capture skills and tools from `systemPromptOptions`.
 - `input` -- explicit skill invocation (Feature 6).
-- `tool_call` -- write guard (Feature 1), loop detection (Feature 2).
+- `tool_call` -- tool hallucination guard (Feature 8), write guard (Feature 1), loop detection (Feature 2).
 - `tool_result` -- EISDIR conversion (Feature 3), schema failure detection (Feature 7).
 - `context` -- tool definition injection (Feature 7).
 - `turn_end` -- reset call window.
-- `message_end` -- skills guard (Feature 4), tools guard (Feature 5).
+- `message_end` -- skills listing guard (Feature 4), tools listing guard (Feature 5), skill reference guard (Feature 9).
+
+### Helper functions
+
+- `buildSignature(toolName, input)` -- normalize tool call input for loop detection.
+- `detectBashBypass(command)` -- check for write-guard bypass patterns.
+- `isSkillsListing(text)` / `isToolsListing(text)` -- detect listing messages.
+- `buildSkillsListing()` / `buildToolsListing()` -- build factual replacement text.
+- `extractNonListingContent(text)` -- preserve trailing non-listing content.
+- `discoverSkills(cwd)` -- scan filesystem for skills when `knownSkills` is empty.
+- `findClosestTool(name, knownTools)` -- fuzzy match unknown tool name against known set.
+- `findClosestSkill(name, knownSkills)` -- fuzzy match unknown skill name against known set.
+- `detectSkillReferences(text)` -- find inline skill references in message text.
 
 ## Edge Cases
 
@@ -268,3 +373,11 @@ Module-level variables:
 - Tool retry: non-schema errors (file not found, permission denied). Do not inject tool definitions for these.
 - Tool retry: loop detection still applies. Schema reminder does not bypass loop threshold.
 - Tool retry: definition injected only once per failure. Clear the set after injection.
+- Tool hallucination: the model uses a tool name that is a close variant of a real tool (e.g., `file_read` vs `read`). The fuzzy matcher suggests the correct name.
+- Tool hallucination: the model uses a real tool name with completely wrong parameters (e.g., `read` with `query` instead of `path`). Parameter shape validation catches this.
+- Tool hallucination: extension tools with dynamic names. The guard validates against `knownTools` which reflects what's actually active.
+- Skill reference: the model mentions a skill name that matches a real npm package or GitHub repo but isn't loaded. The guard flags it as not loaded (not hallucinated — it exists but isn't installed).
+- Skill reference: the model suggests installing a skill. Installation suggestions are allowed; only references to skills presented as already available are flagged.
+- Skill reference: skill names that are common English words (e.g., a skill named `search`). The detection requires structural context (backticks, bold, `/skill:` prefix, or proximity to skill-related keywords) to avoid false positives.
+- Skill reference: the model correctly uses a skill but misstates its capability. The guard replaces the capability claim with the factual description from `knownSkills`.
+- Fuzzy matching: multiple equally-close matches. Pick the shortest name. If still tied, pick the first alphabetically.
