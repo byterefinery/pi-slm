@@ -137,26 +137,25 @@ Return `{ block: true, reason: "Blocked: <pattern>. Use edit tool." }`.
 
 ## Feature 5: Loop Detection
 
-**Event:** `tool_call` (fires third, after Features 3 and 4), `message_end`, `session_start`, `turn_end`
+**Event:** `tool_call` (fires third, after Features 3 and 4), `session_start`, `turn_end`
 
-Abort when the model repeats the same tool call N consecutive times. Extends beyond simple tool-call repetition to detect reads of the same file that produce identical thinking and output across turns.
+Detects repeated tool calls. Two behaviors depending on tool type:
+
+- **`read`**: warns with a random nudge message, does **not** terminate — lets the model recover
+- **All other tools**: blocks with `terminate: true` — aborts the turn
 
 ### Problem
 
-The original sliding window catches consecutive identical tool calls within a single turn. However, small models exhibit two additional loop patterns:
-
-1. **Interleaved reads** — `read A, bash X, read A, bash Y, read A` — the standard window sees mixed calls and never triggers, even though the same file is being re-read repeatedly.
-2. **Cross-turn read loops** — the model reads a file, produces thinking and output, then in the next turn reads the same file again with the same thinking and output. The per-turn window resets at `turn_end`, so this pattern is invisible.
+Small models repeatedly read the same file with identical arguments, getting stuck in doom loops. The original sliding window only catches consecutive identical calls within a single turn — it misses cross-turn repeats (window resets at `turn_end`) and interleaved reads (`read A, bash X, read A`).
 
 ### Solution
 
-Three complementary detection layers, all subject to `PI_LOOP_THRESHOLD`:
+A persistent sliding window (`readLoopWindow`) tracks `read` call signatures across turns. On threshold breach, returns a randomly picked warning from a pool of 10 messages — no termination, so the model can pivot. Non-read tools use the original `callWindow` with `terminate: true`.
 
-| Layer | What it catches | Mechanism | Scope |
-|-------|----------------|-----------|-------|
-| **callWindow** | Consecutive identical tool calls | Sliding window of `(toolName, normalizedInput)` signatures | Same turn, all tools |
-| **pendingReads** | Same file re-read within a turn, even interleaved with other tools | Counts prior reads of same `(path, offset, limit)` in current turn | Same turn, `read` only |
-| **readLoopWindow** | Repeated reads across turns with identical thinking + output | Signatures of `read:path:offset:limit:hash(thinking+output)`, persists across turns | Cross-turn, `read` only |
+| Tool | Window | Scope | On breach |
+|------|--------|-------|-----------|
+| `read` | `readLoopWindow` (persists across turns) | Same args, any turn | Warn (random message), continue |
+| other | `callWindow` (reset at `turn_end`) | Consecutive identical calls | Block + terminate |
 
 ### Configuration
 
@@ -165,38 +164,41 @@ Three complementary detection layers, all subject to `PI_LOOP_THRESHOLD`:
 
 ### Mechanism
 
-#### callWindow (standard)
+#### read tool
 
-On `tool_call` for any tool:
+On `tool_call` for `read`:
+- Build signature: `read:path:offset:limit`.
+- Push onto `readLoopWindow`, trim to threshold length.
+- If all entries identical, return `{ block: true, reason: pickRandom(doomLoopWarnings) }` — **no terminate**.
+- `readLoopWindow` persists across turns. Cleared on any non-`read` tool call.
+
+#### other tools
+
+On `tool_call` for non-read tools:
 - Build signature: `(toolName, normalizedInput)`. Normalization:
   - `bash`: strip/normalize whitespace in command
-  - `read`/`write`/`edit`: `toolName:path:offset:limit`
+  - `write`/`edit`: `toolName:path:offset:limit`
   - Other: `toolName:JSON(input)`
-- Push onto sliding window, trim to threshold length.
+- Push onto `callWindow`, trim to threshold length.
 - If all entries identical, return `{ block: true, reason: "...", terminate: true }`.
-- Clear on `turn_end`.
+- Clear `callWindow` on `turn_end`.
 
-#### pendingReads (same-turn read duplicates)
+### Warning messages
 
-On `tool_call` for `read`:
-- Count entries in `pendingReads` matching `(path, offset, limit)`.
-- If `count + 1 >= threshold`, return `{ block: true, reason: "...", terminate: true }`.
-- Push current read params onto `pendingReads`.
-- Clear `pendingReads` on `turn_end` and on any non-`read` tool call.
+10 varied messages, randomly picked on each breach:
 
-#### readLoopWindow (cross-turn read loops)
-
-On `message_end` for assistant messages:
-- If `pendingReads` is non-empty, extract all text content (thinking + output).
-- Normalize text: strip `<thinking>` tags, collapse whitespace.
-- Compute hash (djb2 → base36) of normalized text.
-- For each pending read, build signature: `read:path:offset:limit:hash`.
-- Push signature onto `readLoopWindow`, trim to threshold length.
-
-On `tool_call` for `read`:
-- If `readLoopWindow` has >= threshold entries and all are identical, return `{ block: true, reason: "...", terminate: true }`.
-
-`readLoopWindow` persists across turns (not cleared at `turn_end`). Cleared on any non-`read` tool call (pattern break).
+```
+Warning: doom looping detected, let's try another approach.
+Heads up: you're stuck in a read loop. Try something different.
+Notice: repeated reads of the same file. Pivot to a new strategy.
+Alert: circular file reading detected. Change direction.
+Caution: you keep reading the same file. Explore a different path.
+Tip: spinning in circles on this file. Try a fresh angle.
+Reminder: repeated file access. Shift your approach.
+Watch out: loop detected on this read. Move on.
+Hint: you've already read this. Consider the next step.
+Pause: looping on the same read. Let's try another route.
+```
 
 ---
 
@@ -259,8 +261,8 @@ On `context`:
 | `tool_call` | Features 3, 4, 5 (in order) |
 | `tool_result` | Features 6, 7 |
 | `context` | Feature 7 (inject hints) |
-| `turn_end` | Feature 5 (reset callWindow + pendingReads) |
-| `message_end` | Feature 1 (listing guard), Feature 5 (build readLoopWindow signatures) |
+| `turn_end` | Feature 5 (reset callWindow) |
+| `message_end` | Feature 1 (listing guard) |
 
 ---
 
@@ -271,9 +273,9 @@ Single file: `src/pi-slm.ts`. No external dependencies beyond `@earendil-works/p
 ### State
 
 - `loopThreshold: number` — from env or default 3
-- `callWindow: Array<{ toolName: string; signature: string }>` — standard loop detection window (cleared at turn_end)
-- `pendingReads: Array<{ path: string; offset: string; limit: string }>` — read calls in current turn (cleared at turn_end)
-- `readLoopWindow: string[]` — cross-turn read loop signatures with thinking/output hash (persists across turns)
+- `callWindow: Array<{ toolName: string; signature: string }>` — loop detection window for non-read tools (cleared at turn_end)
+- `readLoopWindow: string[]` — persistent window for read loop signatures across turns (cleared on non-read tool call)
+- `doomLoopWarnings: string[]` — pool of 10 varied warning messages for read loop breaches
 - `knownSkills: Array<{ name: string; description: string; filePath?: string }>` — captured skills
 - `knownTools: Array<{ name: string; description: string }>` — captured tools
 - `failedToolSchemas: Set<string>` — tools with schema errors
@@ -281,7 +283,7 @@ Single file: `src/pi-slm.ts`. No external dependencies beyond `@earendil-works/p
 ### Helpers
 
 - `buildSignature(toolName, input)` — normalize tool call for loop detection
-- `hashText(text)` — strip thinking tags, normalize whitespace, compute djb2 hash (base36) for compact signature
+- `pickRandom<T>(arr: T[]): T` — pick a random element from an array
 - `detectBashBypass(command)` — check bypass patterns
 - `isSkillsListing(text)` — detect skills listing messages
 - `isToolsListing(text)` — detect tools listing messages

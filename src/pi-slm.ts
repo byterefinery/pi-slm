@@ -24,8 +24,24 @@ let knownSkills: Array<{ name: string; description: string; filePath?: string }>
 let knownTools: Array<{ name: string; description: string }> = [];
 let failedToolSchemas: Set<string> = new Set();
 let listingIntent: "skills" | "tools" | "both" | null = null;
-let pendingReads: Array<{ path: string; offset: string; limit: string }> = [];
 let readLoopWindow: string[] = [];
+
+const doomLoopWarnings = [
+    "Warning: doom looping detected, let's try another approach.",
+    "Heads up: you're stuck in a read loop. Try something different.",
+    "Notice: repeated reads of the same file. Pivot to a new strategy.",
+    "Alert: circular file reading detected. Change direction.",
+    "Caution: you keep reading the same file. Explore a different path.",
+    "Tip: spinning in circles on this file. Try a fresh angle.",
+    "Reminder: repeated file access. Shift your approach.",
+    "Watch out: loop detected on this read. Move on.",
+    "Hint: you've already read this. Consider the next step.",
+    "Pause: looping on the same read. Let's try another route.",
+];
+
+function pickRandom<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
 
 // -- Helpers --
 
@@ -205,15 +221,6 @@ function buildToolsListing(): string {
     return "Available tools:\n\n" + lines.join("\n");
 }
 
-function hashText(text: string): string {
-    const normalized = text.replace(/<thinking[^>]*>|<\/thinking>/g, "").replace(/\s+/g, " ").trim();
-    let hash = 0;
-    for (let i = 0; i < normalized.length; i++) {
-        hash = ((hash << 5) - hash + normalized.charCodeAt(i)) | 0;
-    }
-    return Math.abs(hash).toString(36);
-}
-
 
 
 // -- Extension --
@@ -390,62 +397,52 @@ export default function (pi: ExtensionAPI) {
         }
 
         // Feature 2: Loop detection
-        const signature = buildSignature(event.toolName, event.input);
-        callWindow.push({ toolName: event.toolName, signature });
-
-        if (callWindow.length > loopThreshold) {
-            callWindow.shift();
-        }
-
-        if (callWindow.length >= loopThreshold) {
-            const first = callWindow[0].signature;
-            const allSame = callWindow.every((entry) => entry.signature === first);
-
-            if (allSame) {
-                return {
-                    block: true,
-                    reason: `Loop detected: tool "${event.toolName}" called ${callWindow.length} consecutive times with the same input. Try a different approach.`,
-                    terminate: true,
-                };
-            }
-        }
-
-        // Extended read loop: track for cross-turn detection (same file + same thinking/output)
         if (event.toolName === "read") {
+            // Reads: warn on repeated identical calls, do NOT terminate
             const rPath = (event.input.path as string ?? "").replace(/\s+/g, " ").trim();
             const rOffset = event.input.offset ?? "";
             const rLimit = event.input.limit ?? "";
+            const readSig = `read:${rPath}:${rOffset}:${rLimit}`;
 
-            // Same-turn duplicate check: count previous reads of same file in this turn
-            const pendingCount = pendingReads.filter(
-                (r) => r.path === rPath && r.offset === rOffset && r.limit === rLimit
-            ).length;
-            if (pendingCount + 1 >= loopThreshold) {
-                return {
-                    block: true,
-                    reason: `Loop detected: read "${rPath}" repeated ${pendingCount + 1} times in this turn. Try a different approach.`,
-                    terminate: true,
-                };
+            readLoopWindow.push(readSig);
+            if (readLoopWindow.length > loopThreshold) {
+                readLoopWindow.shift();
             }
 
-            // Cross-turn check: readLoopWindow carries full signatures (params + thinking/output hash) from previous turns
             if (readLoopWindow.length >= loopThreshold) {
                 const firstSig = readLoopWindow[0];
                 const allSameRead = readLoopWindow.every((sig) => sig === firstSig);
                 if (allSameRead) {
                     return {
                         block: true,
-                        reason: `Loop detected: read "${rPath}" repeated ${readLoopWindow.length} times with the same thinking and output. Try a different approach.`,
+                        reason: pickRandom(doomLoopWarnings),
+                    };
+                }
+            }
+        } else {
+            // Non-read tools: standard sliding window with terminate
+            const signature = buildSignature(event.toolName, event.input);
+            callWindow.push({ toolName: event.toolName, signature });
+
+            if (callWindow.length > loopThreshold) {
+                callWindow.shift();
+            }
+
+            if (callWindow.length >= loopThreshold) {
+                const first = callWindow[0].signature;
+                const allSame = callWindow.every((entry) => entry.signature === first);
+
+                if (allSame) {
+                    return {
+                        block: true,
+                        reason: `Loop detected: tool "${event.toolName}" called ${callWindow.length} consecutive times with the same input. Try a different approach.`,
                         terminate: true,
                     };
                 }
             }
 
-            pendingReads.push({ path: rPath, offset: rOffset, limit: rLimit });
-        } else {
             // A non-read tool breaks any read loop sequence
             readLoopWindow = [];
-            pendingReads = [];
         }
     });
 
@@ -522,11 +519,10 @@ export default function (pi: ExtensionAPI) {
     // turn_end: reset call window and listing intent (readLoopWindow persists for cross-turn detection)
     pi.on("turn_end", async (_event, _ctx) => {
         callWindow = [];
-        pendingReads = [];
         listingIntent = null;
     });
 
-    // message_end: capture user intent + Feature 4 (listing guard) + read loop signature
+    // message_end: capture user intent + Feature 4 (listing guard)
     pi.on("message_end", async (event, _ctx) => {
         // Capture intent from user messages
         if (event.message.role === "user") {
@@ -538,23 +534,6 @@ export default function (pi: ExtensionAPI) {
         }
 
         if (event.message.role !== "assistant") return;
-
-        // Build read loop signatures from assistant thinking + output
-        if (pendingReads.length > 0) {
-            const allText = event.message.content
-                .map((c) => (typeof c === "object" && "text" in c ? (c.text as string) : ""))
-                .join("\n");
-            const contentHash = hashText(allText);
-
-            for (const r of pendingReads) {
-                const sig = `read:${r.path}:${r.offset}:${r.limit}:${contentHash}`;
-                readLoopWindow.push(sig);
-                if (readLoopWindow.length > loopThreshold) {
-                    readLoopWindow.shift();
-                }
-            }
-            pendingReads = [];
-        }
 
         const content = event.message.content;
         if (!content || !Array.isArray(content)) return;
