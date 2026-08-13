@@ -24,6 +24,8 @@ let knownSkills: Array<{ name: string; description: string; filePath?: string }>
 let knownTools: Array<{ name: string; description: string }> = [];
 let failedToolSchemas: Set<string> = new Set();
 let listingIntent: "skills" | "tools" | "both" | null = null;
+let pendingReads: Array<{ path: string; offset: string; limit: string }> = [];
+let readLoopWindow: string[] = [];
 
 // -- Helpers --
 
@@ -203,6 +205,15 @@ function buildToolsListing(): string {
     return "Available tools:\n\n" + lines.join("\n");
 }
 
+function hashText(text: string): string {
+    const normalized = text.replace(/<thinking[^>]*>|<\/thinking>/g, "").replace(/\s+/g, " ").trim();
+    let hash = 0;
+    for (let i = 0; i < normalized.length; i++) {
+        hash = ((hash << 5) - hash + normalized.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash).toString(36);
+}
+
 
 
 // -- Extension --
@@ -306,7 +317,7 @@ export default function (pi: ExtensionAPI) {
         return { action: "transform" as const, text: prompt };
     });
 
-    // tool_call: Feature 7 -> Feature 1 -> Feature 2
+    // tool_call: Feature 3 -> Feature 4 -> Feature 5
     pi.on("tool_call", async (event, ctx) => {
         // Feature 7: Tool Hallucination Guard
         const toolName = event.toolName;
@@ -398,6 +409,44 @@ export default function (pi: ExtensionAPI) {
                 };
             }
         }
+
+        // Extended read loop: track for cross-turn detection (same file + same thinking/output)
+        if (event.toolName === "read") {
+            const rPath = (event.input.path as string ?? "").replace(/\s+/g, " ").trim();
+            const rOffset = event.input.offset ?? "";
+            const rLimit = event.input.limit ?? "";
+
+            // Same-turn duplicate check: count previous reads of same file in this turn
+            const pendingCount = pendingReads.filter(
+                (r) => r.path === rPath && r.offset === rOffset && r.limit === rLimit
+            ).length;
+            if (pendingCount + 1 >= loopThreshold) {
+                return {
+                    block: true,
+                    reason: `Loop detected: read "${rPath}" repeated ${pendingCount + 1} times in this turn. Try a different approach.`,
+                    terminate: true,
+                };
+            }
+
+            // Cross-turn check: readLoopWindow carries full signatures (params + thinking/output hash) from previous turns
+            if (readLoopWindow.length >= loopThreshold) {
+                const firstSig = readLoopWindow[0];
+                const allSameRead = readLoopWindow.every((sig) => sig === firstSig);
+                if (allSameRead) {
+                    return {
+                        block: true,
+                        reason: `Loop detected: read "${rPath}" repeated ${readLoopWindow.length} times with the same thinking and output. Try a different approach.`,
+                        terminate: true,
+                    };
+                }
+            }
+
+            pendingReads.push({ path: rPath, offset: rOffset, limit: rLimit });
+        } else {
+            // A non-read tool breaks any read loop sequence
+            readLoopWindow = [];
+            pendingReads = [];
+        }
     });
 
     // tool_result: Feature 3 (EISDIR) + Feature 6 (schema detection)
@@ -470,13 +519,14 @@ export default function (pi: ExtensionAPI) {
         failedToolSchemas.clear();
     });
 
-    // turn_end: reset loop window and listing intent
+    // turn_end: reset call window and listing intent (readLoopWindow persists for cross-turn detection)
     pi.on("turn_end", async (_event, _ctx) => {
         callWindow = [];
+        pendingReads = [];
         listingIntent = null;
     });
 
-    // message_end: capture user intent + Feature 4 (listing guard)
+    // message_end: capture user intent + Feature 4 (listing guard) + read loop signature
     pi.on("message_end", async (event, _ctx) => {
         // Capture intent from user messages
         if (event.message.role === "user") {
@@ -488,6 +538,23 @@ export default function (pi: ExtensionAPI) {
         }
 
         if (event.message.role !== "assistant") return;
+
+        // Build read loop signatures from assistant thinking + output
+        if (pendingReads.length > 0) {
+            const allText = event.message.content
+                .map((c) => (typeof c === "object" && "text" in c ? (c.text as string) : ""))
+                .join("\n");
+            const contentHash = hashText(allText);
+
+            for (const r of pendingReads) {
+                const sig = `read:${r.path}:${r.offset}:${r.limit}:${contentHash}`;
+                readLoopWindow.push(sig);
+                if (readLoopWindow.length > loopThreshold) {
+                    readLoopWindow.shift();
+                }
+            }
+            pendingReads = [];
+        }
 
         const content = event.message.content;
         if (!content || !Array.isArray(content)) return;
