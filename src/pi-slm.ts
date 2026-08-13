@@ -2,37 +2,32 @@
  * pi-slm - Small Language Model reliability extension.
  *
  * Features:
- * 1. Write guard - blocks write on existing files, redirects to edit.
- * 2. Loop detection - aborts repeated identical tool calls.
- * 3. EISDIR handling - converts directory read errors to listings.
- * 4. Skills listing guard - replaces hallucinated skill lists with real ones.
- * 5. Tools listing guard - replaces hallucinated tool lists with real ones.
- * 6. Explicit skill invocation - handles /skill:<NAME> directives.
- * 7. Tool definition retry - injects schema on validation failure.
+ * 1. Write guard — blocks write on existing files, redirects to edit.
+ * 2. Loop detection — aborts repeated identical tool calls.
+ * 3. EISDIR handling — converts directory read errors to listings.
+ * 4. Listing guard — replaces hallucinated skill/tool lists with real ones.
+ * 5. Skill invocation — handles /skill:<NAME> directives.
+ * 6. Tool schema hint — injects hints on parameter validation failures.
+ * 7. Tool hallucination guard — blocks calls to non-existent tools.
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
 import { access, readdir, readFile } from "fs/promises";
 import { constants } from "fs";
 import { resolve } from "path";
 
-// Loop detection threshold. Read from env at session start.
+// -- State --
+
 let loopThreshold = 3;
-
-// Sliding window of recent tool call signatures.
 let callWindow: Array<{ toolName: string; signature: string }> = [];
-
-// Captured skills and tools from system prompt options.
-let knownSkills: Array<{ name: string; description: string; location?: string }> = [];
+let knownSkills: Array<{ name: string; description: string; filePath?: string }> = [];
 let knownTools: Array<{ name: string; description: string }> = [];
-
-// Tool names that had schema errors, for Feature 7.
 let failedToolSchemas: Set<string> = new Set();
+let listingIntent: "skills" | "tools" | "both" | null = null;
 
-// Discover skills from filesystem by scanning known skill directories.
-// Used when knownSkills is empty (input fires before before_agent_start).
-async function discoverSkills(cwd: string): Promise<Array<{ name: string; description: string; location?: string }>> {
+// -- Helpers --
+
+async function discoverSkills(cwd: string): Promise<Array<{ name: string; description: string; filePath?: string }>> {
     const home = process.env.HOME ?? "/";
     const dirs = [
         resolve(home, ".pi/agent/skills"),
@@ -42,7 +37,7 @@ async function discoverSkills(cwd: string): Promise<Array<{ name: string; descri
     ];
 
     const seen = new Set<string>();
-    const results: Array<{ name: string; description: string; location?: string }> = [];
+    const results: Array<{ name: string; description: string; filePath?: string }> = [];
 
     for (const dir of dirs) {
         try {
@@ -54,26 +49,24 @@ async function discoverSkills(cwd: string): Promise<Array<{ name: string; descri
                 const skillMd = resolve(dir, entry.name, "SKILL.md");
                 try {
                     const content = await readFile(skillMd, "utf-8");
-                    // Parse frontmatter name and description.
                     const nameMatch = content.match(/^---\s*\nname:\s*(.+?)\n/);
                     const descMatch = content.match(/^---\s*\n[^\n]*\ndescription:\s*(.+?)\n/);
                     const name = nameMatch ? nameMatch[1].trim() : entry.name;
                     const desc = descMatch ? descMatch[1].trim() : "";
                     seen.add(name);
-                    results.push({ name, description: desc, location: skillMd });
+                    results.push({ name, description: desc, filePath: skillMd });
                 } catch {
-                    // No SKILL.md or unreadable, skip.
+                    // No SKILL.md or unreadable
                 }
             }
         } catch {
-            // Directory doesn't exist, skip.
+            // Directory doesn't exist
         }
     }
 
     return results;
 }
 
-// Build a signature for loop detection.
 function buildSignature(toolName: string, input: Record<string, unknown>): string {
     if (toolName === "bash") {
         const cmd = (input.command as string ?? "").replace(/\s+/g, " ").trim();
@@ -85,73 +78,69 @@ function buildSignature(toolName: string, input: Record<string, unknown>): strin
         const limit = input.limit ?? "";
         return `${toolName}:${path}:${offset}:${limit}`;
     }
-    // For other tools, stringify the whole input.
     return `${toolName}:${JSON.stringify(input)}`;
 }
 
-// Detect bash bypass patterns.
 function detectBashBypass(command: string): string | null {
-    // rm followed by write-like action.
-    if (/\brm\s+(-rf?\s+|--recursive\s+)?\S+\s*&&/.test(command)) return "rm followed by chained command";
-    if (/\brm\s+(-rf?\s+|--recursive\s+)?\S+\s*;/.test(command)) return "rm followed by semicolon-chained command";
-
-    // Truncation via redirect on existing file.
-    if (/^\s*>\s+\S+/.test(command) || /^\s*:\s*>\s+\S+/.test(command)) {
-        return "file truncation via redirect";
-    }
-
-    // truncate or shred targeting a file.
+    // Redirect writes: catches `echo ... > f`, `printf ... > f`, `cat > f`, `> f`
+    if (/\s*>\s*\S+/.test(command) && !/\bif\b/.test(command)) return "file write via redirect (>)";
+    // Append redirect
+    if (/\s*>>\s*\S+/.test(command)) return "file append via redirect (>>)";
+    // tee writing to files
+    if (/\btee\s+(-a\s+)?\S+/.test(command)) return "file write via tee";
+    // sed in-place
+    if (/\bsed\s+-i\b/.test(command)) return "in-place edit via sed -i";
+    // rm -rf targeting protected dirs
+    if (/\brm\s+(-rf?\s+|--recursive\s+)?(?:\.git|\.pi|\.agents|node_modules)/.test(command)) return "rm targeting protected directory";
+    // truncate
     if (/\btruncate\b\s+\S+/.test(command)) return "truncate command";
+    // shred
     if (/\bshred\b\s+\S+/.test(command)) return "shred command";
-
-    // dd writing to a file.
+    // dd write
     if (/\bdd\b.*\bof=\S+/.test(command)) return "dd write command";
-
-    // cp overwriting a file (cp source dest, no flags, no --backup).
-    if (/^\s*cp\s+[^-\s]\S*\s+\S+/.test(command) && !/\bcp\b.*--backup/.test(command)) {
-        return "cp overwrite command";
-    }
-
     return null;
 }
 
-// Check if a message contains a skills listing.
+function detectListingIntent(text: string): "skills" | "tools" | "both" | null {
+    const lower = text.toLowerCase();
+    const hasSkill = /\bskill/i.test(text);
+    const hasTool = /\btool/i.test(text);
+
+    // Check for listing context (not just mentioning the word)
+    const askingForListing =
+        /\blist\b/i.test(text) ||
+        /\bshow\b/i.test(text) ||
+        /\bwhat\b.*\bhave\b/i.test(text) ||
+        /\bavailable\b/i.test(text) ||
+        /\baccess\b/i.test(text) ||
+        /\bcatalog\b/i.test(text) ||
+        /\boptions\b/i.test(text) ||
+        /what\s+(are|can|do)/i.test(text);
+
+    if (!askingForListing) return null;
+
+    if (hasSkill && hasTool) return "both";
+    if (hasSkill) return "skills";
+    if (hasTool) return "tools";
+    return null;
+}
+
 function isSkillsListing(text: string): boolean {
+    // Allow optional markdown (**) and flexible spacing between keywords
     const hasHeader =
-        /available\s+skill/i.test(text) ||
-        /installed\s+skill/i.test(text) ||
+        /available\s*\*?\*?\s*skill/i.test(text) ||
+        /installed\s*\*?\*?\s*skill/i.test(text) ||
         /skill\s+installed/i.test(text) ||
-        /list\s+of\s+skill/i.test(text) ||
-        /here are the.*skill/i.test(text) ||
+        /list.*skill/i.test(text) ||
+        /skill.*list/i.test(text) ||
+        /here are.*skill/i.test(text) ||
         /i have access to.*skill/i.test(text) ||
         /i can use.*skill/i.test(text) ||
         /skill\s*(list|catalog|options)/i.test(text) ||
-        /\b\d+\s+skill/i.test(text) ||
-        /skill\s+available/i.test(text);
-
-    const hasList =
-        /[-*]\s+\S+/.test(text) ||
-        /\d+\.\s+\S+/.test(text) ||
-        /\n\s*\S+\s*\n\s*\S+/.test(text);
-
-    return hasHeader && hasList;
-}
-
-// Check if a message contains a tools listing.
-function isToolsListing(text: string): boolean {
-    const hasHeader =
-        /available\s+tool/i.test(text) ||
-        /list\s+of\s+tool/i.test(text) ||
-        /here are the.*tool/i.test(text) ||
-        /i have access to.*tool/i.test(text) ||
-        /i can use.*tool/i.test(text) ||
-        /tool\s*(list|catalog|options)/i.test(text) ||
-        /function\s+tool/i.test(text) ||
-        /tools i can/i.test(text) ||
-        /tools available/i.test(text) ||
-        /my tools/i.test(text) ||
-        /callable tool/i.test(text) ||
-        /tool.*description/i.test(text);
+        /\b\d+\s*\*?\*?\s*skill/i.test(text) ||
+        /skill\s+available/i.test(text) ||
+        /skill.*and.*tool/i.test(text) ||
+        /tool.*and.*skill/i.test(text);
 
     const hasList =
         /[-*]\s+\S+/.test(text) ||
@@ -162,61 +151,52 @@ function isToolsListing(text: string): boolean {
     return hasHeader && hasList;
 }
 
-// Build a factual skills listing.
+function isToolsListing(text: string): boolean {
+    // Allow optional markdown (**) and flexible spacing between keywords
+    const hasHeader =
+        /available\s*\*?\*?\s*tool/i.test(text) ||
+        /list.*tool/i.test(text) ||
+        /tool.*list/i.test(text) ||
+        /here are.*tool/i.test(text) ||
+        /i have access to.*tool/i.test(text) ||
+        /i can use.*tool/i.test(text) ||
+        /tool\s*(list|catalog|options)/i.test(text) ||
+        /function\s+tool/i.test(text) ||
+        /tools?\s*i can/i.test(text) ||
+        /tools?\s*available/i.test(text) ||
+        /my\s+tools?/i.test(text) ||
+        /callable\s+tool/i.test(text) ||
+        /tool.*description/i.test(text) ||
+        /skill.*and.*tool/i.test(text) ||
+        /tool.*and.*skill/i.test(text);
+
+    const hasList =
+        /[-*]\s+\S+/.test(text) ||
+        /\d+\.\s+\S+/.test(text) ||
+        /\|.*\|.*\|/.test(text) ||
+        /\n\s*\S+\s*\n\s*\S+/.test(text);
+
+    return hasHeader && hasList;
+}
+
 function buildSkillsListing(): string {
-    if (knownSkills.length === 0) {
-        return "No skills are currently loaded.";
-    }
+    if (knownSkills.length === 0) return "No skills are currently loaded.";
     const lines = knownSkills.map((s) => `- ${s.name}: ${s.description}`);
     return "Available skills:\n\n" + lines.join("\n");
 }
 
-// Build a factual tools listing.
 function buildToolsListing(): string {
-    if (knownTools.length === 0) {
-        return "No tools are currently active.";
-    }
+    if (knownTools.length === 0) return "No tools are currently active.";
     const lines = knownTools.map((t) => `- ${t.name}: ${t.description}`);
     return "Available tools:\n\n" + lines.join("\n");
 }
 
-// Extract the non-listing portion of a message (follow-up questions, etc.).
-function extractNonListingContent(text: string): string | null {
-    // Look for content after the list that is not part of the list.
-    // Split on common list patterns and check for trailing content.
-    const lines = text.split("\n");
-    let inList = false;
-    let listEnd = -1;
 
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (/^[-*]\s+/.test(line) || /^\d+\.\s+/.test(line)) {
-            inList = true;
-        } else if (inList && line !== "") {
-            listEnd = i;
-            break;
-        } else if (inList && line === "") {
-            // Blank line after list items might end the list.
-            // Check if next non-blank line is not a list item.
-            let j = i + 1;
-            while (j < lines.length && lines[j].trim() === "") j++;
-            if (j < lines.length && !/^[-*]\s+/.test(lines[j].trim()) && !/^\d+\.\s+/.test(lines[j].trim())) {
-                listEnd = j;
-                break;
-            }
-        }
-    }
 
-    if (listEnd > 0) {
-        const trailing = lines.slice(listEnd).join("\n").trim();
-        if (trailing) return trailing;
-    }
-
-    return null;
-}
+// -- Extension --
 
 export default function (pi: ExtensionAPI) {
-    // Read loop threshold from environment.
+    // session_start: read config
     pi.on("session_start", async (_event, _ctx) => {
         const envVal = process.env.PI_LOOP_THRESHOLD;
         if (envVal !== undefined) {
@@ -229,11 +209,10 @@ export default function (pi: ExtensionAPI) {
         failedToolSchemas = new Set();
     });
 
-    // Capture skills and tools from system prompt options.
+    // before_agent_start: capture skills and tools
     pi.on("before_agent_start", async (event, _ctx) => {
         const opts = event.systemPromptOptions;
 
-        // Capture skills.
         knownSkills = [];
         if (opts.skills && Array.isArray(opts.skills)) {
             for (const skill of opts.skills) {
@@ -241,13 +220,12 @@ export default function (pi: ExtensionAPI) {
                     knownSkills.push({
                         name: (skill.name as string) ?? "unknown",
                         description: (skill.description as string) ?? "",
-                        location: skill.location as string | undefined,
+                        filePath: skill.filePath as string | undefined,
                     });
                 }
             }
         }
 
-        // Capture tools.
         knownTools = [];
         if (opts.selectedTools) {
             const tools = Array.isArray(opts.selectedTools) ? opts.selectedTools : [];
@@ -257,26 +235,18 @@ export default function (pi: ExtensionAPI) {
                     const snippet = opts.toolSnippets
                         ? ((opts.toolSnippets as Record<string, string>)[name] ?? "")
                         : "";
-                    knownTools.push({
-                        name,
-                        description: snippet,
-                    });
+                    knownTools.push({ name, description: snippet });
                 } else if (typeof tool === "string") {
                     const snippet = opts.toolSnippets
                         ? ((opts.toolSnippets as Record<string, string>)[tool] ?? "")
                         : "";
-                    knownTools.push({
-                        name: tool,
-                        description: snippet,
-                    });
+                    knownTools.push({ name: tool, description: snippet });
                 }
             }
         }
     });
 
-    // Feature 6: Explicit skill invocation.
-    // Note: input fires before before_agent_start, so knownSkills may be empty.
-    // We discover skills from filesystem on-demand when needed.
+    // input: skill invocation
     pi.on("input", async (event, ctx) => {
         const skillMatch = event.text.match(/^\/skill:(\S+)(?:\s+(.+))?$/s);
         if (!skillMatch) return;
@@ -284,42 +254,29 @@ export default function (pi: ExtensionAPI) {
         const skillName = skillMatch[1];
         const userMessage = skillMatch[2]?.trim();
 
-        // Resolve skills: use knownSkills if populated, otherwise discover from filesystem.
         let skills = knownSkills;
         if (skills.length === 0) {
             skills = await discoverSkills(ctx.cwd);
         }
 
-        // Find matching skill.
         const skill = skills.find((s) => s.name === skillName);
         if (!skill) {
             const available = skills.map((s) => s.name).join(", ");
-            return {
-                action: "transform" as const,
-                text: `Skill not found: "${skillName}". Available skills: ${available}`,
-            };
+            return { action: "transform" as const, text: `Skill not found: "${skillName}". Available skills: ${available}` };
         }
 
-        // Load skill file.
-        if (!skill.location) {
-            return {
-                action: "transform" as const,
-                text: `Skill "${skillName}" has no file location. Cannot load.`,
-            };
+        if (!skill.filePath) {
+            return { action: "transform" as const, text: `Skill "${skillName}" has no file location. Cannot load.` };
         }
 
         let skillContent: string;
         try {
-            skillContent = await readFile(skill.location, "utf-8");
+            skillContent = await readFile(skill.filePath, "utf-8");
         } catch (err) {
-            return {
-                action: "transform" as const,
-                text: `Failed to read skill "${skillName}": ${err instanceof Error ? err.message : String(err)}`,
-            };
+            return { action: "transform" as const, text: `Failed to read skill "${skillName}": ${err instanceof Error ? err.message : String(err)}` };
         }
 
-        // Build transformed prompt.
-        const dir = resolve(skill.location, "..");
+        const dir = resolve(skill.filePath, "..");
         let prompt = `---\nSkill: ${skill.name}\n---\n\n${skillContent}`;
         prompt += `\n\n---\nInstructions:\n---\nFollow the skill's instructions above to complete the task.`;
         prompt += `\nReference files are NOT loaded automatically. Use the read tool to load only the references you need from: ${dir}/references/`;
@@ -327,15 +284,55 @@ export default function (pi: ExtensionAPI) {
             prompt += `\n\n---\nTask:\n---\n${userMessage}`;
         }
 
-        return {
-            action: "transform" as const,
-            text: prompt,
-        };
+        return { action: "transform" as const, text: prompt };
     });
 
-    // Feature 1: Write guard. Feature 2: Loop detection.
+    // tool_call: Feature 7 -> Feature 1 -> Feature 2
     pi.on("tool_call", async (event, ctx) => {
-        // Feature 1a: Block write on existing files.
+        // Feature 7: Tool Hallucination Guard
+        const toolName = event.toolName;
+        if (!toolName.startsWith("$") && !toolName.startsWith("_")) {
+            const knownToolNames = knownTools.map((t) => t.name);
+            if (knownToolNames.length > 0 && !knownToolNames.includes(toolName)) {
+                return {
+                    block: true,
+                    reason: `Unknown tool "${toolName}". Available tools: ${knownToolNames.join(", ")}.`,
+                };
+            }
+
+            // Parameter shape validation for known tools
+            if (toolName === "read") {
+                const path = event.input.path as string;
+                if (!path || typeof path !== "string" || path.trim() === "") {
+                    return { block: true, reason: `Tool "read" requires a non-empty "path" parameter.` };
+                }
+            } else if (toolName === "write") {
+                const path = event.input.path as string;
+                const content = event.input.content as string;
+                if (!path || typeof path !== "string" || path.trim() === "") {
+                    return { block: true, reason: `Tool "write" requires a non-empty "path" parameter.` };
+                }
+                if (!content || typeof content !== "string" || content.trim() === "") {
+                    return { block: true, reason: `Tool "write" requires a non-empty "content" parameter.` };
+                }
+            } else if (toolName === "edit") {
+                const path = event.input.path as string;
+                const edits = event.input.edits as unknown[];
+                if (!path || typeof path !== "string" || path.trim() === "") {
+                    return { block: true, reason: `Tool "edit" requires a non-empty "path" parameter.` };
+                }
+                if (!edits || !Array.isArray(edits) || edits.length === 0) {
+                    return { block: true, reason: `Tool "edit" requires a non-empty "edits" array.` };
+                }
+            } else if (toolName === "bash") {
+                const command = event.input.command as string;
+                if (!command || typeof command !== "string" || command.trim() === "") {
+                    return { block: true, reason: `Tool "bash" requires a non-empty "command" parameter.` };
+                }
+            }
+        }
+
+        // Feature 1a: Write guard — block write on existing files
         if (event.toolName === "write") {
             const inputPath = event.input.path as string;
             const targetPath = resolve(ctx.cwd, inputPath);
@@ -346,12 +343,12 @@ export default function (pi: ExtensionAPI) {
                     reason: `File "${inputPath}" already exists. Use the edit tool to modify it instead of write.`,
                 };
             } catch {
-                // File does not exist, allow write.
+                // File does not exist, allow write
             }
         }
 
-        // Feature 1b: Block bash bypasses.
-        if (isToolCallEventType("bash", event)) {
+        // Feature 1b: Bash bypass interception
+        if (event.toolName === "bash") {
             const command = event.input.command as string;
             const bypass = detectBashBypass(command);
             if (bypass) {
@@ -362,7 +359,7 @@ export default function (pi: ExtensionAPI) {
             }
         }
 
-        // Feature 2: Loop detection.
+        // Feature 2: Loop detection
         const signature = buildSignature(event.toolName, event.input);
         callWindow.push({ toolName: event.toolName, signature });
 
@@ -375,57 +372,46 @@ export default function (pi: ExtensionAPI) {
             const allSame = callWindow.every((entry) => entry.signature === first);
 
             if (allSame) {
-                const count = callWindow.length;
                 return {
                     block: true,
-                    reason: `Loop detected: tool "${event.toolName}" called ${count} consecutive times with the same input. This likely indicates the model is stuck. Try a different approach or rephrase the task.`,
+                    reason: `Loop detected: tool "${event.toolName}" called ${callWindow.length} consecutive times with the same input. Try a different approach.`,
                     terminate: true,
                 };
             }
         }
     });
 
-    // Feature 3: EISDIR to directory listing. Feature 7: Schema failure detection.
+    // tool_result: Feature 3 (EISDIR) + Feature 6 (schema detection)
     pi.on("tool_result", async (event, _ctx) => {
-        // Feature 3: EISDIR handling.
-        if (event.toolName === "read" && event.isError) {
-            const contentText = event.content
-                .map((c) => (typeof c === "object" && "text" in c ? (c.text as string) : ""))
-                .join("");
+        const contentText = event.content
+            .map((c) => (typeof c === "object" && "text" in c ? (c.text as string) : ""))
+            .join("");
 
-            if (contentText.includes("EISDIR")) {
-                const inputPath = event.input.path as string;
-                const resolvedPath = resolve(_ctx.cwd, inputPath);
+        // Feature 3: EISDIR to directory listing
+        if (event.toolName === "read" && event.isError && contentText.includes("EISDIR")) {
+            const inputPath = event.input.path as string;
+            const resolvedPath = resolve(_ctx.cwd, inputPath);
 
-                try {
-                    const entries = await readdir(resolvedPath, { withFileTypes: true });
-                    const lines = entries
-                        .map((e) => {
-                            const type = e.isDirectory() ? "d" : e.isSymbolicLink() ? "l" : "-";
-                            return `${type} ${e.name}`;
-                        })
-                        .sort();
+            try {
+                const entries = await readdir(resolvedPath, { withFileTypes: true });
+                const lines = entries
+                    .map((e) => {
+                        const type = e.isDirectory() ? "d" : e.isSymbolicLink() ? "l" : "-";
+                        return `${type} ${e.name}`;
+                    })
+                    .sort();
 
-                    return {
-                        content: [{ type: "text", text: lines.join("\n") }],
-                        isError: false,
-                    };
-                } catch {
-                    // readdir failed, keep original error.
-                }
+                return {
+                    content: [{ type: "text", text: lines.join("\n") }],
+                    isError: false,
+                };
+            } catch {
+                // readdir failed, keep original error
             }
         }
 
-        // Feature 7: Detect schema-related failures.
-        // Note: tool definitions are model-native (encoded in system prompt per model format).
-        // We can only detect schema errors and advise the model — we cannot reliably
-        // re-inject the exact schema the model expects. Clear the set after detection
-        // so the model gets a hint message via tool_result error context.
+        // Feature 6: Schema failure detection
         if (event.isError) {
-            const contentText = event.content
-                .map((c) => (typeof c === "object" && "text" in c ? (c.text as string) : ""))
-                .join("");
-
             const isSchemaError =
                 /invalid\s+(tool\s+)?argument/i.test(contentText) ||
                 /tool\s+call\s+validation/i.test(contentText) ||
@@ -441,9 +427,7 @@ export default function (pi: ExtensionAPI) {
         }
     });
 
-    // Feature 7: Inject tool usage hints on schema failures.
-    // Tool definitions are model-native (encoded differently per model in system prompt).
-    // We inject a plain-language hint reminding the model to check the tool's parameter names.
+    // context: Feature 6 (inject schema hints)
     pi.on("context", async (event, _ctx) => {
         if (failedToolSchemas.size === 0) return;
 
@@ -453,7 +437,6 @@ export default function (pi: ExtensionAPI) {
             `Check the tool definitions in your instructions for correct parameter names and types: ` +
             toolNames.join(", ") + ".";
 
-        // Append hint to the last user message.
         const userMessages = event.messages.filter((m) => m.role === "user");
         if (userMessages.length > 0) {
             const lastUserMsg = userMessages[userMessages.length - 1];
@@ -465,18 +448,26 @@ export default function (pi: ExtensionAPI) {
             }
         }
 
-        // Clear after one-time injection.
         failedToolSchemas.clear();
     });
 
-    // Reset loop window on turn end.
+    // turn_end: reset loop window and listing intent
     pi.on("turn_end", async (_event, _ctx) => {
         callWindow = [];
-        failedToolSchemas = new Set();
+        listingIntent = null;
     });
 
-    // Feature 4 and 5: Skills and tools listing guards.
+    // message_end: capture user intent + Feature 4 (listing guard)
     pi.on("message_end", async (event, _ctx) => {
+        // Capture intent from user messages
+        if (event.message.role === "user") {
+            const text = event.message.content
+                .map((c) => (typeof c === "object" && "text" in c ? (c.text as string) : ""))
+                .join(" ");
+            listingIntent = detectListingIntent(text);
+            return;
+        }
+
         if (event.message.role !== "assistant") return;
 
         const content = event.message.content;
@@ -488,25 +479,34 @@ export default function (pi: ExtensionAPI) {
 
         if (textParts.length === 0) return;
 
-        const fullText = textParts.join("\n");
         let replaced = false;
         const newTextParts = [];
 
         for (const part of textParts) {
-            if (isSkillsListing(part)) {
-                const nonListing = extractNonListingContent(part);
-                let replacement = buildSkillsListing();
-                if (nonListing) {
-                    replacement += "\n\n" + nonListing;
+            const hasSkills = isSkillsListing(part);
+            const hasTools = isToolsListing(part);
+
+            if (hasSkills || hasTools) {
+                // Only output what the user asked for.
+                // If no intent captured (e.g. mid-conversation), output what model produced.
+                let replacement = "";
+                const intent = listingIntent;
+
+                if (intent === "skills") {
+                    replacement = buildSkillsListing();
+                } else if (intent === "tools") {
+                    replacement = buildToolsListing();
+                } else if (intent === "both") {
+                    replacement = buildSkillsListing() + "\n\n" + buildToolsListing();
+                } else {
+                    // No intent captured — output what model detected
+                    if (hasSkills) replacement = buildSkillsListing();
+                    if (hasTools) {
+                        if (hasSkills) replacement += "\n\n";
+                        replacement += buildToolsListing();
+                    }
                 }
-                newTextParts.push(replacement);
-                replaced = true;
-            } else if (isToolsListing(part)) {
-                const nonListing = extractNonListingContent(part);
-                let replacement = buildToolsListing();
-                if (nonListing) {
-                    replacement += "\n\n" + nonListing;
-                }
+
                 newTextParts.push(replacement);
                 replaced = true;
             } else {
