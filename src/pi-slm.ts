@@ -29,11 +29,23 @@ let listingIntent: "skills" | "tools" | "both" | null = null;
 
 async function discoverSkills(cwd: string): Promise<Array<{ name: string; description: string; filePath?: string }>> {
     const home = process.env.HOME ?? "/";
+
+    // Walk up from cwd to find project-local skill dirs (like pi does)
+    const projectDirs: string[] = [];
+    let current = resolve(cwd);
+    while (true) {
+        for (const sub of [".pi/skills", ".agents/skills"]) {
+            projectDirs.push(resolve(current, sub));
+        }
+        const parent = resolve(current, "..");
+        if (parent === current) break; // reached root
+        current = parent;
+    }
+
     const dirs = [
         resolve(home, ".pi/agent/skills"),
         resolve(home, ".agents/skills"),
-        resolve(cwd, ".pi/skills"),
-        resolve(cwd, ".agents/skills"),
+        ...projectDirs,
     ];
 
     const seen = new Set<string>();
@@ -254,14 +266,21 @@ export default function (pi: ExtensionAPI) {
         const skillName = skillMatch[1];
         const userMessage = skillMatch[2]?.trim();
 
-        let skills = knownSkills;
-        if (skills.length === 0) {
-            skills = await discoverSkills(ctx.cwd);
+        // Try known skills first, then discover from filesystem
+        let skill = knownSkills.find((s) => s.name === skillName);
+        let allSkills = [...knownSkills];
+
+        if (!skill) {
+            const discovered = await discoverSkills(ctx.cwd);
+            skill = discovered.find((s) => s.name === skillName);
+            const seen = new Set(knownSkills.map((s) => s.name));
+            for (const s of discovered) {
+                if (!seen.has(s.name)) allSkills.push(s);
+            }
         }
 
-        const skill = skills.find((s) => s.name === skillName);
         if (!skill) {
-            const available = skills.map((s) => s.name).join(", ");
+            const available = allSkills.map((s) => s.name).join(", ");
             return { action: "transform" as const, text: `Skill not found: "${skillName}". Available skills: ${available}` };
         }
 
