@@ -6,8 +6,8 @@ Known issues of reliability of small language models (<14B params) and known fea
 
 - Blocks destructive actions (`write` tool interception, `bash` bypass interception) - Use `edit` tool instead of `write`, and force `edit` to use correct `path`, `edits[].oldText` and `edits[].newText`. `edits[].oldText` is the exact text for one targeted replacement.
 - High (50%) `edit` failure rate, force/pressure model not to make. Failed edit repeat up to `PI_EDIT_THRESHOLD` times (min 2). After N times, if it keeps failing, report that tool call has failed and change strategy. Error is usually in `path` or most likely `edits[].oldText` argument. `edits[].oldText` is the exact text for one targeted replacement.
-- Skills listing. Replace hallucinated skills listings with factual ones. Detect via text (`available skill`, `installed skill`, `list of skill`, etc.) + list structure. Replace with factual data as a simple markdown list.
-- Tools listing. Replace hallucinated skills listings with factual ones. Detect via header (`available tool`, `i have access to`, `tools available`, etc.) + list/table structure.
+- Skills listing. Replace hallucinated skills listings with factual ones. Detect via text (`available skill`, `installed skill`, `list of skill`, etc.) + list structure. Replace with factual data as a simple markdown list. Try to us LLM to recognize if it was asked for list of tools if unsure (non-English prompt).
+- Tools listing. Replace hallucinated skills listings with factual ones. Detect via header (`available tool`, `i have access to`, `tools available`, etc.) + list/table structure. Try to us LLM to recognize if it was asked for list of tools if unsure (non-English prompt).
 - Skill invocation.
 - Skill loading, references and scripts. References paths need to be converted to absolute paths and loaded on demand. Script paths are also absolute needs to be executed relative to working directory.
 - Tool invocation. Inject plain-language hints when tool calls fail parameter validation.

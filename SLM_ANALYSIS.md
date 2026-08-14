@@ -47,11 +47,6 @@ Both compactions happened during active assistant turns:
 The compaction's parentId points to the orphaned thinking-only message. The firstKeptEntryId keeps the orphan in the chain (it falls after the cutoff). This means the partial
 thinking is preserved as context for subsequent turns, polluting the context window with incomplete reasoning.
 
-Issue 4: ToolResults Missing toolCallId
-
-All 69 toolResult messages have content structured as just {"type": "text", "text": "..."} — no toolCallId field to link back to the originating tool call. The only way to match
-them is positional (sequential order). This makes the log unreconstructable if the sequence is ever disrupted.
-
 Issue 5: Excessive File Re-Reads (30× same file)
 
 interp.py was read 30 times out of 69 total tool calls (43%). The model can't retain the file content in context and keeps re-reading it to verify edits. This is a symptom of the
@@ -61,30 +56,6 @@ Issue 6: Duplicate Consecutive ToolResults
 
 Positions 130 and 132 contain byte-identical toolResult content (both are the full text of demo1.lisp, 69 chars). The model read the same file twice in consecutive turns with no
 intervening change.
-
-Issue 7: Model Downgrade at Session Start
-
-```
-  [1] llamacpp/Qwen/Qwen3.6-27B   (27B params)
-  [3] llamacpp/LiquidAI/LFM2.5-2.6B  (2.6B params)
-```
-
-The model was switched to a 10× smaller model before the first user message. A 2.6B model is fundamentally underpowered for this task (implementing a Lisp interpreter), and this
-directly explains the massive thinking loops — the small model can't reason efficiently and gets stuck.
-
-Issue 8: Zero Usage Tracking
-
-Both compaction entries show:
-
-```json
-  "usage": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0, "cost": {"total": 0}}
-```
-
-No token usage or cost data is recorded, which suggests either a local model (llamacpp) that doesn't report usage, or a tracking bug.
-
-Issue 9: 30-Minute User Idle Gap
-
-At position 106, there's a 1,828-second (30.5 min) gap before the second user message. The session was idle while the user was away.
 
 Issue 10: No Text Response from Assistant (Until Very Late)
 
@@ -108,19 +79,6 @@ Session Log Analysis: 019fffb7-d556-7933-b8e4-da375514ed7e.jsonl
 
 A session attempting to build a Lisp interpreter in Python using a 2.6B parameter model (LiquidAI/LFM2.5-2.6B via llama.cpp). The session ran 71 LLM requests, produced broken code,
 and never completed successfully. The model ended in a degenerate "code looks correct" repetition loop.
-
-────────────────────────────────────────────────────────────────────────────────
-
-### Issue 1: Model Downgrade (27B → 2.6B)
-
-The session started with Qwen/Qwen3.6-27B but was immediately switched to LiquidAI/LFM2.5-2.6B ~1 second later:
-
-```
-  10:01:05.690  model_change → Qwen/Qwen3.6-27B
-  10:01:06.504  model_change → LiquidAI/LFM2.5-2.6B   (10x smaller!)
-```
-
-A 2.6B model is severely underpowered for complex code generation with tool use. This is the root cause of most downstream issues.
 
 ────────────────────────────────────────────────────────────────────────────────
 
@@ -211,50 +169,6 @@ The code produced 8 Python tracebacks during testing. The model never successful
 │ "No modifications are required to the source code."
 
 — despite the code still being broken.
-
-────────────────────────────────────────────────────────────────────────────────
-
-### Issue 7: Shrinking max_tokens Before Compaction
-
-As context grew, available output tokens shrank dramatically:
-
-┌──────────────┬────────────┬────────────────────┐
-│ Request      │ max_tokens │ Context (messages) │
-├──────────────┼────────────┼────────────────────┤
-│ 035          │ 39,951     │ 70                 │
-├──────────────┼────────────┼────────────────────┤
-│ 036          │ 23,605     │ 72                 │
-├──────────────┼────────────┼────────────────────┤
-│ 037          │ 7,259      │ 74                 │
-├──────────────┼────────────┼────────────────────┤
-│ → Compaction │            │                    │
-├──────────────┼────────────┼────────────────────┤
-│ 038          │ 49,152     │ 4                  │
-├──────────────┼────────────┼────────────────────┤
-│ ...          │ ...        │ ...                │
-├──────────────┼────────────┼────────────────────┤
-│ 065          │ 10,102     │ 60                 │
-├──────────────┼────────────┼────────────────────┤
-│ → Compaction │            │                    │
-├──────────────┼────────────┼────────────────────┤
-│ 066          │ 49,152     │ 6                  │
-└──────────────┴────────────┴────────────────────┘
-
-At max_tokens=7,259, the model has almost no room to produce meaningful output — it can barely fit a tool call, let alone reasoning.
-
-────────────────────────────────────────────────────────────────────────────────
-
-### Issue 8: No Token Usage Tracking
-
-All 71 response metadata files contain only HTTP status/headers — zero token usage data (input_token_count, output_token_count, total_token_count are all null). The llama.cpp
-server doesn't report usage, so pi can't track costs or context consumption accurately.
-
-────────────────────────────────────────────────────────────────────────────────
-
-### Issue 9: No repetition_penalty Set
-
-The request has temperature, top_p, repetition_penalty, top_k, and min_p all set to null. With no repetition penalty and a small model prone to looping, the repetition behavior is
-unsurprising.
 
 ────────────────────────────────────────────────────────────────────────────────
 
