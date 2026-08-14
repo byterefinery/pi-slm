@@ -1,6 +1,6 @@
 # SLM Extension Specification
 
-Reliability extension for small language models (<14B params).
+Reliability extension for Small Language Models.
 
 Intercepts tool calls, corrects hallucinations, detects loops, deduplicates redundant reads, and steers the model away from degenerate behavior patterns observed in session analysis.
 
@@ -10,10 +10,10 @@ Intercepts tool calls, corrects hallucinations, detects loops, deduplicates redu
 
 | Env Variable | Default | Description |
 |---|---|---|
-| `PI_EDIT_THRESHOLD` | `3` (min 2) | Max retries for failed `edit` tool calls before reporting failure and changing strategy |
 | `PI_LOOP_THRESHOLD` | `3` (min 2) | Number of repeated patterns before loop intervention triggers |
-| `PI_READ_DEDUP_WINDOW` | `5` | Lookback window (turns) for detecting duplicate `read` calls on the same file |
-| `PI_SLM_ENABLED` | `true` | Master toggle to enable/disable the extension |
+| `PI_EDIT_THRESHOLD` | `3` (min 2) | Max retries for failed `edit` tool calls before reporting failure and changing strategy |
+| `PI_READ_DEDUP_WINDOW` | `3` (min 2) | Lookback window (turns) for detecting duplicate `read` calls on the same file |
+| `PI_SLM_ENABLED` | `true` (default) | Master toggle to enable/disable the extension |
 
 ---
 
