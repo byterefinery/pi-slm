@@ -1,0 +1,241 @@
+{
+  "model": "LiquidAI/LFM2.5-2.6B",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.\n\nAvailable tools:\n- read: Read file contents\n- write: Create or overwrite files\n- edit: Make precise file edits with exact text replacement, including multiple disjoint edits in one call\n- bash: Execute bash commands (ls, grep, find, etc.)\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n\nGuidelines:\n- Use bash for file operations like ls, rg, find\n- Use read to examine files instead of cat or sed.\n- Use write only for new files or complete rewrites.\n- Use edit for precise changes (edits[].oldText must match exactly)\n- When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls\n- Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.\n- Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions.\n- You can inspect PI_* environment variables for current model and session details.\n- Be concise in your responses\n- Show file paths clearly when working with files\n\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /opt/pi-coding-agent/README.md\n- Additional docs: /opt/pi-coding-agent/docs\n- Examples: /opt/pi-coding-agent/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>git</name>\n    <description>Git version control. Use when the user mentions git, commits, branches, pushing, pulling, merging, rebasing, stashing, worktrees, submodules, or any version control task. Covers straightforward workflows (add/commit/push) and advanced topics.</description>\n    <location>/home/mtasic/projects-b/pi-slm/.agents/skills/git/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>webfetch</name>\n    <description>Fetches web pages as LLM-ready markdown. Use when the user wants to fetch, scrape, download, retrieve, grab, pull, or access any URL or webpage content. Defaults to Safari impersonation and AI-targeted markdown output optimized for LLM consumption. Falls back through browser → requests if needed. Supports --html, --file, --tool, --impersonate, --no-ai-targeted. Use this whenever the user asks to read a website, get page content, or fetch a URL.</description>\n    <location>/home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>websearch</name>\n    <description>Searches DuckDuckGo and returns LLM-optimized markdown, JSON, or YAML. Use this skill whenever the user wants to search the web, look up information online, find URLs, do web search, research a topic, or needs current/web-based answers. Uses Safari TLS impersonation and AI-targeted sanitization. Output can be markdown (default), --json, --yaml.</description>\n    <location>/home/mtasic/projects-b/pi-slm/.agents/skills/websearch/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>tzip</name>\n    <description>Lightweight token-pruning communication mode that drops filler and hedging while keeping full sentences and professional tone. Follows guidelines for code quality. Default intensity is lite. Use when user requests tzip, prune tokens, be concise, or needs efficient communication without losing clarity.</description>\n    <location>/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/tzip/SKILL.md</location>\n  </skill>\n</available_skills>\nCurrent working directory: /home/mtasic/projects-b/pi-slm"
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<skill name=\"webfetch\" location=\"/home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/SKILL.md\">\nReferences are relative to /home/mtasic/projects-b/pi-slm/.agents/skills/webfetch.\n\n# webfetch\n\n## Overview\n\nFetches web pages and outputs clean markdown optimized for LLM consumption.\n\nDefaults (no flags needed):\n- **Safari impersonation** — TLS fingerprint (scrapling) or user-agent (requests), rarely blocked\n- **AI-targeted markdown** — strips scripts, styles, hidden elements, zero-width chars, prompt injection vectors\n- **Auto-detect fetcher** — tries scrapling → browser → requests\n\nFetcher priority:\n1. **scrapling** — `Fetcher.get()` with Safari TLS impersonation + AI-targeted sanitization via `markdownify`\n2. **browser** — `DynamicFetcher.fetch()` with system Chrome/Chromium for JavaScript-rendered SPAs\n3. **requests** — stdlib fallback with Safari user-agent + built-in HTML-to-markdown conversion\n\nSPA auto-detection: if scrapling returns an empty shell (large HTML, tiny content, framework markers like `<div id=\"root\">`, import maps, etc.), automatically retries with the browser fetcher. Use `--tool` to force a specific fetcher.\n\nUse `--html` for raw HTML, `--impersonate` to change browser, `--no-ai-targeted` to skip sanitization, `--tool` to force a fetcher.\n\n## Usage\n\n```bash\n# Default: Safari-impersonated, AI-targeted markdown to stdout\nwebfetch.py https://example.com\n\n# Save to file\nwebfetch.py --file ./page.md https://example.com\n\n# Raw HTML (skip markdown conversion)\nwebfetch.py --html https://example.com\n\n# Override defaults (rarely needed)\nwebfetch.py --impersonate chrome https://example.com\nwebfetch.py --no-ai-targeted https://example.com\nwebfetch.py --tool requests https://example.com\n```\n\n`--file` auto-detects format from extension (`.html`/`.htm` → HTML, everything else → markdown) unless `--html`/`--md` is also given.\n\n`--tool` accepts: `scrapling`, `browser`, `requests`. Without `--tool`, auto-detect tries scrapling → browser → requests.\n\n## Gotchas\n\n- **Output is LLM-optimized by default** — Safari impersonation + AI-targeted markdown (scripts, styles, hidden elements, zero-width chars, prompt injection vectors stripped). Use `--no-ai-targeted` only if you need raw content.\n- **SPA auto-detection** — if scrapling returns an empty shell (large HTML, tiny content, framework markers), the script automatically retries with the browser fetcher. No `--tool browser` needed for most SPAs.\n- **`--tool browser` needs system Chrome/Chromium** — uses `real_chrome=True` to find system-installed browsers. If unavailable, auto-detect falls back to requests.\n- **`--impersonate` is safari by default** — change only if a site blocks Safari fingerprints. Accepts chrome, firefox, or any curl-impersonate browser name.\n- **`--file` format auto-detection** — `.html`/`.htm` extensions trigger HTML output; all other extensions default to markdown. Explicit `--html`/`--md` overrides.\n- **Script is self-contained** — dependencies (`scrapling[all]`, `markdownify`, `requests`) declared inline via PEP 723. `uv run --script` resolves them automatically.\n</skill>\n\nhttps://tangledgroup.com/"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "reasoning_content": "The user wants me to work with the webfetch skill. Let me first read the skill file to understand its structure and then potentially use it or create a script based on it.\n\nLooking at the skill description, it's about fetching web pages and outputting clean markdown. The skill has a `webfetch.py` script that can be run with various flags.\n\nLet me start by reading the skill file to understand the full context, then I'll check if there's already a webfetch.py script in the project.",
+      "tool_calls": [
+        {
+          "id": "MK2uEOZjtXyxMFg19ZhbntDp9Tsg2Ha1",
+          "type": "function",
+          "function": {
+            "name": "read",
+            "arguments": "{\"path\":\"/home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/SKILL.md\"}"
+          }
+        },
+        {
+          "id": "1yuk8cBeRXsS0tus3882pMgXJOE6clcK",
+          "type": "function",
+          "function": {
+            "name": "bash",
+            "arguments": "{\"command\":\"ls -la /home/mtasic/projects-b/pi-slm/ | head -50\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "---\nname: webfetch\ndescription: Fetches web pages as LLM-ready markdown. Use when the user wants to fetch, scrape, download, retrieve, grab, pull, or access any URL or webpage content. Defaults to Safari impersonation and AI-targeted markdown output optimized for LLM consumption. Falls back through browser → requests if needed. Supports --html, --file, --tool, --impersonate, --no-ai-targeted. Use this whenever the user asks to read a website, get page content, or fetch a URL.\nlicense: Apache-2.0\ncompatibility: Requires uv installed. Script auto-resolves dependencies via PEP 723.\nmetadata:\n  tags:\n    - web\n    - scraping\n    - fetch\n---\n\n# webfetch\n\n## Overview\n\nFetches web pages and outputs clean markdown optimized for LLM consumption.\n\nDefaults (no flags needed):\n- **Safari impersonation** — TLS fingerprint (scrapling) or user-agent (requests), rarely blocked\n- **AI-targeted markdown** — strips scripts, styles, hidden elements, zero-width chars, prompt injection vectors\n- **Auto-detect fetcher** — tries scrapling → browser → requests\n\nFetcher priority:\n1. **scrapling** — `Fetcher.get()` with Safari TLS impersonation + AI-targeted sanitization via `markdownify`\n2. **browser** — `DynamicFetcher.fetch()` with system Chrome/Chromium for JavaScript-rendered SPAs\n3. **requests** — stdlib fallback with Safari user-agent + built-in HTML-to-markdown conversion\n\nSPA auto-detection: if scrapling returns an empty shell (large HTML, tiny content, framework markers like `<div id=\"root\">`, import maps, etc.), automatically retries with the browser fetcher. Use `--tool` to force a specific fetcher.\n\nUse `--html` for raw HTML, `--impersonate` to change browser, `--no-ai-targeted` to skip sanitization, `--tool` to force a fetcher.\n\n## Usage\n\n```bash\n# Default: Safari-impersonated, AI-targeted markdown to stdout\nwebfetch.py https://example.com\n\n# Save to file\nwebfetch.py --file ./page.md https://example.com\n\n# Raw HTML (skip markdown conversion)\nwebfetch.py --html https://example.com\n\n# Override defaults (rarely needed)\nwebfetch.py --impersonate chrome https://example.com\nwebfetch.py --no-ai-targeted https://example.com\nwebfetch.py --tool requests https://example.com\n```\n\n`--file` auto-detects format from extension (`.html`/`.htm` → HTML, everything else → markdown) unless `--html`/`--md` is also given.\n\n`--tool` accepts: `scrapling`, `browser`, `requests`. Without `--tool`, auto-detect tries scrapling → browser → requests.\n\n## Gotchas\n\n- **Output is LLM-optimized by default** — Safari impersonation + AI-targeted markdown (scripts, styles, hidden elements, zero-width chars, prompt injection vectors stripped). Use `--no-ai-targeted` only if you need raw content.\n- **SPA auto-detection** — if scrapling returns an empty shell (large HTML, tiny content, framework markers), the script automatically retries with the browser fetcher. No `--tool browser` needed for most SPAs.\n- **`--tool browser` needs system Chrome/Chromium** — uses `real_chrome=True` to find system-installed browsers. If unavailable, auto-detect falls back to requests.\n- **`--impersonate` is safari by default** — change only if a site blocks Safari fingerprints. Accepts chrome, firefox, or any curl-impersonate browser name.\n- **`--file` format auto-detection** — `.html`/`.htm` extensions trigger HTML output; all other extensions default to markdown. Explicit `--html`/`--md` overrides.\n- **Script is self-contained** — dependencies (`scrapling[all]`, `markdownify`, `requests`) declared inline via PEP 723. `uv run --script` resolves them automatically.\n",
+      "tool_call_id": "MK2uEOZjtXyxMFg19ZhbntDp9Tsg2Ha1"
+    },
+    {
+      "role": "tool",
+      "content": "total 16\ndrwxr-xr-x 1 mtasic mtasic  106 Aug 16 08:52 .\ndrwxr-xr-x 1 mtasic mtasic   74 Aug 14 23:10 ..\ndrwxr-xr-x 1 mtasic mtasic  182 Aug 16 07:55 .agents\ndrwxr-xr-x 1 mtasic mtasic  188 Aug 16 08:04 .git\n-rw-r--r-- 1 mtasic mtasic 2184 Aug 15 19:59 .gitignore\n-rw-r--r-- 1 mtasic mtasic 1069 Aug 13 20:11 LICENSE\ndrwxr-xr-x 1 mtasic mtasic  562 Aug 16 08:52 misc\ndrwxr-xr-x 1 mtasic mtasic   32 Aug 16 08:52 .pi\n-rw-r--r-- 1 mtasic mtasic   86 Aug 14 11:48 README.md\n-rw-r--r-- 1 mtasic mtasic   80 Aug 14 21:17 SLM.md\ndrwxr-xr-x 1 mtasic mtasic   12 Aug 14 21:17 src\n",
+      "tool_call_id": "1yuk8cBeRXsS0tus3882pMgXJOE6clcK"
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "reasoning_content": "The webfetch skill is well-documented. The script `webfetch.py` should be in the `.agents/skills/webfetch/` directory. Let me check if it exists and what its current state is. I also need to see if there's a project structure that might have this script.\n\nLet me look at the skill location more carefully - the SKILL.md file mentions the script is self-contained with dependencies declared via PEP 723. The actual script should be in `/home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/`.\n\nLet me check if webfetch.py exists there and what it contains.",
+      "tool_calls": [
+        {
+          "id": "q2UuQcgS69O9oSjRH8vsUMc2QFQtRLUz",
+          "type": "function",
+          "function": {
+            "name": "read",
+            "arguments": "{\"path\":\"/home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/webfetch.py\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "ENOENT: no such file or directory, access '/home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/webfetch.py'",
+      "tool_call_id": "q2UuQcgS69O9oSjRH8vsUMc2QFQtRLUz"
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "reasoning_content": "The webfetch.py script doesn't exist yet. The skill describes it as a self-contained script with dependencies declared via PEP 723 (uv). I need to create this script based on the skill description.\n\nLet me check if there's a `src` directory or any other place where the script might be, and also look at what's in the .agents/skills/webfetch/ directory.",
+      "tool_calls": [
+        {
+          "id": "3rvINyXFsRQtBA0398NPX9j3uRPr9JdE",
+          "type": "function",
+          "function": {
+            "name": "bash",
+            "arguments": "{\"command\":\"find /home/mtasic/projects-b/pi-slm -name \\\"webfetch.py\\\" 2>/dev/null; ls -la /home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "/home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/scripts/webfetch.py\ntotal 4\ndrwxr-xr-x 1 mtasic mtasic   30 Aug 16 07:55 .\ndrwxr-xr-x 1 mtasic mtasic   50 Aug 16 07:55 ..\ndrwxr-xr-x 1 mtasic mtasic   22 Aug 16 07:55 scripts\n-rw-r--r-- 1 mtasic mtasic 3597 Aug  9 16:51 SKILL.md\n",
+      "tool_call_id": "3rvINyXFsRQtBA0398NPX9j3uRPr9JdE"
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "reasoning_content": "The webfetch.py script exists in `/home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/scripts/webfetch.py`. Let me read it to understand its current state and then potentially update or create the main entry point. The skill description mentions this is a self-contained script with dependencies declared via PEP 723 (uv). \n\nLet me read the existing webfetch.py file first.",
+      "tool_calls": [
+        {
+          "id": "ssb5KNKtAFGvk6yYeC1cADrdP1vX5yzl",
+          "type": "function",
+          "function": {
+            "name": "read",
+            "arguments": "{\"path\":\"/home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/scripts/webfetch.py\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "#!/usr/bin/env -S uv run --script\n#\n# /// script\n# requires-python = \">=3.10\"\n# dependencies = [\n#     \"scrapling[all]>=0.4.12\",\n#     \"markdownify==1.2.3\",\n#     \"requests>=2.34.2\",\n# ]\n# ///\n\n\"\"\"webfetch — Fetch web pages as markdown or HTML for LLM consumption.\n\nUses scrapling Fetcher with Safari impersonation by default.\nFalls back to requests with built-in HTML-to-markdown conversion.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport re\nimport sys\nimport textwrap\n\n# ── User agents (Safari — rarely blocked) ────────────────────────────\nUA_IPHONE = (\n    \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_7_8 like Mac OS X) \"\n    \"AppleWebKit/605.1.15 (KHTML, like Gecko) \"\n    \"Version/26.0 Mobile/15E148 Safari/604.1\"\n)\n\nUA_MAC = (\n    \"Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_7) \"\n    \"AppleWebKit/605.1.15 (KHTML, like Gecko) \"\n    \"Version/26.0 Safari/605.1.15\"\n)\n\n# ── HTML → Markdown (stdlib-only, used by requests fallback) ────────\n\n_HTML_REPLACEMENTS = [\n    # Headings\n    (re.compile(r\"<h1[^>]*>(.*?)</h1>\", re.DOTALL | re.I), r\"\\n\\n# \\1\\n\\n\"),\n    (re.compile(r\"<h2[^>]*>(.*?)</h2>\", re.DOTALL | re.I), r\"\\n\\n## \\1\\n\\n\"),\n    (re.compile(r\"<h3[^>]*>(.*?)</h3>\", re.DOTALL | re.I), r\"\\n\\n### \\1\\n\\n\"),\n    (re.compile(r\"<h4[^>]*>(.*?)</h4>\", re.DOTALL | re.I), r\"\\n\\n#### \\1\\n\\n\"),\n    (re.compile(r\"<h5[^>]*>(.*?)</h5>\", re.DOTALL | re.I), r\"\\n\\n##### \\1\\n\\n\"),\n    (re.compile(r\"<h6[^>]*>(.*?)</h6>\", re.DOTALL | re.I), r\"\\n\\n###### \\1\\n\\n\"),\n    # Paragraphs & breaks\n    (re.compile(r\"<p[^>]*>(.*?)</p>\", re.DOTALL | re.I), r\"\\n\\n\\1\\n\\n\"),\n    (re.compile(r\"<br\\s*/?>\", re.I), r\"\\n\"),\n    # Lists\n    (re.compile(r\"<li[^>]*>(.*?)</li>\", re.DOTALL | re.I), r\"  - \\1\\n\"),\n    # Links\n    (re.compile(r'<a[^>]*href=\"([^\"]*?)\"[^>]*>(.*?)</a>', re.DOTALL | re.I), r\"\\2 (\\1)\"),\n    # Formatting\n    (re.compile(r\"<strong[^>]*>(.*?)</strong>\", re.DOTALL | re.I), r\"**\\1**\"),\n    (re.compile(r\"<b[^>]*>(.*?)</b>\", re.DOTALL | re.I), r\"**\\1**\"),\n    (re.compile(r\"<em[^>]*>(.*?)</em>\", re.DOTALL | re.I), r\"*\\1*\"),\n    (re.compile(r\"<i[^>]*>(.*?)</i>\", re.DOTALL | re.I), r\"*\\1*\"),\n    (re.compile(r\"<code[^>]*>(.*?)</code>\", re.DOTALL | re.I), r\"`\\1`\"),\n    (re.compile(r\"<pre[^>]*>(.*?)</pre>\", re.DOTALL | re.I), r\"\\n\\n```\\n\\1\\n```\\n\\n\"),\n    # Tables (basic)\n    (re.compile(r\"<tr[^>]*>(.*?)</tr>\", re.DOTALL | re.I), r\"\\1\\n\"),\n    (re.compile(r\"<t[dh][^>]*>(.*?)</t[dh]>\", re.DOTALL | re.I), r\" \\1 |\"),\n]\n\n\ndef html_to_md(html: str) -> str:\n    \"\"\"Convert HTML to markdown using stdlib-only regex replacements.\"\"\"\n    import html as html_mod\n\n    content = html_mod.unescape(html)\n\n    # Strip HTML comments first (contains > chars that break tag stripping)\n    content = re.sub(r\"<!--.*?-->\", \"\", content, flags=re.DOTALL)\n\n    # Block-level conversions\n    for pat, repl in _HTML_REPLACEMENTS:\n        content = pat.sub(repl, content)\n\n    # Strip remaining tags\n    content = re.sub(r\"<[^>]+>\", \"\", content)\n\n    # Collapse whitespace\n    content = re.sub(r\"[ \\t]+\", \" \", content)\n    content = re.sub(r\"\\n{3,}\", \"\\n\\n\", content)\n\n    return content.strip()\n\n\n# ── Fetchers ─────────────────────────────────────────────────────────\n\ndef _ai_targeted_html(html: str) -> str:\n    \"\"\"Strip noise from HTML for AI/LLM consumption.\n\n    Mirrors scrapling CLI --ai-targeted: removes scripts, styles, noscript,\n    svg, templates, aria-hidden, zero-width chars, control chars.\n    \"\"\"\n    # Remove block elements (with content)\n    for tag in (\"script\", \"style\", \"noscript\", \"svg\", \"template\", \"link\", \"meta\"):\n        html = re.sub(r\"<\" + tag + r\"[^>]*>.*?</\" + tag + r\">\", \"\", html, flags=re.DOTALL | re.I)\n        html = re.sub(r\"<\" + tag + r\"[^>]*/>\", \"\", html, flags=re.I)  # self-closing\n    # Remove aria-hidden elements\n    html = re.sub(r'<[^>]*aria-hidden=\"true\"[^>]*>.*?</[^>]*>', \"\", html, flags=re.DOTALL | re.I)\n    # Strip zero-width and control characters\n    html = re.sub(r\"[\\u200b\\u200c\\u200d\\u2060\\ufeff]\", \"\", html)\n    html = re.sub(r\"[\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]\", \"\", html)\n    return html\n\n\ndef _to_md(html: str, ai_targeted: bool) -> str:\n    \"\"\"Convert HTML to markdown, optionally with AI-targeted cleaning.\"\"\"\n    from markdownify import markdownify as md\n    if ai_targeted:\n        html = _ai_targeted_html(html)\n    return md(html, heading_style=\"atx\", strip=['img'])\n\n\ndef fetch_with_scrapling(url: str, output_format: str, *, impersonate: str, ai_targeted: bool) -> tuple[str, str]:\n    \"\"\"Fetch using scrapling Fetcher. Returns (result, raw_html).\"\"\"\n    import logging\n    from scrapling.fetchers import Fetcher\n\n    logging.getLogger(\"scrapling\").setLevel(logging.WARNING)\n\n    page = Fetcher.get(url, impersonate=impersonate, timeout=30)\n    html = page.html_content\n\n    if output_format == \"html\":\n        return html, html\n    return _to_md(html, ai_targeted), html\n\n\ndef fetch_with_browser(url: str, output_format: str, *, impersonate: str, ai_targeted: bool) -> tuple[str, str]:\n    \"\"\"Fetch using scrapling DynamicFetcher (browser). Returns (result, raw_html).\"\"\"\n    import logging\n    from scrapling.fetchers import DynamicFetcher\n\n    logging.getLogger(\"scrapling\").setLevel(logging.WARNING)\n    logging.getLogger(\"playwright\").setLevel(logging.WARNING)\n\n    page = DynamicFetcher.fetch(\n        url,\n        headless=True,\n        disable_resources=True,\n        real_chrome=True,\n        timeout=30000,\n    )\n    html = page.html_content\n\n    if output_format == \"html\":\n        return html, html\n    return _to_md(html, ai_targeted), html\n\n\ndef _ua_for_impersonate(impersonate: str) -> str:\n    \"\"\"Map impersonate name to a requests-compatible user-agent.\"\"\"\n    if \"safari\" in impersonate.lower():\n        return UA_IPHONE\n    return UA_MAC\n\n\ndef fetch_with_requests(url: str, output_format: str, *, impersonate: str, ai_targeted: bool) -> tuple[str, str]:\n    \"\"\"Fetch using requests as fallback. Returns (result, raw_html).\"\"\"\n    import requests\n\n    headers = {\n        \"User-Agent\": _ua_for_impersonate(impersonate),\n        \"Accept\": \"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\",\n        \"Accept-Language\": \"en-US,en;q=0.9\",\n    }\n\n    resp = requests.get(url, headers=headers, timeout=30, allow_redirects=True)\n    resp.raise_for_status()\n\n    html = resp.text\n\n    if output_format == \"html\":\n        return html, html\n    if ai_targeted:\n        html = _ai_targeted_html(html)\n    return html_to_md(html), resp.text\n\n\ndef _looks_like_spa_shell(result: str, html: str) -> bool:\n    \"\"\"Heuristic: detect JS-rendered SPA shell (large HTML, tiny content).\n\n    Returns True if the page looks like it needs a browser to render.\n    \"\"\"\n    # Only check markdown output (HTML output is always the full HTML)\n    if len(html) < 500:\n        return False\n    # Large HTML but very little extracted content\n    if len(result) < 200 and len(html) > 1000:\n        # Check for SPA markers: root div, import maps, framework scripts\n        spa_markers = [\n            r'<div[^>]*id=\"root\"',\n            r'<div[^>]*id=\"app\"',\n            r'type=\"importmap\"',\n            r'<script[^>]*type=\"module\"',\n            r'__NEXT_DATA__',\n            r'window\\.__NUXT__',\n            r'__PEAKS__',\n            r'__REMIX__',\n        ]\n        for marker in spa_markers:\n            if re.search(marker, html, re.I):\n                return True\n    return False\n\n\n# ── CLI ──────────────────────────────────────────────────────────────\n\ndef parse_args(argv: list[str] | None = None) -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        prog=\"webfetch.py\",\n        description=\"Fetch a web page and output as markdown (default) or raw HTML.\",\n        formatter_class=argparse.RawDescriptionHelpFormatter,\n        epilog=textwrap.dedent(\"\"\"\\\n            Examples:\n              webfetch.py https://example.com\n              webfetch.py --html https://example.com\n              webfetch.py --md --file ./page.md https://example.com\n              webfetch.py --impersonate chrome https://example.com\n              webfetch.py --no-ai-targeted https://example.com\n              webfetch.py --tool browser https://spa.example.com\n\n            Auto-detection tries scrapling first, then browser, then requests.\n            --ai-targeted is on by default; use --no-ai-targeted to disable sanitization.\n            --impersonate defaults to safari; also accepts chrome, firefox, or any browser name from curl_cffi/curl-impersonate.\n        \"\"\"),\n    )\n\n    fmt = parser.add_mutually_exclusive_group()\n    fmt.add_argument(\"--html\", action=\"store_true\", default=False,\n                     help=\"Output raw HTML instead of markdown\")\n    fmt.add_argument(\"--md\", \"--markdown\", action=\"store_true\", default=False,\n                     help=\"Output markdown (default)\")\n\n    mode = parser.add_mutually_exclusive_group()\n    mode.add_argument(\"--stdout\", action=\"store_true\", default=False,\n                      help=\"Print result to stdout (default)\")\n    mode.add_argument(\"--file\", metavar=\"PATH\", default=None,\n                      help=\"Save result to file; nothing printed to stdout\")\n\n    parser.add_argument(\"--tool\", choices=[\"scrapling\", \"browser\", \"requests\"], default=None,\n                        help=\"Force a specific fetcher (scrapling, browser, requests)\")\n    parser.add_argument(\"--impersonate\", default=\"safari\",\n                        help=\"Browser to impersonate: safari (default), chrome, firefox\")\n    parser.add_argument(\"--ai-targeted\", action=\"store_true\", default=True,\n                        help=\"Sanitize output for LLM consumption (default on; use --no-ai-targeted to disable)\")\n    parser.add_argument(\"--no-ai-targeted\", action=\"store_false\",\n                        dest=\"ai_targeted\",\n                        help=\"Disable AI-targeted sanitization\")\n    parser.add_argument(\"url\", nargs=\"?\", default=None, help=\"URL to fetch\")\n\n    args = parser.parse_args(argv)\n\n    if args.url is None:\n        parser.error(\"missing URL. Usage: webfetch.py [OPTIONS] <URL>\")\n\n    # Derive format from --file extension if not explicitly set\n    if args.file and not args.html and not args.md:\n        if args.file.endswith((\".html\", \".htm\")):\n            args.html = True\n        else:\n            args.md = True\n\n    return args\n\n\ndef main() -> None:\n    args = parse_args()\n\n    output_format = \"html\" if args.html else \"md\"\n    impersonate = args.impersonate\n    ai_targeted = args.ai_targeted\n\n    # Determine which fetcher to use\n    if args.tool == \"requests\":\n        fetcher_name = \"requests\"\n    elif args.tool == \"scrapling\":\n        fetcher_name = \"scrapling\"\n    else:\n        # Auto-detect: try scrapling first, fall back to requests\n        fetcher_name = None\n        tried = []\n\n    result = None\n    raw_html = \"\"\n    errors = []\n\n    def try_fetch(name: str, fn) -> bool:\n        nonlocal result, raw_html, fetcher_name\n        try:\n            result, raw_html = fn(args.url, output_format, impersonate=impersonate, ai_targeted=ai_targeted)\n            fetcher_name = name\n            return True\n        except Exception as e:\n            errors.append(f\"  {name}: {e}\")\n            tried.append(name)\n            return False\n\n    if args.tool:\n        # User forced a specific tool\n        fetchers = {\n            \"scrapling\": (\"scrapling\", fetch_with_scrapling),\n            \"browser\": (\"browser\", fetch_with_browser),\n            \"requests\": (\"requests\", fetch_with_requests),\n        }\n        name, fn = fetchers[args.tool]\n        success = try_fetch(name, fn)\n\n        if not success:\n            print(f\"webfetch.py: '{args.tool}' failed to fetch {args.url}.\", file=sys.stderr)\n            for err in errors:\n                print(err, file=sys.stderr)\n            sys.exit(1)\n    else:\n        # Auto-detect: scrapling → (SPA check → browser) → requests\n        if not try_fetch(\"scrapling\", fetch_with_scrapling):\n            if not try_fetch(\"browser\", fetch_with_browser):\n                if not try_fetch(\"requests\", fetch_with_requests):\n                    print(f\"webfetch.py: no suitable fetcher found for {args.url}.\", file=sys.stderr)\n                    for err in errors:\n                        print(err, file=sys.stderr)\n                    sys.exit(1)\n        # SPA auto-detection: if scrapling succeeded but looks like empty shell, try browser\n        elif _looks_like_spa_shell(result, raw_html):\n            if not try_fetch(\"browser\", fetch_with_browser):\n                # Browser failed, keep scrapling result (better than nothing)\n                pass\n\n    # Output\n    if args.file:\n        with open(args.file, \"w\", encoding=\"utf-8\") as f:\n            f.write(result)\n    else:\n        sys.stdout.write(result)\n        if not result.endswith(\"\\n\"):\n            sys.stdout.write(\"\\n\")\n\n\nif __name__ == \"__main__\":\n    main()\n",
+      "tool_call_id": "ssb5KNKtAFGvk6yYeC1cADrdP1vX5yzl"
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  },
+  "max_tokens": 49152,
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "read",
+        "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to read (relative or absolute)"
+            },
+            "offset": {
+              "type": "number",
+              "description": "Line number to start reading from (1-indexed)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of lines to read"
+            }
+          }
+        },
+        "strict": false
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "write",
+        "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "content"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to write (relative or absolute)"
+            },
+            "content": {
+              "type": "string",
+              "description": "Content to write to the file"
+            }
+          }
+        },
+        "strict": false
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "edit",
+        "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "edits"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to edit (relative or absolute)"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "oldText",
+                  "newText"
+                ],
+                "properties": {
+                  "oldText": {
+                    "type": "string",
+                    "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                  },
+                  "newText": {
+                    "type": "string",
+                    "description": "Replacement text for this targeted edit."
+                  }
+                }
+              },
+              "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+            }
+          }
+        },
+        "strict": false
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "bash",
+        "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "command"
+          ],
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "Bash command to execute"
+            },
+            "timeout": {
+              "type": "number",
+              "description": "Timeout in seconds (optional, no default timeout)"
+            }
+          }
+        },
+        "strict": false
+      }
+    }
+  ],
+  "reasoning_effort": "high",
+  "temperature": 0.1,
+  "top_k": 50,
+  "repeat_penalty": 1.1
+}
