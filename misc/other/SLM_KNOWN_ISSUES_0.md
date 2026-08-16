@@ -17,7 +17,9 @@ Known issues of reliability of small language models (<14B params) and known fea
 - Convert `read` errors on directories into directory listings. `EISDIR` to Directory Listing.
 - If `read` tool call of the same file path (often the same offset/limit) happens without any modifications in between, remove all unnecessary `read` tool calls/results, and just keep the beginning one (first in the loop) because there were not changes afterwards. And try something else. You can put synthetic reasoning content and synthetic content to steer model into new direction to explore.
 - If you detect loop of the same series of messages, remove later ones, and keep initial messages just before looping started. And try something else. You can put synthetic reasoning content and synthetic content to steer model into new direction to explore.
+
 - `edit` intercept and check if all `edits[].oldText` exist. keep one that exist, remove which don't exist. if non exist remove last message that caused `edit` tool call in the first place.
+- on new session, insert first two synthetic (compact in terms of tokens) messages with `Available skills:` and `Available tools:` as YAML, with name, description, absolute paths, etc.
 
 ---
 
