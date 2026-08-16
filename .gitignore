@@ -142,10 +142,10 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
-.agents
-.pi
-# misc/
-
 # Python bytecode
 __pycache__/
 *.pyc
+
+.agents
+.pi
+misc/
