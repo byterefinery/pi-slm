@@ -1,5 +1,11 @@
 # Usage of LiquidAI/LFM2.5-2.6B in pi coding agent
 
+## Server
+
+```bash
+llama-server -hf LiquidAI/LFM2.5-2.6B-GGUF:BF16 --alias "LiquidAI/LFM2.5-2.6B" -ngl all -fa on -fit off --metrics --props --slots --host 0.0.0.0 --port 9012 -dev CUDA0 --temp 0.1 --top-k 50 --repeat-penalty 1.1 --reasoning on --reasoning-preserve -c 128000 -np 1 --spec-default --reasoning-budget 4096 --reasoning-budget-message "... I am thinking for too -- let me gather more info about the task."
+```
+
 ## Issue 1: pi System Message Template
 
 ### 1.1: Default pi System Message
