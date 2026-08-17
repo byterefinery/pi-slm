@@ -109,6 +109,7 @@ Known issues of reliability of small language models and known feature list how 
   If not scripts are used in skill do not output it in YAML.
 
 - Convert `read` errors on directories into directory listings. `EISDIR` to Directory Listing.
+- Interrupted reasoning content needs to close \`\`\` code blocks properly by altering reasoning content of message.
 
 ---
 
