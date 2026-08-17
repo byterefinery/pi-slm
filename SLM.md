@@ -9,7 +9,9 @@ Reliability extension for Small Language Models.
     3. assistant: short synthetic thinking/reasoning, then the answer — available skills as YAML framed in natural language (header line, list, closing "These are skills, not tools.") in the main content
     4. user: `What are available tools?` (simulated)
     5. assistant: short synthetic thinking/reasoning, then the answer — available tools as YAML framed in natural language (header line, list, closing "These are tools, not skills.") in the main content
-    6. the first-ever user request
+    6. user: `How can a skill be used?` (simulated)
+    7. assistant: short synthetic thinking/reasoning, then the answer — a static one-shot example of a skill invocation: a generic `example` skill (name that collides with no real or popular skill) whose SKILL.md lists harmless example usages (bash script with a positional arg; python script with a positional arg plus a flag), and the assistant picking the usage that matches the task, resolving the script path from the skill dir, and running it with the bash tool
+    8. the first-ever user request
   - Skills YAML: name (single line text), description (single line text), reference file paths as absolute paths, script file paths as absolute paths. If the model supports reasoning, insert short synthetic reasoning (on the wire it must be visible on the assistant message, not dropped). Available skills come from `pi` internal API.
   - The first real user request is sent exactly as typed; the top-level `tools` field of the provider request is pi core's native function-calling definitions (active tools), not something the extension adds.
   - Tools YAML: name (single line), description (single line), whole function signature (`parameters` JSON schema as YAML, all params and types). Available tools come from `pi` internal API.
@@ -17,7 +19,7 @@ Reliability extension for Small Language Models.
   - Clarifications (agreed during implementation):
     - tools entries carry the whole function signature: the tool's `parameters` JSON schema (all params and types) converted to YAML.
     - YAML strings are emitted as plain (unquoted) scalars wherever YAML-safe, to save tokens; double quotes only as a correctness fallback.
-    - the asks are the full questions "What are available skills?" / "What are available tools?"; the answers are natural language wrapping the YAML list (header line, explicit empty-case phrase, closing disambiguation line); thinking lines in first person ("I found N skills…"). The Q/A shape makes the SLM follow the reminder more deterministically — the listing is not stray system noise, and skills are never conflated with tools.
+    - the asks are the full questions "What are available skills?" / "What are available tools?" / "How can a skill be used?"; the first two answers are natural language wrapping the YAML list (header line, explicit empty-case phrase, closing disambiguation line); the third is a static one-shot example of a skill invocation; thinking lines in first person ("I found N skills…"). The Q/A shape makes the SLM follow the reminder more deterministically — the listing is not stray system noise, and skills are never conflated with tools.
 
 ---
 
@@ -39,8 +41,9 @@ parameter formats.
 prompt, before the agent loop; the user message is not persisted yet). When
 the session branch contains no user message yet — i.e. this is the first
 request of a new session (resumed/forked sessions and all later prompts are
-skipped) — the extension persists a simulated four-message dialogue at the
-start of the session, right after the startup bookkeeping entries:
+skipped) — the extension persists a simulated six-message dialogue (three
+ask/answer pairs) at the start of the session, right after the startup
+bookkeeping entries:
 
 ```
 [model_change / thinking_level_change]
@@ -48,6 +51,8 @@ start of the session, right after the startup bookkeeping entries:
 [message assistant]                thinking + skills answer (natural language + YAML)
 [custom_message available-tools]  "What are available tools?"    (simulated user, display: true)
 [message assistant]                thinking + tools answer (natural language + YAML)
+[custom_message skill-usage]       "How can a skill be used?"     (simulated user, display: true)
+[message assistant]                thinking + skill-usage one-shot example (static text)
 [user message]                     the first real request
 ```
 
@@ -59,7 +64,9 @@ The resulting context sent to the provider is exactly:
 3. assistant: <skills answer: header + YAML list + "These are skills, not tools.">  (thinking block kept in pi, see below)
 4. user:      "What are available tools?"
 5. assistant: <tools answer: header + YAML list + "These are tools, not skills.">
-6. user:      first real user request
+6. user:      "How can a skill be used?"
+7. assistant: <skill-usage one-shot: /skill:<name> trigger, <skill> block expansion, run-the-matching-usage rule>
+8. user:      first real user request
 ```
 
 **Mechanics — three parts:**
@@ -79,12 +86,12 @@ The resulting context sent to the provider is exactly:
    public method the core uses, one cast away.
 3. *Live LLM context* — persisted entries alone are not enough for the
    current run: the provider is called with the agent's in-memory state,
-   which `pi.sendMessage()` populates with the two asks but nothing adds
+   which `pi.sendMessage()` populates with the three asks but nothing adds
    assistant messages to (there is no official API for that). So the
    extension also subscribes to the official `context` event
    (`transformContext`), which fires on every provider call with the full
    `AgentMessage[]`: when the session is the one this process injected
-   into, it re-inserts the two synthetic assistant messages right after
+   into, it re-inserts the three synthetic assistant messages right after
    each simulated user message if they are missing from the live state.
    For resumed/continued sessions the state is restored from the session
    file and already contains the full dialogue, the per-session check
@@ -93,15 +100,17 @@ The resulting context sent to the provider is exactly:
 **Answer format (natural-language Q&A)** — the dialogue is
 phrased the way a real exchange would be, so the SLM treats it as an
 actually-answered question it can rely on: the simulated user asks the full
-questions `What are available skills?` / `What are available tools?`, and
-each assistant answer is natural language wrapping the YAML list — a header
-line (`Available skills are:` / `Available tools are:`), the YAML entries,
-and a closing disambiguation line (`These are skills, not tools.` /
-`These are tools, not skills.`); the empty case is a plain phrase
-(`No available skills: []` / `No available tools: []`). The framing makes
-later skill/tool use more deterministic: the listing is not stray system
-noise, and skills are never conflated with tools. The simulated user
-messages carry the custom types `available-skills` / `available-tools`.
+questions `What are available skills?` / `What are available tools?` /
+`How can a skill be used?`, and each of the first two assistant answers is
+natural language wrapping the YAML list — a header line (`Available skills
+are:` / `Available tools are:`), the YAML entries, and a closing
+disambiguation line (`These are skills, not tools.` / `These are tools,
+not skills.`); the empty case is a plain phrase (`No available skills: []`
+/ `No available tools: []`). The third answer is the static skill-usage
+one-shot (see below). The framing makes later skill/tool use more
+deterministic: the listing is not stray system noise, and skills are never
+conflated with tools. The simulated user messages carry the custom types
+`available-skills` / `available-tools` / `skill-usage`.
 Note: with the closing line, the answer body is prose containing a YAML
 list, not a single parseable YAML document — the list itself (from the
 header line through the last entry) remains valid YAML.
@@ -120,16 +129,76 @@ one-line system-prompt snippet from `toolSnippets`, fallback flattened
 `parameters` JSON schema from `pi.getAllTools()` converted to YAML (all
 params and types; `null` when the tool has no parameters).
 
+**Skill-usage one-shot (third pair)** — the simulated user asks `How can
+a skill be used?` (custom type `skill-usage`) and the assistant answers
+with a static one-shot example that teaches the whole skill-invocation
+pattern in a single exchange: the user types `/skill:<name> [task]`, pi
+expands it into a user message containing the skill's SKILL.md body in a
+`<skill name=... location=...>` block (plus the task after the block),
+and the assistant performs the task by running the matching example
+command with the bash tool. The example uses a deliberately generic
+`example` skill — a name that collides with no real or popular skill —
+with two harmless usages so the SLM sees both common script shapes (bash
+script with a positional arg, python script with a positional arg plus a
+flag) and that the right usage must be *identified* for the current task.
+The block also carries the rule that the text after `</skill>` is the
+task (a sentence or bare arguments like a URL or a search query) and that
+the skill is *performed*, never explained. The answer text (four-backtick
+fence: the text itself contains triple-backtick fences):
+
+````
+A skill is invoked by the user with /skill:<name> [task]. Example: the user types
+
+/skill:example List the files in /data.
+
+and pi expands it into a user message with the skill's SKILL.md body in a <skill> block:
+
+<skill name="example" location="/tmp/skills/example/SKILL.md">
+References are relative to /tmp/skills/example.
+
+# example
+
+## Usage
+
+```bash
+example.sh DIR           # list the files in DIR
+example.py DIR --json    # count the files in DIR, as JSON
+```
+</skill>
+
+List the files in /data.
+
+The text after the </skill> block is the task - a sentence or bare arguments
+like a URL or a search query. I perform that task, I do not explain the skill.
+If the <skill> block shows script or command usages, I identify the right one
+for the task, resolve its path from the skill dir (dirname of location), and
+run it with the bash tool:
+
+bash: /tmp/skills/example/scripts/example.sh /data
+````
+
+The `<skill>` block in the example matches pi's real expansion byte-for-byte
+in shape (`_expandSkillCommand`: `<skill name="<name>" location="<SKILL.md
+path>">` + `References are relative to <skill dir>.` + the SKILL.md body
+with the frontmatter stripped + the task after the block). The script-path
+lesson (script lives in the skill dir, `dirname of location`, here
+`scripts/<name>.<ext>`) is what lets the SLM run real skill scripts by
+absolute path without a prior `read` — the skills YAML from pair 1 lists
+the same absolute paths in its `scripts:` fields.
+
 **Synthetic reasoning** — if the active model supports reasoning
 (`ctx.model.reasoning === true`, e.g. `LiquidAI/LFM2.5-2.6B`), each
 synthetic assistant message carries one short synthetic reasoning line as a
-real `thinking` content block before the YAML text block:
+real `thinking` content block before the answer text block:
 
 - skills: `I found <n> skills. I will check whether the task matches a
   description, and if so read that skill's SKILL.md and the reference files
   listed below.`
 - tools: `I found <n> tools. I will pick the narrowest tool that fits the
   task.`
+- skill-usage: `I will show one example: the user invokes a skill with
+  /skill:<name>, pi puts its SKILL.md in a <skill> block of the user
+  message, and I run the matching example command with the bash tool.`
 
 For the OpenAI Completions API (the llama.cpp server path) the block
 additionally carries `thinkingSignature: "reasoning_content"`. Pi's
@@ -234,6 +303,7 @@ the first request (llamacpp/LFM, reasoning on):
 ```
 system  → user "What are available skills?" → assistant <skills answer> + reasoning_content
        → user "What are available tools?"  → assistant <tools answer> + reasoning_content
+       → user "How can a skill be used?"   → assistant <skill-usage one-shot> + reasoning_content
        → user <first real request>
 ```
 
@@ -299,7 +369,43 @@ Status: the suite still encodes an earlier reminder format (ask texts,
 exact `skills: []`/`tools: []` bodies in S4/S5, and whole-body
 `yaml.safe_load` in S1/S2 — the answer body is no longer a single YAML
 document), so it must be synced to the natural-language Q&A format
-before it passes again.
+before it passes again. The skill-usage pair (this change) is not covered
+by the suite at all: S1/S6/S8-style checks would need the third ask
+(`skill-usage`) + third assistant entry, the `prompt_index` shifted from
+5 to 7, and the wire history expectations extended by one pair.
+
+### Live test: real skills in a random temp dir
+
+The dialogue is also validated end-to-end against real skills: for each
+skill a random temp dir is created under `/tmp`
+(`mktemp -d /tmp/slm-f2-<skill>-XXXXXX`), the skill is copied into
+`<root>/work/.agents/skills/<skill>/` (pi's project skill dir), an
+isolated temp `HOME` is used (minimal `models.json` with only the LFM
+model, so no global skills/settings leak in), the uv cache is shared via
+`UV_CACHE_DIR` (never copied per run — `/tmp` is a 1M-inode tmpfs), and
+the run is `pi --offline -a -e src/slm.ts -e tests/payload-logger.ts
+--model LiquidAI/LFM2.5-2.6B -p "/skill:<skill> <task>"` in
+`<root>/work`. The `/skill:` expansion is pi core's (the user message in
+the session file is the expanded `<skill>` block + task — the extension
+touches neither), so this also validates that the one-shot's example
+matches the real block shape.
+
+Results (model `LiquidAI/LFM2.5-2.6B`, pi 0.84.2):
+
+| Prompt (after the dialogue) | Outcome |
+|---|---|
+| `/skill:webfetch fetch https://tangledgroup.com/ and summarize it` | **success** — single `bash` tool call with the exact absolute path `<root>/work/.agents/skills/webfetch/scripts/webfetch.py https://tangledgroup.com`, real page fetched, answer summarizes the live content. Reproduced 2/2 runs, first try, no flailing. |
+| `/skill:websearch look for tangled group repos` | **success after flailing** — 7 tool calls: `find`/`ls` in the work dir, two malformed attempts at the SKILL.md path, a `read` of SKILL.md, then the correct `bash: <root>/work/.agents/skills/websearch/scripts/websearch.py "tangled group repos"`; final answer grounded in the real DuckDuckGo results (tangled.org repos, TangledRust, github.com/orgs/tangledgroup). A second run of the same prompt degenerated into a repeated `grep`-in-skill-dir loop (1000 calls until the run timeout) — a known SLM derailment, independent of the extension. |
+| `/skill:webfetch https://tangledgroup.com/` (bare URL) | **meta-explanation** — 0 tool calls; the model re-answers the immediately preceding synthetic question `How can a skill be used?` instead of performing the task. Same for bare search queries. The 2.6B model does not treat a bare argument after the block as a task; explicit task phrasing (verb + argument) is required. |
+
+What the live runs confirm: the three-pair dialogue sits at the head of
+the session and of the wire context (system → 3×(ask, assistant with
+`reasoning_content`) → user request), the skills YAML lists the real
+skill with its absolute `scripts/` path, and when the SLM does engage the
+one-shot pattern it resolves the script exactly as taught — absolute path
+under the skill dir (`dirname of location`) + `scripts/`, run through
+`bash`, task arguments appended — matching the `bash: …/scripts/example.sh
+/data` line of the example.
 
 ### Notes
 
@@ -307,9 +413,9 @@ before it passes again.
   `before_agent_start` time — not entry count, because startup
   bookkeeping entries (`model_change`, `thinking_level_change`) already
   exist when `--model` is passed.
-- The dialogue is persisted once per session (two `custom_message` entries
-  + two assistant `message` entries) and stays at the head of the context
-  for all later turns. Resumed/continued/forked sessions restore it from
+- The dialogue is persisted once per session (three `custom_message`
+  entries + three assistant `message` entries) and stays at the head of
+  the context for all later turns. Resumed/continued/forked sessions restore it from
   the session file — the `context` handler then no-ops (per-session
   guard), so nothing is duplicated. Mid-session tool/skill changes
   (`/tools`, `/reload`) do not rewrite it.
@@ -342,5 +448,19 @@ before it passes again.
   style, flow style for scalar arrays, plain scalars when safe.
 - Works in all run modes (validated via `-p` and `--mode json`; TUI/RPC
   share the same hook path).
+- The skill-usage answer is static (no live data): the `example` skill
+  name collides with no real or popular skill, and the paths inside it
+  (`/tmp/skills/example/...`) are fictitious — the SLM must substitute
+  the real skill dir from the incoming `<skill>` block, not reuse the
+  example's paths.
+- The one-shot's `<skill>` block mirrors pi's real expansion shape
+  (`_expandSkillCommand` in pi 0.84.2), including the `References are
+  relative to <skill dir>.` line and the SKILL.md body with frontmatter
+  stripped; the nested ``` fences are authentic (real SKILL.md bodies
+  contain them).
+- Skill usage with a 2.6B model is task-phrasing sensitive: explicit
+  tasks (verb + argument) trigger the script call, bare arguments after
+  the `<skill>` block tend to be answered as the meta question `How can
+  a skill be used?` (see Live test).
 
 ---

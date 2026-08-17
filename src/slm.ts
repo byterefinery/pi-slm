@@ -21,7 +21,13 @@
  *   3. assistant:  short synthetic thinking + available skills as YAML
  *   4. user:       "Available tools"   (simulated)
  *   5. assistant:  short synthetic thinking + available tools as YAML
- *   6. user:       the first real user request
+ *   6. user:       "How can a skill be used?" (simulated)
+ *   7. assistant:  short synthetic thinking + a one-shot example of a skill
+ *                  invocation (a generic "example" skill whose SKILL.md
+ *                  lists example script/command usages with arguments, plus
+ *                  the assistant picking the matching usage and running it
+ *                  through the bash tool)
+ *   8. user:       the first real user request
  *
  * The skills YAML mirrors what the system prompt exposes (see
  * system-prompt.ts / formatSkillsForPrompt): the loaded skills minus those
@@ -38,7 +44,8 @@
  * (the llama.cpp server path) that block is sent on the wire as a
  * `reasoning_content` field of the assistant message — the standard
  * OpenAI-compatible way to carry reasoning in chat history — while
- * `content` stays the pure YAML document. For other APIs no signature is
+ * `content` stays the answer (the YAML document for skills/tools, the
+ * one-shot example text for skill-usage). For other APIs no signature is
  * set: the block stays in the session/TUI and is replayed or dropped by
  * the provider's serializer as usual.
  *
@@ -64,7 +71,7 @@
  *    separately, and only pi.sendMessage() adds to it. So the extension
  *    also subscribes to the official `context` event (transformContext),
  *    which fires on every LLM call with the full message array: it
- *    re-inserts the two synthetic assistant messages right after each
+ *    re-inserts the three synthetic assistant messages right after each
  *    simulated user message when they are missing from the live state.
  *    On resumed/continued sessions the dialogue is restored from the
  *    session file into the agent state, the detection below no-ops, and
@@ -95,8 +102,10 @@ import { join, resolve } from "node:path";
 
 const SKILLS_CUSTOM_TYPE = "available-skills";
 const TOOLS_CUSTOM_TYPE = "available-tools";
+const USAGE_CUSTOM_TYPE = "skill-usage";
 const SKILLS_ASK = "What are available skills?";
 const TOOLS_ASK = "What are available tools?";
+const USAGE_ASK = "How can a skill be used?";
 
 /** Collapse all whitespace runs to single spaces and trim. */
 function oneLine(text: string): string {
@@ -281,6 +290,52 @@ function toolsThinking(count: number): string {
 	return `I found ${count} tools. I will pick the narrowest tool that fits the task.`;
 }
 
+/** One short synthetic reasoning line for the skill-usage assistant message. */
+function usageThinking(): string {
+	return `I will show one example: the user invokes a skill with /skill:<name>, pi puts its SKILL.md in a <skill> block of the user message, and I run the matching example command with the bash tool.`;
+}
+
+/**
+ * One-shot example answering "How can a skill be used?": a generic
+ * "example" skill (deliberately a name that collides with no real or
+ * popular skill) whose SKILL.md lists harmless example invocations — a
+ * bash script with a positional arg and a python script with a positional
+ * arg plus a flag — and the assistant picking the usage that matches the
+ * task, resolving the script path from the skill dir, and running it with
+ * the bash tool. This is the pattern the SLM must follow whenever a real
+ * <skill> block arrives in a user message.
+ */
+const SKILL_USAGE_EXAMPLE = [
+	"A skill is invoked by the user with /skill:<name> [task]. Example: the user types",
+	"",
+	"/skill:example List the files in /data.",
+	"",
+	"and pi expands it into a user message with the skill's SKILL.md body in a <skill> block:",
+	"",
+	'<skill name="example" location="/tmp/skills/example/SKILL.md">',
+	"References are relative to /tmp/skills/example.",
+	"",
+	"# example",
+	"",
+	"## Usage",
+	"",
+	"```bash",
+	"example.sh DIR           # list the files in DIR",
+	"example.py DIR --json    # count the files in DIR, as JSON",
+	"```",
+	"</skill>",
+	"",
+	"List the files in /data.",
+	"",
+	"The text after the </skill> block is the task - a sentence or bare arguments",
+	"like a URL or a search query. I perform that task, I do not explain the skill.",
+	"If the <skill> block shows script or command usages, I identify the right one",
+	"for the task, resolve its path from the skill dir (dirname of location), and",
+	"run it with the bash tool:",
+	"",
+	"bash: /tmp/skills/example/scripts/example.sh /data",
+].join("\n");
+
 /**
  * Build the available-skills YAML document (main content of the synthetic
  * assistant message answering "Available skills").
@@ -442,7 +497,13 @@ export default function slmExtension(pi: ExtensionAPI) {
 		sessionId: string | undefined;
 		skillsAssistant: AssistantMessage | undefined;
 		toolsAssistant: AssistantMessage | undefined;
-	} = { sessionId: undefined, skillsAssistant: undefined, toolsAssistant: undefined };
+		usageAssistant: AssistantMessage | undefined;
+	} = {
+		sessionId: undefined,
+		skillsAssistant: undefined,
+		toolsAssistant: undefined,
+		usageAssistant: undefined,
+	};
 
 	// ------------------------------------------------------------------
 	// Injection: first prompt of a new session.
@@ -489,10 +550,16 @@ export default function slmExtension(pi: ExtensionAPI) {
 			reasoning ? toolsThinking(activeTools.length) : undefined,
 			ctx.model,
 		);
+		state.usageAssistant = makeSynthAssistant(
+			SKILL_USAGE_EXAMPLE,
+			reasoning ? usageThinking() : undefined,
+			ctx.model,
+		);
 
 		// Persist the simulated dialogue in order:
-		//   user "Available skills" -> assistant skills YAML
-		//   user "Available tools"  -> assistant tools YAML
+		//   user "Available skills"     -> assistant skills YAML
+		//   user "Available tools"      -> assistant tools YAML
+		//   user "How can a skill be used?" -> assistant one-shot example
 		// pi.sendMessage() (no triggerTurn) appends the custom message to
 		// the session and to the agent state synchronously (its
 		// non-streaming path contains no awaits), so the following
@@ -514,6 +581,12 @@ export default function slmExtension(pi: ExtensionAPI) {
 			display: true,
 		});
 		sm.appendMessage(state.toolsAssistant);
+		pi.sendMessage({
+			customType: USAGE_CUSTOM_TYPE,
+			content: USAGE_ASK,
+			display: true,
+		});
+		sm.appendMessage(state.usageAssistant);
 	});
 
 	// ------------------------------------------------------------------
@@ -536,11 +609,15 @@ export default function slmExtension(pi: ExtensionAPI) {
 				return;
 			}
 			const msgs = event.messages;
+			// The simulated asks and the synthetic assistant reply each maps
+			// to (skills, tools, skill-usage).
+			const byType = new Map<string, AssistantMessage | undefined>([
+				[SKILLS_CUSTOM_TYPE, state.skillsAssistant],
+				[TOOLS_CUSTOM_TYPE, state.toolsAssistant],
+				[USAGE_CUSTOM_TYPE, state.usageAssistant],
+			]);
 			const hasAsk = msgs.some(
-				(m) =>
-					m.role === "custom" &&
-					(m.customType === SKILLS_CUSTOM_TYPE ||
-						m.customType === TOOLS_CUSTOM_TYPE),
+				(m) => m.role === "custom" && byType.has(m.customType),
 			);
 			if (!hasAsk) {
 				return;
@@ -552,12 +629,7 @@ export default function slmExtension(pi: ExtensionAPI) {
 				if (m.role !== "custom") {
 					continue;
 				}
-				const ours =
-					m.customType === SKILLS_CUSTOM_TYPE
-						? state.skillsAssistant
-						: m.customType === TOOLS_CUSTOM_TYPE
-							? state.toolsAssistant
-							: undefined;
+				const ours = byType.get(m.customType);
 				if (!ours) {
 					continue;
 				}
