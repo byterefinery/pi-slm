@@ -4,52 +4,89 @@
  * Load with:  pi -e src/slm.ts
  *
  * Single file, no dependencies — only pi's internal TypeScript API is used
- * (extension events, session manager, built-in tool factories, model/tool
- * state). All state is per-session and in-memory. Works in all modes
- * (interactive TUI, -p, --mode json, --mode rpc).
+ * (extension events, session manager, model/tool state) plus node builtins.
+ * All extension state is in-memory. Works in all modes (interactive TUI,
+ * -p, --mode json, --mode rpc).
  *
- * Implements the features:
+ * Feature 1: Available skills and tools reminder (simulated dialogue).
  *
- * Feature 1: Available skills and tools reminder.
- *   Small language models frequently forget which skills/tools are available
- *   when that information only lives in the system prompt. On the first
- *   prompt of a new session, this extension inserts two compact synthetic
- *   messages (custom messages, hidden from the TUI) immediately before the
- *   user message, so the conversation context itself reminds the model:
+ * Small language models frequently forget which skills/tools are available
+ * when that information only lives in the system prompt. On the first prompt
+ * of a new session, this extension simulates a short user/assistant dialogue
+ * at the very beginning of the conversation, so the context itself reminds
+ * the model:
  *
- *     1. "Available skills:" — valid YAML list of the loaded skills with
- *        name, single-line description, absolute reference file paths
- *        (skill dir `references/`), and absolute script file paths
- *        (skill dir `scripts/`). Skills mirror what the system prompt
- *        exposes (see system-prompt.ts / formatSkillsForPrompt): loaded
- *        skills minus those with disable-model-invocation.
- *     2. "Available tools:" — valid YAML list of the active tools with
- *        name, single-line description (the one-line system-prompt
- *        snippet), and the whole function signature: the tool's
- *        `parameters` JSON schema (from pi.getAllTools()) converted to
- *        YAML, with all params and their types.
+ *   1. system message                (pi default, untouched)
+ *   2. user:       "Available skills"  (simulated)
+ *   3. assistant:  short synthetic thinking + available skills as YAML
+ *   4. user:       "Available tools"   (simulated)
+ *   5. assistant:  short synthetic thinking + available tools as YAML
+ *   6. user:       the first real user request
  *
- *   If the active model supports reasoning (`model.reasoning === true`),
- *   each synthetic message carries one short synthetic reasoning line
- *   (`# thinking: ...`, a YAML comment so the document stays valid).
+ * The skills YAML mirrors what the system prompt exposes (see
+ * system-prompt.ts / formatSkillsForPrompt): the loaded skills minus those
+ * with disable-model-invocation, each with name, single-line description,
+ * and absolute paths of the skill dir's references/ and scripts/ files.
+ * The tools YAML lists the active tools with name, single-line description
+ * (the one-line system-prompt snippet when available), and the whole
+ * function signature: the tool's `parameters` JSON schema (from
+ * pi.getAllTools()) converted to YAML, with all params and their types.
  *
- *   Mechanics: the hook is `before_agent_start`, which fires after the user
- *   submits a prompt but before the agent loop starts. At that point the
- *   user message is not persisted yet (startup bookkeeping entries like
- *   model_change/thinking_level_change may exist, so entry count is not a
- *   reliable signal), hence the check: the session branch contains no user
- *   message yet => this is the first request of a new session.
- *   `pi.sendMessage()` (no triggerTurn) appends each synthetic message to
- *   both the agent state and the session tree synchronously, hence the
- *   final order in the session and in the LLM context is:
- *   [skills message, tools message, user message]. Subsequent prompts (and
- *   resumed/forked sessions, which already have user messages) never get
- *   another injection.
+ * If the active model supports reasoning (`model.reasoning === true`),
+ * each synthetic assistant message carries one short synthetic reasoning
+ * line as a real `thinking` content block. For the OpenAI Completions API
+ * (the llama.cpp server path) that block is sent on the wire as a
+ * `reasoning_content` field of the assistant message — the standard
+ * OpenAI-compatible way to carry reasoning in chat history — while
+ * `content` stays the pure YAML document. For other APIs no signature is
+ * set: the block stays in the session/TUI and is replayed or dropped by
+ * the provider's serializer as usual.
+ *
+ * Token economy: YAML strings are emitted as plain (unquoted) scalars
+ * whenever YAML-safe; double quotes are used only as a correctness
+ * fallback.
+ *
+ * Mechanics:
+ *  - `before_agent_start` fires after the user submits a prompt but before
+ *    the agent loop. At that point the user message is not persisted yet
+ *    (startup bookkeeping entries like model_change/thinking_level_change
+ *    may exist, so entry count is not a reliable signal), hence the
+ *    new-session check: the session branch contains no user message.
+ *  - The simulated user messages are injected with `pi.sendMessage()`
+ *    (custom messages, display: true; no triggerTurn). They are persisted
+ *    as custom_message entries and also enter the agent state.
+ *  - The synthetic assistant messages are persisted with
+ *    `SessionManager.appendMessage()` (the runtime object behind
+ *    ctx.sessionManager is the full SessionManager, although the public
+ *    context type only exposes its read-only pick).
+ *  - Persisted entries alone are not enough for the *current* run: the
+ *    agent's in-memory state (what the LLM actually sees) is built
+ *    separately, and only pi.sendMessage() adds to it. So the extension
+ *    also subscribes to the official `context` event (transformContext),
+ *    which fires on every LLM call with the full message array: it
+ *    re-inserts the two synthetic assistant messages right after each
+ *    simulated user message when they are missing from the live state.
+ *    On resumed/continued sessions the dialogue is restored from the
+ *    session file into the agent state, the detection below no-ops, and
+ *    nothing is duplicated.
+ *
+ * Display: the simulated user messages are shown in the TUI (custom
+ * message styling); the synthetic assistant messages are part of the
+ * session file, so they render when the session is loaded/reopened (they
+ * have no live streaming events in the run they were injected in).
  */
 
 import type {
+	AssistantMessage,
+	Model,
+	TextContent,
+	ThinkingContent,
+	Usage,
+} from "@earendil-works/pi-ai";
+import type {
 	BuildSystemPromptOptions,
 	ExtensionAPI,
+	SessionManager,
 	Skill,
 	ToolInfo,
 } from "@earendil-works/pi-coding-agent";
@@ -58,6 +95,8 @@ import { join, resolve } from "node:path";
 
 const SKILLS_CUSTOM_TYPE = "slm-skills";
 const TOOLS_CUSTOM_TYPE = "slm-tools";
+const SKILLS_ASK = "Available skills";
+const TOOLS_ASK = "Available tools";
 
 /** Collapse all whitespace runs to single spaces and trim. */
 function oneLine(text: string): string {
@@ -232,38 +271,31 @@ function listFiles(dir: string): string[] {
 	return out;
 }
 
-/** One short synthetic reasoning line for the skills message. */
+/** One short synthetic reasoning line for the skills assistant message. */
 function skillsThinking(count: number): string {
-	return `thinking: scanned loaded skills - ${count} found. I will check whether the task matches a description, and if so read that skill's SKILL.md and the reference files listed below.`;
+	return `scanned loaded skills - ${count} found. I will check whether the task matches a description, and if so read that skill's SKILL.md and the reference files listed below.`;
 }
 
-/** One short synthetic reasoning line for the tools message. */
+/** One short synthetic reasoning line for the tools assistant message. */
 function toolsThinking(count: number): string {
-	return `thinking: scanned active tools - ${count} found. I will pick the narrowest tool that fits the task.`;
+	return `scanned active tools - ${count} found. I will pick the narrowest tool that fits the task.`;
 }
 
 /**
- * Build the "Available skills:" message content.
+ * Build the available-skills YAML document (main content of the synthetic
+ * assistant message answering "Available skills").
  *
- * Layout (one YAML document):
- *   Available skills:
- *   # thinking: ...            (only for reasoning models)
  *   skills: []                 (or a list of skill entries)
  *
  * Each skill entry: name, description (single line), references (absolute
  * paths of files under <skill dir>/references/), scripts (absolute paths of
  * files under <skill dir>/scripts/). Empty lists are `[]`.
  */
-function buildSkillsMessage(skills: Skill[], reasoning: boolean): string {
-	const lines: string[] = ["Available skills:"];
-	if (reasoning) {
-		lines.push(`# ${skillsThinking(skills.length)}`);
-	}
+function buildSkillsYaml(skills: Skill[]): string {
 	if (skills.length === 0) {
-		lines.push("skills: []");
-		return lines.join("\n");
+		return "skills: []";
 	}
-	lines.push("skills:");
+	const lines: string[] = ["skills:"];
 	for (const skill of skills) {
 		lines.push(`  - name: ${yamlField(skill.name)}`);
 		lines.push(`    description: ${yamlField(skill.description)}`);
@@ -282,11 +314,9 @@ function buildSkillsMessage(skills: Skill[], reasoning: boolean): string {
 }
 
 /**
- * Build the "Available tools:" message content.
+ * Build the available-tools YAML document (main content of the synthetic
+ * assistant message answering "Available tools").
  *
- * Layout (one YAML document):
- *   Available tools:
- *   # thinking: ...            (only for reasoning models)
  *   tools: []                  (or a list of tool entries)
  *
  * Each tool entry is the whole function signature:
@@ -296,26 +326,19 @@ function buildSkillsMessage(skills: Skill[], reasoning: boolean): string {
  *   - parameters: <the tool's parameters JSON schema converted to YAML,
  *     with all params and types; null when the tool has no parameters>
  */
-function buildToolsMessage(
+function buildToolsYaml(
 	names: string[],
 	snippets: Record<string, string> | undefined,
 	allTools: ToolInfo[],
-	reasoning: boolean,
 ): string {
-	const byName = new Map<string, ToolInfo>(allTools.map((t) => [t.name, t]));
-	const lines: string[] = ["Available tools:"];
-	if (reasoning) {
-		lines.push(`# ${toolsThinking(names.length)}`);
-	}
 	if (names.length === 0) {
-		lines.push("tools: []");
-		return lines.join("\n");
+		return "tools: []";
 	}
-	lines.push("tools:");
+	const byName = new Map<string, ToolInfo>(allTools.map((t) => [t.name, t]));
+	const lines: string[] = ["tools:"];
 	for (const name of names) {
 		const tool = byName.get(name);
-		const description =
-			snippets?.[name] ?? oneLine(tool?.description ?? "");
+		const description = snippets?.[name] ?? oneLine(tool?.description ?? "");
 		lines.push(`  - name: ${yamlField(name)}`);
 		lines.push(`    description: ${yamlField(description)}`);
 		if (tool && tool.parameters !== undefined) {
@@ -332,8 +355,98 @@ function buildToolsMessage(
 	return lines.join("\n");
 }
 
+const ZERO_USAGE: Usage = {
+	input: 0,
+	output: 0,
+	cacheRead: 0,
+	cacheWrite: 0,
+	totalTokens: 0,
+	cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+};
+
+/**
+ * Build the synthetic assistant message answering an slm ask. Main content
+ * is the YAML document; when the model supports reasoning a short synthetic
+ * thinking block precedes it.
+ */
+function makeSynthAssistant(
+	yaml: string,
+	thinking: string | undefined,
+	model: Model<any>,
+): AssistantMessage {
+	const content: (TextContent | ThinkingContent)[] = [];
+	if (thinking !== undefined) {
+		const block: ThinkingContent = { type: "thinking", thinking };
+		// OpenAI Completions serializers (pi's openai-completions.js) emit
+		// `assistantMsg[signature] = <thinking text>` for thinking blocks
+		// that carry a signature — the documented replay path for
+		// llama.cpp server. Content stays the pure YAML document.
+		if (model.api === "openai-completions") {
+			block.thinkingSignature = "reasoning_content";
+		}
+		content.push(block);
+	}
+	content.push({ type: "text", text: yaml });
+	return {
+		role: "assistant",
+		content,
+		api: model.api,
+		provider: model.provider,
+		model: model.id,
+		usage: ZERO_USAGE,
+		stopReason: "stop",
+		timestamp: Date.now(),
+	};
+}
+
+/** True when the (restored) message is the synthetic assistant we injected. */
+function isOurAssistant(
+	m: unknown,
+	ours: AssistantMessage,
+): boolean {
+	if (typeof m !== "object" || m === null) {
+		return false;
+	}
+	const msg = m as { role?: string; content?: unknown };
+	if (msg.role !== "assistant" || !Array.isArray(msg.content)) {
+		return false;
+	}
+	const ourText = ours.content.find((b) => b.type === "text") as
+		| TextContent
+		| undefined;
+	const ourThinking = ours.content.find((b) => b.type === "thinking") as
+		| ThinkingContent
+		| undefined;
+	for (const block of msg.content as Array<Record<string, unknown>>) {
+		if (
+			ourThinking &&
+			block.type === "thinking" &&
+			block.thinking === ourThinking.thinking
+		) {
+			return true;
+		}
+		if (ourText && block.type === "text" && block.text === ourText.text) {
+			return true;
+		}
+	}
+	return false;
+}
+
 export default function slmExtension(pi: ExtensionAPI) {
+	// In-memory state for the session this extension injected into.
+	const state: {
+		sessionId: string | undefined;
+		skillsAssistant: AssistantMessage | undefined;
+		toolsAssistant: AssistantMessage | undefined;
+	} = { sessionId: undefined, skillsAssistant: undefined, toolsAssistant: undefined };
+
+	// ------------------------------------------------------------------
+	// Injection: first prompt of a new session.
+	// ------------------------------------------------------------------
 	pi.on("before_agent_start", (event, ctx) => {
+		if (!ctx.model) {
+			return;
+		}
 		// Only the first prompt of a new session gets the reminder.
 		// At before_agent_start time the user message is not persisted yet
 		// (startup entries such as model_change may already exist), so the
@@ -346,23 +459,118 @@ export default function slmExtension(pi: ExtensionAPI) {
 		}
 
 		const opts: BuildSystemPromptOptions = event.systemPromptOptions;
-		const reasoning = ctx.model?.reasoning === true;
+		const reasoning = ctx.model.reasoning === true;
 
-		// 1) Skills — the same loaded set the system prompt is built from,
-		//    minus skills hidden from the model (disableModelInvocation).
+		// Skills — the same loaded set the system prompt is built from,
+		// minus skills hidden from the model (disableModelInvocation).
 		const skills = (opts.skills ?? []).filter((s) => !s.disableModelInvocation);
+		const skillsYaml = buildSkillsYaml(skills);
+
+		// Tools — the active tool set, with one-line descriptions.
+		const activeTools = opts.selectedTools ?? pi.getActiveTools();
+		const toolsYaml = buildToolsYaml(
+			activeTools,
+			opts.toolSnippets,
+			pi.getAllTools(),
+		);
+
+		state.sessionId = ctx.sessionManager.getSessionId();
+		state.skillsAssistant = makeSynthAssistant(
+			skillsYaml,
+			reasoning ? skillsThinking(skills.length) : undefined,
+			ctx.model,
+		);
+		state.toolsAssistant = makeSynthAssistant(
+			toolsYaml,
+			reasoning ? toolsThinking(activeTools.length) : undefined,
+			ctx.model,
+		);
+
+		// Persist the simulated dialogue in order:
+		//   user "Available skills" -> assistant skills YAML
+		//   user "Available tools"  -> assistant tools YAML
+		// pi.sendMessage() (no triggerTurn) appends the custom message to
+		// the session and to the agent state synchronously (its
+		// non-streaming path contains no awaits), so the following
+		// appendMessage() calls continue the session tree right after it.
+		// The synthetic assistant messages are persisted through the
+		// SessionManager itself: ctx.sessionManager is typed as a read-only
+		// pick, but the runtime object is the full SessionManager instance,
+		// whose appendMessage() is the same method the core uses.
+		const sm = ctx.sessionManager as unknown as SessionManager;
 		pi.sendMessage({
 			customType: SKILLS_CUSTOM_TYPE,
-			content: buildSkillsMessage(skills, reasoning),
-			display: false,
+			content: SKILLS_ASK,
+			display: true,
 		});
-
-		// 2) Tools — the active tool set, with one-line descriptions.
-		const activeTools = opts.selectedTools ?? pi.getActiveTools();
+		sm.appendMessage(state.skillsAssistant);
 		pi.sendMessage({
 			customType: TOOLS_CUSTOM_TYPE,
-			content: buildToolsMessage(activeTools, opts.toolSnippets, pi.getAllTools(), reasoning),
-			display: false,
+			content: TOOLS_ASK,
+			display: true,
 		});
+		sm.appendMessage(state.toolsAssistant);
+	});
+
+	// ------------------------------------------------------------------
+	// LLM context: guarantee the synthetic assistant messages are present
+	// (on every provider call) right after their simulated user messages.
+	//
+	// Why this is needed: the persisted entries above are not in the
+	// agent's in-memory state (only pi.sendMessage() adds to it), and the
+	// in-memory state is what gets sent to the provider. For resumed
+	// sessions the state is restored from the session file, already
+	// containing the full dialogue — the per-session check below then
+	// no-ops and nothing is duplicated.
+	// ------------------------------------------------------------------
+	pi.on("context", (event, ctx) => {
+		try {
+			if (
+				state.sessionId === undefined ||
+				state.sessionId !== ctx.sessionManager.getSessionId()
+			) {
+				return;
+			}
+			const msgs = event.messages;
+			const hasAsk = msgs.some(
+				(m) =>
+					m.role === "custom" &&
+					(m.customType === SKILLS_CUSTOM_TYPE ||
+						m.customType === TOOLS_CUSTOM_TYPE),
+			);
+			if (!hasAsk) {
+				return;
+			}
+			const out = [...msgs];
+			const inserts: Array<[number, AssistantMessage]> = [];
+			for (let i = 0; i < msgs.length; i++) {
+				const m = msgs[i];
+				if (m.role !== "custom") {
+					continue;
+				}
+				const ours =
+					m.customType === SKILLS_CUSTOM_TYPE
+						? state.skillsAssistant
+						: m.customType === TOOLS_CUSTOM_TYPE
+							? state.toolsAssistant
+							: undefined;
+				if (!ours) {
+					continue;
+				}
+				if (isOurAssistant(msgs[i + 1], ours)) {
+					continue;
+				}
+				inserts.push([i, ours]);
+			}
+			if (inserts.length > 0) {
+				// splice backwards so earlier indices stay valid
+				for (let k = inserts.length - 1; k >= 0; k--) {
+					out.splice(inserts[k][0] + 1, 0, inserts[k][1]);
+				}
+				return { messages: out };
+			}
+		} catch {
+			// transformContext contract: never throw; leave context unchanged.
+		}
 	});
 }
