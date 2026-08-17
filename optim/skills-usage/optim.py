@@ -7,13 +7,13 @@
 
 # OPENAI_API_BASE="" OPENAI_API_KEY="" uv run optim.py
 
-import os
+# import os
 import dspy
 
 lm = dspy.LM(
     "openai/Qwen/Qwen3.8-27B",
-    api_base=os.getenv("OPENAI_API_BASE"),
-    api_key=os.getenv("OPENAI_API_KEY"),
+    # api_base=os.getenv("OPENAI_API_BASE"),
+    # api_key=os.getenv("OPENAI_API_KEY"),
     model_type="chat",
     temperature=1.0,
     top_p=0.95,
