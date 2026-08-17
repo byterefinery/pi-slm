@@ -633,6 +633,10 @@ List of tools: [{"type": "function", "function": {"name": "read", "description":
 hi<|im_end|>
 ```
 
-### Observation
+### 1.4: Observation
 
-...
+- Default (1.1): the system message is the default preamble (identity line, one-line "Available tools" summary, bullet guidelines, pi-docs pointers) + `<available_skills>` block + cwd line + trailing `List of tools` JSON. Notably it contains AGENTS.md `<project_context>` block.
+- `--system-prompt` (1.2) only replaces the default preamble — identity, tool guidelines, and the pi-docs block are gone. The harness-appended sections (AGENTS.md `<project_context>`, `<available_skills>`, cwd line, trailing `List of tools` JSON) are identical to 1.1.
+- `--no-context-files` (1.3) strips only the AGENTS.md `<project_context>` block; skills, cwd, and the tools JSON remain. It does not make the message minimal.
+- All three variants end in a raw JSON dump of the 4 tool schemas (~3k chars, ~1k tokens) that duplicates what the API `tools` parameter already provides — pure overhead for a 2.6B model.
+- Even the "minimal" 1.3 is dominated by boilerplate: the custom prompt is one line, while skills metadata + the tools JSON make up the bulk of the system message.
