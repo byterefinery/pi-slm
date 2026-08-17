@@ -93,10 +93,10 @@ import type {
 import { readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const SKILLS_CUSTOM_TYPE = "slm-skills";
-const TOOLS_CUSTOM_TYPE = "slm-tools";
-const SKILLS_ASK = "Available skills";
-const TOOLS_ASK = "Available tools";
+const SKILLS_CUSTOM_TYPE = "available-skills";
+const TOOLS_CUSTOM_TYPE = "available-tools";
+const SKILLS_ASK = "What are available skills?";
+const TOOLS_ASK = "What are available tools?";
 
 /** Collapse all whitespace runs to single spaces and trim. */
 function oneLine(text: string): string {
@@ -273,12 +273,12 @@ function listFiles(dir: string): string[] {
 
 /** One short synthetic reasoning line for the skills assistant message. */
 function skillsThinking(count: number): string {
-	return `scanned loaded skills - ${count} found. I will check whether the task matches a description, and if so read that skill's SKILL.md and the reference files listed below.`;
+	return `I found ${count} skills. I will check whether the task matches a description, and if so read that skill's SKILL.md and the reference files listed below.`;
 }
 
 /** One short synthetic reasoning line for the tools assistant message. */
 function toolsThinking(count: number): string {
-	return `scanned active tools - ${count} found. I will pick the narrowest tool that fits the task.`;
+	return `I found ${count} tools. I will pick the narrowest tool that fits the task.`;
 }
 
 /**
@@ -293,9 +293,9 @@ function toolsThinking(count: number): string {
  */
 function buildSkillsYaml(skills: Skill[]): string {
 	if (skills.length === 0) {
-		return "skills: []";
+		return "No available skills: []";
 	}
-	const lines: string[] = ["skills:"];
+	const lines: string[] = ["Available skills are:"];
 	for (const skill of skills) {
 		lines.push(`  - name: ${yamlField(skill.name)}`);
 		lines.push(`    description: ${yamlField(skill.description)}`);
@@ -309,7 +309,9 @@ function buildSkillsYaml(skills: Skill[]): string {
 		for (const p of scripts) {
 			lines.push(`      - ${yamlStr(p)}`);
 		}
-	}
+  }
+
+  lines.push("These are skills, not tools.");
 	return lines.join("\n");
 }
 
@@ -332,10 +334,10 @@ function buildToolsYaml(
 	allTools: ToolInfo[],
 ): string {
 	if (names.length === 0) {
-		return "tools: []";
+		return "No available tools: []";
 	}
 	const byName = new Map<string, ToolInfo>(allTools.map((t) => [t.name, t]));
-	const lines: string[] = ["tools:"];
+	const lines: string[] = ["Available tools are:"];
 	for (const name of names) {
 		const tool = byName.get(name);
 		const description = snippets?.[name] ?? oneLine(tool?.description ?? "");
@@ -352,6 +354,8 @@ function buildToolsYaml(
 			lines.push("    parameters: null");
 		}
 	}
+	lines.push("");
+	lines.push("These are tools, not skills.");
 	return lines.join("\n");
 }
 
