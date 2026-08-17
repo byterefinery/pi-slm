@@ -5,19 +5,19 @@ Reliability extension for Small Language Models.
 ## Feature 1:
   - On new session, simulate a short user/assistant dialogue before the first user request:
     1. system message (pi default, untouched)
-    2. user: `Available skills` (simulated)
-    3. assistant: short synthetic thinking/reasoning, then available skills as YAML in the main content
-    4. user: `Available tools` (simulated)
-    5. assistant: short synthetic thinking/reasoning, then available tools as YAML in the main content
+    2. user: `What are available skills?` (simulated)
+    3. assistant: short synthetic thinking/reasoning, then the answer — available skills as YAML framed in natural language (header line, list, closing "These are skills, not tools.") in the main content
+    4. user: `What are available tools?` (simulated)
+    5. assistant: short synthetic thinking/reasoning, then the answer — available tools as YAML framed in natural language (header line, list, closing "These are tools, not skills.") in the main content
     6. the first-ever user request
   - Skills YAML: name (single line text), description (single line text), reference file paths as absolute paths, script file paths as absolute paths. If the model supports reasoning, insert short synthetic reasoning (on the wire it must be visible on the assistant message, not dropped). Available skills come from `pi` internal API.
   - The first real user request is sent exactly as typed; the top-level `tools` field of the provider request is pi core's native function-calling definitions (active tools), not something the extension adds.
   - Tools YAML: name (single line), description (single line), whole function signature (`parameters` JSON schema as YAML, all params and types). Available tools come from `pi` internal API.
-  - Reason: small language models forget skills and tools mentioned in the system message, so we remind them what they can use — inside the conversation itself, in a natural Q/A shape.
+  - Reason: small language models forget skills and tools mentioned in the system message, so we remind them what they can use — inside the conversation itself, as an actually-answered question. The natural Q/A shape (full question, first-person answer, explicit "these are skills, not tools" framing) makes the model's later use of skills and tools more deterministic than a bare listing.
   - Clarifications (agreed during implementation):
     - tools entries carry the whole function signature: the tool's `parameters` JSON schema (all params and types) converted to YAML.
     - YAML strings are emitted as plain (unquoted) scalars wherever YAML-safe, to save tokens; double quotes only as a correctness fallback.
-    - redesign (2026-08-17): the reminder is a simulated user→assistant dialogue instead of two custom user messages — the assistant side is a real assistant message (thinking block + YAML), not a user-role custom message.
+    - the asks are the full questions "What are available skills?" / "What are available tools?"; the answers are natural language wrapping the YAML list (header line, explicit empty-case phrase, closing disambiguation line); thinking lines in first person ("I found N skills…"). The Q/A shape makes the SLM follow the reminder more deterministically — the listing is not stray system noise, and skills are never conflated with tools.
 
 ---
 
@@ -44,21 +44,21 @@ start of the session, right after the startup bookkeeping entries:
 
 ```
 [model_change / thinking_level_change]
-[custom_message slm-skills]  "Available skills"   (simulated user, display: true)
-[message assistant]          thinking + skills YAML
-[custom_message slm-tools]   "Available tools"    (simulated user, display: true)
-[message assistant]          thinking + tools YAML
-[user message]               the first real request
+[custom_message available-skills]  "What are available skills?"  (simulated user, display: true)
+[message assistant]                thinking + skills answer (natural language + YAML)
+[custom_message available-tools]  "What are available tools?"    (simulated user, display: true)
+[message assistant]                thinking + tools answer (natural language + YAML)
+[user message]                     the first real request
 ```
 
 The resulting context sent to the provider is exactly:
 
 ```
 1. system message            (pi default, untouched)
-2. user:      "Available skills"
-3. assistant: <skills YAML>  (thinking block kept in pi, see below)
-4. user:      "Available tools"
-5. assistant: <tools YAML>
+2. user:      "What are available skills?"
+3. assistant: <skills answer: header + YAML list + "These are skills, not tools.">  (thinking block kept in pi, see below)
+4. user:      "What are available tools?"
+5. assistant: <tools answer: header + YAML list + "These are tools, not skills.">
 6. user:      first real user request
 ```
 
@@ -90,6 +90,22 @@ The resulting context sent to the provider is exactly:
    file and already contains the full dialogue, the per-session check
    no-ops, and nothing is duplicated.
 
+**Answer format (natural-language Q&A)** — the dialogue is
+phrased the way a real exchange would be, so the SLM treats it as an
+actually-answered question it can rely on: the simulated user asks the full
+questions `What are available skills?` / `What are available tools?`, and
+each assistant answer is natural language wrapping the YAML list — a header
+line (`Available skills are:` / `Available tools are:`), the YAML entries,
+and a closing disambiguation line (`These are skills, not tools.` /
+`These are tools, not skills.`); the empty case is a plain phrase
+(`No available skills: []` / `No available tools: []`). The framing makes
+later skill/tool use more deterministic: the listing is not stray system
+noise, and skills are never conflated with tools. The simulated user
+messages carry the custom types `available-skills` / `available-tools`.
+Note: with the closing line, the answer body is prose containing a YAML
+list, not a single parseable YAML document — the list itself (from the
+header line through the last entry) remains valid YAML.
+
 **Skills YAML** — skill set = the same loaded skills the system prompt is
 built from (`event.systemPromptOptions.skills`), minus skills with
 `disable-model-invocation` (mirrors `formatSkillsForPrompt`). Per skill:
@@ -109,20 +125,20 @@ params and types; `null` when the tool has no parameters).
 synthetic assistant message carries one short synthetic reasoning line as a
 real `thinking` content block before the YAML text block:
 
-- skills: `scanned loaded skills - <n> found. I will check whether the task
-  matches a description, and if so read that skill's SKILL.md and the
-  reference files listed below.`
-- tools: `scanned active tools - <n> found. I will pick the narrowest tool
-  that fits the task.`
+- skills: `I found <n> skills. I will check whether the task matches a
+  description, and if so read that skill's SKILL.md and the reference files
+  listed below.`
+- tools: `I found <n> tools. I will pick the narrowest tool that fits the
+  task.`
 
 For the OpenAI Completions API (the llama.cpp server path) the block
 additionally carries `thinkingSignature: "reasoning_content"`. Pi's
 serializer (`openai-completions.js`) then emits the thinking text as a
 `reasoning_content` field on the wire message — the standard
 OpenAI-compatible convention for carrying reasoning in chat history (the
-replay path pi documents for llama.cpp server) — while `content` stays the
-pure YAML document: `reasoning_content` on the wire is guaranteed, not
-dropped. For other APIs no signature is set: the block stays in the
+replay path pi documents for llama.cpp server) — while `content` stays
+the natural-language answer: `reasoning_content` on the wire is
+guaranteed, not dropped. For other APIs no signature is set: the block stays in the
 session/TUI and is replayed or dropped by the provider's serializer as
 usual (it is never sent with a signature the provider would reject).
 
@@ -133,10 +149,10 @@ Sample (session JSONL, abridged — the skills assistant entry):
   "role": "assistant",
   "content": [
     { "type": "thinking",
-      "thinking": "scanned loaded skills - 1 found. I will check whether the task matches a description, and if so read that skill's SKILL.md and the reference files listed below.",
+      "thinking": "I found 1 skills. I will check whether the task matches a description, and if so read that skill's SKILL.md and the reference files listed below.",
       "thinkingSignature": "reasoning_content" },
     { "type": "text",
-      "text": "skills:\n  - name: demo-skill\n    description: A demo skill for sampling.\n    references:\n      - /tmp/.../demo-skill/references/ref.md\n    scripts: []" }
+      "text": "Available skills are:\n  - name: demo-skill\n    description: A demo skill for sampling.\n    references:\n      - /tmp/.../demo-skill/references/ref.md\n    scripts: []\nThese are skills, not tools." }
   ],
   "api": "openai-completions",
   "provider": "llamacpp",
@@ -147,10 +163,10 @@ Sample (session JSONL, abridged — the skills assistant entry):
 }
 ```
 
-Skills YAML sample (the `text` block):
+Skills answer sample (the `text` block):
 
 ```
-skills:
+Available skills are:
   - name: slm-alpha
     description: "Alpha test skill: handles \"quotes\", colons: and #hashes for YAML escaping checks."
     references:
@@ -163,12 +179,13 @@ skills:
     description: Beta test skill without references or scripts.
     references: []
     scripts: []
+These are skills, not tools.
 ```
 
-Tools YAML sample (abridged to two tools):
+Tools answer sample (abridged to two tools):
 
 ```
-tools:
+Available tools are:
   - name: read
     description: Read file contents
     parameters:
@@ -206,6 +223,8 @@ tools:
                 type: string
                 description: Replacement text for this targeted edit.
           description: One or more targeted replacements. ...
+
+These are tools, not skills.
 ```
 
 **Wire behavior (what the provider actually receives)** — validated against
@@ -213,13 +232,13 @@ the real provider payload (`before_provider_request`). Net wire order for
 the first request (llamacpp/LFM, reasoning on):
 
 ```
-system  → user "Available skills" → assistant <skills YAML> + reasoning_content
-       → user "Available tools"  → assistant <tools YAML> + reasoning_content
+system  → user "What are available skills?" → assistant <skills answer> + reasoning_content
+       → user "What are available tools?"  → assistant <tools answer> + reasoning_content
        → user <first real request>
 ```
 
 The OpenAI Completions serializer sends the assistant reply `content` as a
-plain string (the pure YAML document); the synthetic reasoning rides in the
+plain string (the natural-language answer); the synthetic reasoning rides in the
 `reasoning_content` field (see above). The first real user request is sent
 exactly as typed (OpenAI content-block form `[{type:"text",text:...}]`,
 built by pi core). The request's top-level `tools` field is pi core's
@@ -239,15 +258,16 @@ message entries in the session file, with expandable thinking blocks).
 whenever that is safe (fallback to double-quoted + escaped only when the
 content would otherwise change meaning: `: `, ` #`, leading indicator
 chars, leading/trailing whitespace, newlines, or values that YAML would
-re-type as number/bool/null/date). Empty sets are listed explicitly
-(`skills: []` / `tools: []`) — the dialogue is always complete.
+re-type as number/bool/null/date). Empty sets are stated explicitly
+(`No available skills: []` / `No available tools: []`) — the dialogue is
+always complete.
 
 ### Validation
 
 Test suite: `tests/feature1_test.py` (Python 3 + PyYAML only; no other
 deps). Run: `python3 tests/feature1_test.py`.
 
-Each scenario runs the real `pi` (0.84.2) with `pi -e src/slm.ts --model
+Each scenario runs the real `pi` with `pi -e src/slm.ts --model
 LiquidAI/LFM2.5-2.6B` in a random temp dir under `/tmp`, fully isolated via
 a temp `HOME` (no global skills/settings/`~/.agents/skills` interference)
 and a temp session dir. A second helper extension
@@ -264,18 +284,22 @@ Scenarios:
 
 | # | Scenario | Checks |
 |---|----------|--------|
-| S1 | skills listed correctly (default run) | exactly one ask + one assistant per side; order `askS → asst → askT → asst → user` with only bookkeeping entries before; assistant entry shape (role, `stopReason: stop`, zero usage, model metadata, one thinking + one text block, thinking carries the `reasoning_content` signature); skills YAML parses; listed skills == `{slm-alpha, slm-beta}` (hidden excluded); descriptions single-line and exact; reference/script paths absolute, correct, existing; names/descriptions are plain (unquoted) scalars; wire: `system → ask → skills YAML → ask → tools YAML → user`, assistant wire content a plain string, wire `reasoning_content` equals the session thinking text |
+| S1 | skills listed correctly (default run) | exactly one ask + one assistant per side; order `askS → asst → askT → asst → user` with only bookkeeping entries before; assistant entry shape (role, `stopReason: stop`, zero usage, model metadata, one thinking + one text block, thinking carries the `reasoning_content` signature); skills listing parses as YAML (header/note lines are prose); listed skills == `{slm-alpha, slm-beta}` (hidden excluded); descriptions single-line and exact; reference/script paths absolute, correct, existing; names/descriptions are plain (unquoted) scalars; wire: `system → ask → skills YAML → ask → tools YAML → user`, assistant wire content a plain string, wire `reasoning_content` equals the session thinking text |
 | S2 | tools listed correctly | same run: `tools` == `[read, bash, edit, write]` in pi's default order; descriptions == pi's one-line snippets, emitted unquoted; each tool carries the full `parameters` JSON-schema-as-YAML signature (`type`, `required`, per-param `type`; nested `array`/`items` for `edit` verified exactly) |
 | S3 | restricted tools (`-t read,grep`) | tools listing follows the active set (`[read, grep]` with signatures); skills listing unaffected; wire consistent |
-| S4 | no skills (`--no-skills`) | assistant skills text is exactly `skills: []`; thinking says `0 found`; full tools listing still correct |
-| S5 | no tools (`-nt`) | assistant tools text is exactly `tools: []`; full skills listing still correct |
+| S4 | no skills (`--no-skills`) | assistant skills text is exactly `No available skills: []`; thinking says `I found 0 skills`; full tools listing still correct |
+| S5 | no tools (`-nt`) | assistant tools text is exactly `No available tools: []`; full skills listing still correct |
 | S6 | repeated prompts (`pi -c` continued) | dialogue injected exactly once and sits before both user messages; no re-injection around the second prompt; the continued run's wire context starts with the restored dialogue, then the restored history (first request + real reply), then the new prompt; restored assistant texts identical to run 1 |
 | S7 | non-reasoning model (`reasoning: false`) | both assistant messages present and correct but with no thinking block; no `reasoning_content` fields on the wire; everything else identical |
 | S8 | JSON mode (`--mode json`) | `message_start` events for both asks are emitted `display: true` with the exact ask texts, in dialogue order (ask → ask → user) — i.e. the asks are visible in the TUI; wire consistent |
 | S9 | user message verbatim + tools field from pi core | first user request (`list tools`) sent verbatim in both an extension run and a baseline run without the extension; the request's top-level `tools` field (4 built-in function definitions with name + JSON-schema parameters) is identical in both runs — the extension never touches it |
 
-Result (2026-08-17, pi 0.84.2, model `LiquidAI/LFM2.5-2.6B`):
-**538 checks passed, 0 failed.**
+Status: the suite still encodes an earlier reminder format (ask texts,
+`slm-skills`/`slm-tools` custom types, `scanned …` thinking prefixes,
+exact `skills: []`/`tools: []` bodies in S4/S5, and whole-body
+`yaml.safe_load` in S1/S2 — the answer body is no longer a single YAML
+document), so it must be synced to the natural-language Q&A format
+before it passes again.
 
 ### Notes
 
