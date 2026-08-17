@@ -110,6 +110,7 @@ Known issues of reliability of small language models and known feature list how 
 
 - Convert `read` errors on directories into directory listings. `EISDIR` to Directory Listing.
 - Interrupted reasoning content needs to close \`\`\` code blocks properly by altering reasoning content of message.
+- Only read text files with `read`. If it is enabled to `read` images in `settings.json` which is parsed on `pi` startup, then also read directly images. However, never read binary data into context.
 
 ---
 
