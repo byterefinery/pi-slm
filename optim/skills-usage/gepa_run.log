@@ -1,0 +1,800 @@
+2026/08/17 23:01:41 INFO dspy.teleprompt.gepa.gepa: Running GEPA for approx 412 metric calls of the program. This amounts to 51.50 full evals on the train set.
+2026/08/17 23:01:41 WARNING dspy.teleprompt.gepa.gepa: No valset provided; Using trainset as valset. This is useful as an inference-time scaling strategy where you want GEPA to find the best solutions for the provided tasks in the trainset, as it makes GEPA overfit prompts to the provided trainset. In order to ensure generalization and perform well on unseen tasks, please provide separate trainset and valset. Provide the smallest valset that is just large enough to match the downstream task distribution, while keeping trainset as large as possible.
+2026/08/17 23:01:41 INFO dspy.teleprompt.gepa.gepa: Using 8 examples for tracking Pareto scores.
+GEPA compile: budget=light program_lm=LiquidAI/LFM2.5-2.6B reflection_lm=Qwen/Qwen3.8-27B
+GEPA Optimization:   0%|          | 0/412 [00:00<?, ?rollouts/s]2026/08/17 23:02:03 INFO dspy.evaluate.evaluate: Average Metric: 6.666666666666667 / 8 (83.3%)
+2026/08/17 23:02:03 INFO dspy.teleprompt.gepa.gepa: Iteration 0: Base program full valset score: 0.8333333333333334 over 8 / 8 examples
+GEPA Optimization:   2%|▏         | 8/412 [00:21<18:05,  2.69s/rollouts]2026/08/17 23:02:03 INFO dspy.teleprompt.gepa.gepa: Iteration 1: Selected program 0 score: 0.8333333333333334
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 0.50 / 1 (50.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.50 / 2 (75.0%):  33%|███▎      | 1/3 [00:00<00:00, 228.81it/s]Average Metric: 2.17 / 3 (72.2%):  67%|██████▋   | 2/3 [00:00<00:00, 423.45it/s]Average Metric: 2.17 / 3 (72.2%): 100%|██████████| 3/3 [00:00<00:00, 627.14it/s]2026/08/17 23:02:03 INFO dspy.evaluate.evaluate: Average Metric: 2.1666666666666665 / 3 (72.2%)
+2026/08/17 23:02:03 WARNING dspy.teleprompt.gepa.gepa_utils: The score returned by the metric with pred_name is different from the overall metric score. This can indicate 2 things: Either the metric is non-deterministic (e.g., LLM-as-judge, Semantic score, etc.) or the metric returned a score specific to pred_name that differs from the module level score. Currently, GEPA does not support predictor level scoring (support coming soon), and only requires a feedback text to be provided, which can be specific to the predictor or program level. GEPA will ignore the differing score returned, and instead use module level score. You can safely ignore this warning if using a semantic metric, however, if this mismatch is caused due to predictor scoring, please return module-level scores. To disable this warning, set warn_on_score_mismatch=False.
+2026/08/17 23:04:40 WARNING dspy.clients.lm: LM response was truncated due to exceeding max_tokens=8000. You can inspect the latest LM interactions with `dspy.inspect_history()`. To avoid truncation, consider passing a larger max_tokens when setting up dspy.LM. You may also consider increasing the temperature (currently 1.0)  if the reason for truncation is repetition.
+2026/08/17 23:04:40 INFO dspy.teleprompt.gepa.gepa: Iteration 1: Proposed new text for act: 
+2026/08/17 23:04:55 INFO dspy.evaluate.evaluate: Average Metric: 1.6666666666666665 / 3 (55.6%)
+2026/08/17 23:04:55 INFO dspy.teleprompt.gepa.gepa: Iteration 1: New subsample score 1.6666666666666665 is not better than old score 2.1666666666666665, skipping
+GEPA Optimization:   3%|▎         | 14/412 [03:13<1:47:10, 16.16s/rollouts]2026/08/17 23:04:55 INFO dspy.teleprompt.gepa.gepa: Iteration 2: Selected program 0 score: 0.8333333333333334
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 741.31it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1128.26it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 1639.25it/s]2026/08/17 23:04:55 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:04:55 INFO dspy.teleprompt.gepa.gepa: Iteration 2: All subsample scores perfect. Skipping.
+2026/08/17 23:04:55 INFO dspy.teleprompt.gepa.gepa: Iteration 2: Reflective mutation did not propose a new candidate
+2026/08/17 23:04:55 INFO dspy.teleprompt.gepa.gepa: Iteration 3: Selected program 0 score: 0.8333333333333334
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.50 / 2 (75.0%):  33%|███▎      | 1/3 [00:00<00:00, 420.19it/s]Average Metric: 2.00 / 3 (66.7%):  67%|██████▋   | 2/3 [00:00<00:00, 821.37it/s]Average Metric: 2.00 / 3 (66.7%): 100%|██████████| 3/3 [00:00<00:00, 1213.40it/s]2026/08/17 23:04:55 INFO dspy.evaluate.evaluate: Average Metric: 2.0 / 3 (66.7%)
+2026/08/17 23:07:29 WARNING dspy.clients.lm: LM response was truncated due to exceeding max_tokens=8000. You can inspect the latest LM interactions with `dspy.inspect_history()`. To avoid truncation, consider passing a larger max_tokens when setting up dspy.LM. You may also consider increasing the temperature (currently 1.0)  if the reason for truncation is repetition.
+2026/08/17 23:07:29 INFO dspy.teleprompt.gepa.gepa: Iteration 3: Proposed new text for act: 
+2026/08/17 23:07:54 INFO dspy.evaluate.evaluate: Average Metric: 1.5 / 3 (50.0%)
+2026/08/17 23:07:54 INFO dspy.teleprompt.gepa.gepa: Iteration 3: New subsample score 1.5 is not better than old score 2.0, skipping
+GEPA Optimization:   6%|▌         | 23/412 [06:13<1:57:33, 18.13s/rollouts]2026/08/17 23:07:54 INFO dspy.teleprompt.gepa.gepa: Iteration 4: Selected program 0 score: 0.8333333333333334
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 728.56it/s]Average Metric: 2.50 / 3 (83.3%):  67%|██████▋   | 2/3 [00:00<00:00, 844.09it/s] Average Metric: 2.50 / 3 (83.3%): 100%|██████████| 3/3 [00:00<00:00, 1237.38it/s]2026/08/17 23:07:54 INFO dspy.evaluate.evaluate: Average Metric: 2.5 / 3 (83.3%)
+2026/08/17 23:10:25 WARNING dspy.clients.lm: LM response was truncated due to exceeding max_tokens=8000. You can inspect the latest LM interactions with `dspy.inspect_history()`. To avoid truncation, consider passing a larger max_tokens when setting up dspy.LM. You may also consider increasing the temperature (currently 1.0)  if the reason for truncation is repetition.
+2026/08/17 23:10:25 INFO dspy.teleprompt.gepa.gepa: Iteration 4: Proposed new text for act: 
+2026/08/17 23:10:31 INFO dspy.evaluate.evaluate: Average Metric: 0.5 / 3 (16.7%)
+2026/08/17 23:10:31 INFO dspy.teleprompt.gepa.gepa: Iteration 4: New subsample score 0.5 is not better than old score 2.5, skipping
+GEPA Optimization:   7%|▋         | 29/412 [08:49<2:12:37, 20.78s/rollouts]2026/08/17 23:10:31 INFO dspy.teleprompt.gepa.gepa: Iteration 5: Selected program 0 score: 0.8333333333333334
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 474.74it/s]Average Metric: 2.50 / 3 (83.3%):  67%|██████▋   | 2/3 [00:00<00:00, 833.61it/s] Average Metric: 2.50 / 3 (83.3%): 100%|██████████| 3/3 [00:00<00:00, 1227.84it/s]2026/08/17 23:10:31 INFO dspy.evaluate.evaluate: Average Metric: 2.5 / 3 (83.3%)
+2026/08/17 23:13:23 WARNING dspy.clients.lm: LM response was truncated due to exceeding max_tokens=8000. You can inspect the latest LM interactions with `dspy.inspect_history()`. To avoid truncation, consider passing a larger max_tokens when setting up dspy.LM. You may also consider increasing the temperature (currently 1.0)  if the reason for truncation is repetition.
+2026/08/17 23:13:23 INFO dspy.teleprompt.gepa.gepa: Iteration 5: Proposed new text for act: 
+2026/08/17 23:13:23 INFO dspy.evaluate.evaluate: Average Metric: 1.5 / 3 (50.0%)
+2026/08/17 23:13:23 INFO dspy.teleprompt.gepa.gepa: Iteration 5: New subsample score 1.5 is not better than old score 2.5, skipping
+GEPA Optimization:   8%|▊         | 35/412 [11:41<2:26:42, 23.35s/rollouts]2026/08/17 23:13:23 INFO dspy.teleprompt.gepa.gepa: Iteration 6: Selected program 0 score: 0.8333333333333334
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 0.67 / 1 (66.7%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.67 / 2 (83.3%):  33%|███▎      | 1/3 [00:00<00:00, 14122.24it/s]Average Metric: 2.67 / 3 (88.9%):  67%|██████▋   | 2/3 [00:00<00:00, 18196.55it/s]Average Metric: 2.67 / 3 (88.9%): 100%|██████████| 3/3 [00:00<00:00, 20295.02it/s]2026/08/17 23:13:23 INFO dspy.evaluate.evaluate: Average Metric: 2.6666666666666665 / 3 (88.9%)
+2026/08/17 23:16:20 WARNING dspy.clients.lm: LM response was truncated due to exceeding max_tokens=8000. You can inspect the latest LM interactions with `dspy.inspect_history()`. To avoid truncation, consider passing a larger max_tokens when setting up dspy.LM. You may also consider increasing the temperature (currently 1.0)  if the reason for truncation is repetition.
+2026/08/17 23:16:20 INFO dspy.teleprompt.gepa.gepa: Iteration 6: Proposed new text for act: 
+2026/08/17 23:16:35 INFO dspy.evaluate.evaluate: Average Metric: 2.0 / 3 (66.7%)
+2026/08/17 23:16:35 INFO dspy.teleprompt.gepa.gepa: Iteration 6: New subsample score 2.0 is not better than old score 2.6666666666666665, skipping
+GEPA Optimization:  10%|▉         | 41/412 [14:53<2:41:05, 26.05s/rollouts]2026/08/17 23:16:35 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Selected program 0 score: 0.8333333333333334
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 0.67 / 1 (66.7%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.17 / 2 (58.3%):  33%|███▎      | 1/3 [00:00<00:00, 520.19it/s]Average Metric: 2.17 / 3 (72.2%):  67%|██████▋   | 2/3 [00:00<00:00, 721.23it/s]Average Metric: 2.17 / 3 (72.2%): 100%|██████████| 3/3 [00:00<00:00, 1064.27it/s]2026/08/17 23:16:35 INFO dspy.evaluate.evaluate: Average Metric: 2.1666666666666665 / 3 (72.2%)
+2026/08/17 23:19:09 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Proposed new text for act: You are the assistant inside a pi coding session. The transcript is the whole conversation so far. Produce the assistant's next action.
+
+If the latest user message contains a <skill name="..." location="..."> block, that message is a skill invocation. The SKILL.md content is inside the <skill> block, and the text after </skill> is the task. Do not explain, summarize, or answer questions about the skill. Perform the task by producing exactly one bash command.
+
+If the latest user message does not contain a <skill> block, follow normal pi assistant behavior. The rules below apply when a skill is invoked.
+
+How to build the command:
+
+1. Match the task to the script or command usage shown in the <skill> block.
+   - Use the usage line whose meaning best matches the task.
+   - Map task wording only to flags shown or described in the skill.
+   - Common mappings in this environment:
+     - "JSON" / "JSON output" / "as JSON" -> --json
+     - "YAML" / "YAML output" / "as YAML" -> --yaml
+     - "save to FILE" / "write to FILE" / "output FILE" -> the file/output flag shown for that skill; for webfetch use --file FILE, for websearch use -o FILE
+     - "raw HTML" for webfetch -> --html
+     - "no sanitization" / "raw content" / "skip AI-targeted" -> --no-ai-targeted
+     - "force fetcher" / "use requests/browser/scrapling" -> --tool TOOL
+     - "use Chrome/Firefox/Safari impersonation" -> --impersonate BROWSER
+   - Do not invent flags. If the task only asks for the default behavior, use the default usage line.
+
+2. Extract the positional argument(s) from the task.
+   - For websearch, the search query is the positional argument.
+   - For webfetch, the URL is the positional argument.
+   - Preserve the argument order from the matching usage example when possible:
+     - If the example is `websearch.py "query" --json`, emit the query before `--json`.
+     - If the example is `webfetch.py --file ./page.md https://example.com`, emit `--file ./page.md` before the URL.
+   - Quote arguments that contain spaces, such as search queries.
+
+3. Resolve the script's absolute path.
+   - The skill directory is the dirname of the <skill> location attribute.
+   - Scripts live in `<skill-dir>/scripts/`.
+   - Example:
+     - location: /home/mtasic/projects-b/pi-slm/.agents/skills/websearch/SKILL.md
+     - script: /home/mtasic/projects-b/pi-slm/.agents/skills/websearch/scripts/websearch.py
+   - Always use the absolute script path derived from the <skill> block. Do not use a relative path, a bare script name, or the current working directory.
+
+4. Run Python skill scripts with uv.
+   - In this pi setup, bundled Python skill scripts such as websearch.py and webfetch.py are self-contained PEP 723 scripts, even when SKILL.md shows bare usage like `websearch.py ...` or does not explicitly mention PEP 723.
+   - The command must be:
+     uv run --script <absolute-script-path> <args...>
+   - Do not run the .py file directly.
+   - Do not use `python` or `python3`.
+   - Do not use `uv run <script>` without `--script`.
+   - Do not install dependencies manually; `uv run --script` resolves inline PEP 723 dependencies automatically.
+
+5. Keep the command minimal.
+   - Do not add comments, explanations, wrappers, temporary files, or extra output redirection unless the task explicitly asks for a file.
+   - The command should be a single bash command.
+
+Output format:
+- Return only the exact full bash command.
+- No prose, no markdown code fences, no explanations, and no extra text.
+- If the surrounding interface provides a `command` field, put only the command string in that field. Do not include the field label inside the command itself.
+2026/08/17 23:19:17 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:17 INFO dspy.teleprompt.gepa.gepa: Iteration 7: New subsample score 3.0 is better than old score 2.1666666666666665. Continue to full eval and add to candidate pool.
+2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 8.0 / 8 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Found a better program on the valset with score 1.0.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Valset score for new program: 1.0 (coverage 8 / 8)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Val aggregate for new program: 1.0
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Individual valset scores for new program: {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0}
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0}
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Valset pareto front aggregate score: 1.0
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Updated valset pareto front programs: {0: {0, 1}, 1: {0, 1}, 2: {0, 1}, 3: {0, 1}, 4: {0, 1}, 5: {1}, 6: {1}, 7: {1}}
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Best valset aggregate score so far: 1.0
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Best program as per aggregate score on valset: 1
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Best score on valset: 1.0
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: Linear pareto front program index: 1
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 7: New program candidate index: 1
+GEPA Optimization:  13%|█▎        | 55/412 [18:03<1:56:54, 19.65s/rollouts]2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 8: No merge candidates found
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 8: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 406.31it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 527.32it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 780.24it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 8: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 8: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 9: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 451.53it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 835.35it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 1233.86it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 9: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 9: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 10: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 16578.28it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 20560.31it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 21998.10it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 10: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 10: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 11: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 925.89it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1474.53it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2144.33it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 11: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 11: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 12: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 7206.71it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 9436.00it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 10450.92it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 12: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 12: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 13: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 739.08it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 916.09it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 1341.89it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 13: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 13: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 14: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14266.34it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 8208.03it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 10477.03it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 14: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 14: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 15: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14820.86it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 8184.01it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 10512.04it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 15: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 15: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 16: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 1302.17it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1765.28it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2320.71it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 16: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 16: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 17: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 16912.52it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 6569.00it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 8654.00it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 17: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 17: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 18: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17331.83it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 6558.72it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 8594.89it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 18: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 18: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 19: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17476.27it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 21732.15it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23475.58it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 19: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 19: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 20: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17848.10it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 4946.11it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 6783.24it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 20: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 20: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 21: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15363.75it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 19972.88it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 22349.75it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 21: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 21: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 22: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15592.21it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 20311.40it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 22836.50it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 22: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 22: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 23: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15534.46it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 19691.57it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 21509.25it/s]2026/08/17 23:19:44 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 23: All subsample scores perfect. Skipping.
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 23: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:44 INFO dspy.teleprompt.gepa.gepa: Iteration 24: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17623.13it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 6652.35it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 8726.01it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 24: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 24: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 25: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 1395.31it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 2094.53it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 3000.93it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 25: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 25: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 26: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14820.86it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 6227.62it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 8202.68it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 26: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 26: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 27: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15947.92it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 2099.78it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2995.22it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 27: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 27: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 28: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 463.05it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 901.42it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 1326.05it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 28: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 28: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 29: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15196.75it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18682.87it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20493.34it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 29: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 29: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 30: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 6159.04it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 9642.08it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 12312.05it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 30: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 30: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 31: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 16912.52it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1942.71it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2793.72it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 31: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 31: Reflective mutation did not propose a new candidate
+GEPA Optimization:  31%|███       | 127/412 [18:03<19:35,  4.12s/rollouts] 2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 32: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17119.61it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 5781.26it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 7729.06it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 32: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 32: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 33: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17848.10it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 22133.53it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23876.49it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 33: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 33: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 34: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 13189.64it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 5391.14it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 7290.22it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 34: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 34: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 35: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 18315.74it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 22192.08it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 24385.49it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 35: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 35: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 36: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 11244.78it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 14742.72it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 16912.52it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 36: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 36: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 37: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 11949.58it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 6177.18it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 8107.55it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 37: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 37: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 38: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 615.90it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1197.18it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 1754.94it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 38: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 38: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 39: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 793.77it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1297.94it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 1896.44it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 39: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 39: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 40: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14364.05it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18477.11it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20901.85it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 40: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 40: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 41: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14820.86it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 8073.73it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 10347.79it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 41: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 41: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 42: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 1475.83it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 2046.00it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2942.68it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 42: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 42: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 43: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 1045.44it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1767.14it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2567.94it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 43: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 43: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 44: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 18236.10it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 22369.62it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 24528.09it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 44: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 44: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 45: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14979.66it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 6423.13it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 8484.77it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 45: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 45: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 46: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 11586.48it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 2244.74it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 3140.23it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 46: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 46: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 47: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15087.42it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 19645.45it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 22075.28it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 47: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 47: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 48: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17924.38it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 20610.83it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 21546.08it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 48: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 48: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 49: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 16008.79it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1889.33it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2734.23it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 49: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 49: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 50: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 16844.59it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 21024.08it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23475.58it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 50: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 50: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 51: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17260.51it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1655.21it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2400.40it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 51: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 51: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 52: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 1979.38it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 3620.46it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 5086.06it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 52: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 52: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 53: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14768.68it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 5974.79it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 7938.75it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 53: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 53: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 54: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 3454.95it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 4253.86it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 5844.36it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 54: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 54: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 55: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 2490.68it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1519.12it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2175.85it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 55: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 55: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 56: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 16912.52it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 8128.50it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 10364.84it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 56: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 56: Reflective mutation did not propose a new candidate
+GEPA Optimization:  49%|████▉     | 202/412 [18:03<06:38,  1.90s/rollouts]2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 57: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14820.86it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 8516.35it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 10866.07it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 57: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 57: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 58: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 9915.61it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 2072.80it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2991.66it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 58: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 58: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 59: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 2313.46it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 4223.87it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 5907.47it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 59: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 59: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 60: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15650.39it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 20164.92it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 22671.91it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 60: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 60: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 61: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 765.66it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1481.30it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2166.11it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 61: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 61: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 62: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 1414.61it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 2091.40it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 3003.80it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 62: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 62: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 63: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 13066.37it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 17296.10it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 19972.88it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 63: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 63: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 64: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 1197.00it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1816.50it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2623.08it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 64: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 64: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 65: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15196.75it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 19152.07it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 21657.34it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 65: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 65: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 66: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 935.60it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1802.84it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2622.53it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 66: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 66: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 67: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17260.51it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 21454.24it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23696.63it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 67: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 67: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 68: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15196.75it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18724.57it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 21183.35it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 68: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 68: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 69: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15887.52it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18893.26it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 21694.68it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 69: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 69: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 70: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 13981.01it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 5599.87it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 7463.17it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 70: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 70: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 71: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 12633.45it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 16878.49it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 19478.19it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 71: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 71: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 72: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 13273.11it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 17924.38it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20560.31it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 72: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 72: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 73: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17623.13it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 21732.15it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23876.49it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 73: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 73: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 74: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 3758.34it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 4688.99it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 6403.52it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 74: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 74: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 75: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 9383.23it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 12175.05it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 14380.47it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 75: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 75: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 76: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14873.42it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 19108.45it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20798.20it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 76: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 76: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 77: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 4877.10it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 7619.08it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 9884.46it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 77: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 77: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 78: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14364.05it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18517.90it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20936.63it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 78: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 78: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 79: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17403.75it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 20410.24it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 21657.34it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 79: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 79: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 80: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 18978.75it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 21454.24it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23258.62it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 80: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 80: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 81: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17476.27it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18477.11it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 13797.05it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 81: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 81: Reflective mutation did not propose a new candidate
+GEPA Optimization:  67%|██████▋   | 277/412 [18:03<02:24,  1.07s/rollouts]2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 82: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 11459.85it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 5970.54it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 7879.09it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 82: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 82: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 83: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15087.42it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18978.75it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 21183.35it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 83: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 83: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 84: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 5178.15it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 7898.88it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 10373.38it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 84: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 84: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 85: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 998.41it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1556.62it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2260.27it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 85: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 85: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 86: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 3741.57it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 3671.16it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 5131.69it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 86: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 86: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 87: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 2790.62it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 3556.00it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 4997.19it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 87: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 87: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 88: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15768.06it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1795.51it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2584.29it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 88: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 88: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 89: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 2589.08it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 4554.08it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 6189.33it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 89: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 89: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 90: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 9754.20it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1635.53it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2362.54it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 90: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 90: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 91: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 13617.87it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 17734.90it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20262.34it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 91: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 91: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 92: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14169.95it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18275.83it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20627.72it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 92: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 92: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 93: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15307.68it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18893.26it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 21583.04it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 93: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 93: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 94: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14873.42it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 19195.90it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20971.52it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 94: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 94: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 95: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 5874.38it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 5130.65it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 5703.95it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 95: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 95: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 96: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17623.13it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 21675.99it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23786.22it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 96: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 96: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 97: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 962.88it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1063.46it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 1559.22it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 97: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 97: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 98: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15420.24it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 19784.45it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 22231.29it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 98: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 98: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 99: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17260.51it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 21509.25it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23045.63it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 99: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 99: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 100: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17549.39it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 21454.24it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23876.49it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 100: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 100: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 101: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 9362.29it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 13315.25it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 16049.63it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 101: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 101: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 102: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15033.35it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18766.46it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 19538.68it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 102: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 102: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 103: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 2666.44it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 4541.75it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 6216.85it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 103: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 103: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 104: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17119.61it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 21183.35it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23301.69it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 104: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 104: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 105: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14463.12it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18436.50it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20593.96it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 105: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 105: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 106: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 1653.91it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 2322.43it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 3330.57it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 106: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 106: Reflective mutation did not propose a new candidate
+GEPA Optimization:  85%|████████▌ | 352/412 [18:03<00:39,  1.51rollouts/s]2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 107: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14563.56it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 6359.82it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 8344.11it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 107: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 107: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 108: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 12671.61it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 15563.28it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 17379.71it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 108: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 108: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 109: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14665.40it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 19195.90it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20262.34it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 109: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 109: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 110: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 13797.05it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18196.55it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20832.64it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 110: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 110: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 111: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14315.03it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 17810.21it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 19846.86it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 111: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 111: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 112: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 17189.77it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 21290.88it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23563.51it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 112: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 112: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 113: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 1588.75it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 2271.49it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 3267.44it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 113: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 113: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 114: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 15420.24it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 18078.90it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 20197.29it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 114: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 114: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 115: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14364.05it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 7516.67it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 9590.63it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 115: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 115: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 116: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 2087.76it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 2665.59it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 3744.91it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 116: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 116: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 117: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14563.56it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 7456.54it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 9776.93it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 117: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 117: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 118: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 3799.19it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 6293.03it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 8450.58it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 118: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 118: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 119: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 2168.72it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1681.08it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 2417.47it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 119: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 119: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 120: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14074.85it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 5349.88it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 7260.77it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 120: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 120: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 121: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 18157.16it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 22192.08it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 23921.89it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 121: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 121: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 122: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 16844.59it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 5702.66it/s] Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 7743.33it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 122: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 122: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 123: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 13530.01it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 16844.59it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 19181.27it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 123: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 123: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 124: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 1428.09it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 2667.28it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 3819.95it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 124: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 124: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 125: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 14820.86it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 19152.07it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 21657.34it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 125: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 125: Reflective mutation did not propose a new candidate
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 126: Selected program 1 score: 1.0
+
+  0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 1.00 / 1 (100.0%):   0%|          | 0/3 [00:00<?, ?it/s]Average Metric: 2.00 / 2 (100.0%):  33%|███▎      | 1/3 [00:00<00:00, 903.36it/s]Average Metric: 3.00 / 3 (100.0%):  67%|██████▋   | 2/3 [00:00<00:00, 1150.07it/s]Average Metric: 3.00 / 3 (100.0%): 100%|██████████| 3/3 [00:00<00:00, 1686.04it/s]2026/08/17 23:19:45 INFO dspy.evaluate.evaluate: Average Metric: 3.0 / 3 (100.0%)
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 126: All subsample scores perfect. Skipping.
+2026/08/17 23:19:45 INFO dspy.teleprompt.gepa.gepa: Iteration 126: Reflective mutation did not propose a new candidate
+GEPA Optimization:  99%|█████████▉| 409/412 [18:03<00:07,  2.65s/rollouts]
+
+saved /home/mtasic/projects-b/pi-slm/optim/skills-usage/program.json
+
+--- optimized instruction ---
+You are the assistant inside a pi coding session. The transcript is the whole conversation so far. Produce the assistant's next action.
+
+If the latest user message contains a <skill name="..." location="..."> block, that message is a skill invocation. The SKILL.md content is inside the <skill> block, and the text after </skill> is the task. Do not explain, summarize, or answer questions about the skill. Perform the task by producing exactly one bash command.
+
+If the latest user message does not contain a <skill> block, follow normal pi assistant behavior. The rules below apply when a skill is invoked.
+
+How to build the command:
+
+1. Match the task to the script or command usage shown in the <skill> block.
+   - Use the usage line whose meaning best matches the task.
+   - Map task wording only to flags shown or described in the skill.
+   - Common mappings in this environment:
+     - "JSON" / "JSON output" / "as JSON" -> --json
+     - "YAML" / "YAML output" / "as YAML" -> --yaml
+     - "save to FILE" / "write to FILE" / "output FILE" -> the file/output flag shown for that skill; for webfetch use --file FILE, for websearch use -o FILE
+     - "raw HTML" for webfetch -> --html
+     - "no sanitization" / "raw content" / "skip AI-targeted" -> --no-ai-targeted
+     - "force fetcher" / "use requests/browser/scrapling" -> --tool TOOL
+     - "use Chrome/Firefox/Safari impersonation" -> --impersonate BROWSER
+   - Do not invent flags. If the task only asks for the default behavior, use the default usage line.
+
+2. Extract the positional argument(s) from the task.
+   - For websearch, the search query is the positional argument.
+   - For webfetch, the URL is the positional argument.
+   - Preserve the argument order from the matching usage example when possible:
+     - If the example is `websearch.py "query" --json`, emit the query before `--json`.
+     - If the example is `webfetch.py --file ./page.md https://example.com`, emit `--file ./page.md` before the URL.
+   - Quote arguments that contain spaces, such as search queries.
+
+3. Resolve the script's absolute path.
+   - The skill directory is the dirname of the <skill> location attribute.
+   - Scripts live in `<skill-dir>/scripts/`.
+   - Example:
+     - location: /home/mtasic/projects-b/pi-slm/.agents/skills/websearch/SKILL.md
+     - script: /home/mtasic/projects-b/pi-slm/.agents/skills/websearch/scripts/websearch.py
+   - Always use the absolute script path derived from the <skill> block. Do not use a relative path, a bare script name, or the current working directory.
+
+4. Run Python skill scripts with uv.
+   - In this pi setup, bundled Python skill scripts such as websearch.py and webfetch.py are self-contained PEP 723 scripts, even when SKILL.md shows bare usage like `websearch.py ...` or does not explicitly mention PEP 723.
+   - The command must be:
+     uv run --script <absolute-script-path> <args...>
+   - Do not run the .py file directly.
+   - Do not use `python` or `python3`.
+   - Do not use `uv run <script>` without `--script`.
+   - Do not install dependencies manually; `uv run --script` resolves inline PEP 723 dependencies automatically.
+
+5. Keep the command minimal.
+   - Do not add comments, explanations, wrappers, temporary files, or extra output redirection unless the task explicitly asks for a file.
+   - The command should be a single bash command.
+
+Output format:
+- Return only the exact full bash command.
+- No prose, no markdown code fences, no explanations, and no extra text.
+- If the surrounding interface provides a `command` field, put only the command string in that field. Do not include the field label inside the command itself.
+
+evaluation (dev + seed case)
+----------------------------------------------------------------------------------------------------
+[ OK ] 'https://dspy.ai'
+        uv run --script /home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/scripts/webfetch.py https://dspy.ai
+[ OK ] 'Search for "liquid ai lfm2.5"'
+        uv run --script /home/mtasic/projects-b/pi-slm/.agents/skills/websearch/scripts/websearch.py "liquid ai lfm2.5"
+[ OK ] 'https://tangledgroup.com/'
+        uv run --script /home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/scripts/webfetch.py https://tangledgroup.com/
+----------------------------------------------------------------------------------------------------
+mean score: 1.000  (3/3 perfect)
+
+--- improved last assistant message (seed.json) ---
+{
+  "role": "assistant",
+  "content": null,
+  "tool_calls": [
+    {
+      "id": "call_optimized",
+      "type": "function",
+      "function": {
+        "name": "bash",
+        "arguments": "{\"command\": \"uv run --script /home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/scripts/webfetch.py https://tangledgroup.com/\", \"timeout\": 300}"
+      }
+    }
+  ]
+}
