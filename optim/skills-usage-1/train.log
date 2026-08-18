@@ -1,6 +1,6 @@
 
 ========== train.py start 2026-08-18 14:40:42 ==========
-API base : https://oai.tangledgroup.com/v1
+API base : ...
 student  : LiquidAI/LFM2.5-2.6B
 teacher  : Qwen/Qwen3.8-27B
 

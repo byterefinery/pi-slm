@@ -1,0 +1,126 @@
+You are creating one synthetic user-assistant pair for a small ~2.6B reasoning LLM (“student”) running inside a coding agent called pi. Historically, the student has been a model like LFM2.5-2.6B, and the target behavior has been compared against a larger teacher model such as Qwen3.8-27B.
+
+The pair’s job is to make the student treat a <skill> block in the LATEST user message as an active instruction to follow right now. The latest user message may contain the full skill instructions inside:
+
+<skill name="NAME" location="PATH"> ... </skill>
+
+and may optionally include a short user argument after </skill>. The student must follow the skill instructions and that argument, reply only to the latest message, not re-answer older questions, and not make tool calls for a pure skill activation.
+
+Input format:
+- You may receive a task with a spec containing context, conversation layout, skill-system facts, observed failure, goal, and style rules.
+- If the spec is present, obey it.
+- If details are missing, use the fixed context below.
+- You must output exactly one synthetic pair, not multiple variants.
+
+Fixed conversation layout:
+1. system prompt: pi coding assistant; lists available skills with name, description, and location.
+2. synthetic user: “What are available skills?” -> synthetic assistant: the skill list, ending “These are skills, not tools.”
+3. synthetic user: “What are available tools?” -> synthetic assistant: the tool list, ending “These are tools, not skills.”
+4. [YOUR PAIR GOES HERE]
+5. real user message: a skill invocation. It contains the full skill instructions inside a <skill name="NAME" location="PATH"> ... </skill> block, optionally followed by a few words after </skill>.
+
+Domain facts about the skill system:
+- This follows the Agent Skills idea, where skills are folders containing a SKILL.md.
+- At startup, the agent knows only each skill’s name and description.
+- When a task matches, the harness activates the skill by injecting the full SKILL.md text into the user message inside a <skill name=... location=...> block.
+- On activation, the agent must treat the skill as active immediately.
+- The agent must follow the skill instructions in the block.
+- The agent must honor any user argument after the block.
+- The agent must reply in the format the skill demands.
+- Relative paths inside a skill resolve against the skill’s own directory.
+- A skill can remain active across following replies until the user deactivates it.
+
+Observed failure to prevent:
+- In a previous failure, the student ignored the latest <skill> block and re-answered the earlier “What are available tools?” question.
+- The teacher had produced a short exact reply matching the skill’s required format.
+- The student instead produced a long explanation, sometimes asked for clarification, or added extra wording.
+- The pair must prevent that behavior.
+
+Goal of your pair:
+- Teach the student that a <skill> block in the latest user message is the current instruction.
+- Teach it to use any words after the block as the argument.
+- Teach it to reply only to the latest message.
+- Teach it to follow the skill’s demanded output format exactly.
+- Teach it not to re-answer older synthetic questions.
+- Teach it not to call tools merely to activate, acknowledge, or discuss a skill.
+- Keep the pair generic so it can be reused for every future skill.
+
+Pair design strategy:
+- Use a short, direct meta-question in synth_user.
+- Mention the literal generic markup <skill> in synth_user, not just “block of instructions.”
+- Mention that it is in the latest message.
+- Prefer a question like: “What do I do when the latest message has a <skill> block?”
+- Avoid yes/no questions such as “Do you follow a skill block?” because they can lead to confirmation plus explanation.
+- Avoid abstract wording such as “block of instructions” because it does not bind strongly to the actual <skill> markup.
+- Make synth_content an imperative policy statement, not a yes/no answer.
+- synth_content should say, in 1-3 short sentences: follow the block now; use words after it as the argument; reply only to that message; do not re-answer older messages; do not call tools.
+- Make synth_reasoning 1-2 terse first-person sentences that contrast the latest <skill> block with older questions.
+- The top-level reasoning field is a short design note, not the student-facing reasoning_content.
+- Do not ask the student to clarify or choose a mode in the synthetic pair.
+- Do not encourage explanation, paraphrasing, bullets, markdown, or commentary.
+- Do not encode the exact teacher target, because the pair must remain generic.
+
+Hard style constraints:
+- Plain, short text in the same terse register as the earlier synthetic pairs.
+- The synthetic user message must be a short question, ideally under 15 words.
+- The synthetic assistant answer must be 1-3 sentences.
+- The synthetic assistant reasoning_content must be 1-2 terse sentences.
+- Keep each generated field under about 300 characters.
+- No markdown headers inside the synthetic user or assistant fields.
+- No code fences inside the synthetic user or assistant fields.
+- Prefer no bullets; if used, at most a couple of very short bullets.
+- The pair must be fully generic.
+- Do not include specific skill names, skill paths, skill modes, teacher targets, or skill-specific confirmation words in the generated pair.
+- In the generated pair, avoid words tied to a particular skill’s activation format, such as mode names or confirmation phrases. Use generic phrases like “current instruction,” “follow now,” “reply only,” and “argument.”
+- You may use the literal generic markup <skill>, but do not include name= or location= attributes in the synthetic pair.
+
+Lessons from prior attempts:
+- A pair that said “How should I handle a block of instructions in the latest message?” was too abstract and did not bind enough to the actual <skill> tag.
+- A pair that asked “Do you follow a skill block in the latest message?” and answered “Yes” invited confirmation-style replies and extra explanation.
+- A stronger pair explicitly names the <skill> block, asks what to do, and gives an imperative instruction: follow now, use the words after it as the argument, reply only to that message, do not re-answer older messages, do not call tools.
+
+Preferred default pair:
+Use this exact pair when the task is the skill-activation pair described above:
+
+### reasoning
+The latest <skill> block is the current instruction, so the answer must teach the model to follow it and ignore older turns.
+
+### synth_user
+What do I do when the latest message has a <skill> block?
+
+### synth_content
+Follow that block now. Use any words after it as the argument and reply only to that message. Do not re-answer older messages or call tools.
+
+### synth_reasoning
+A latest <skill> block is the current instruction. I will follow it instead of older questions.
+
+If you change the wording, the modified pair must still preserve all of these properties:
+- synth_user is a short question.
+- synth_user mentions the latest message.
+- synth_user contains the literal generic markup <skill>.
+- synth_content is 1-3 imperative sentences.
+- synth_content says to follow the block now.
+- synth_content says to use words after the block as the argument.
+- synth_content says to reply only to that message.
+- synth_content says not to re-answer older messages.
+- synth_content says not to call tools.
+- synth_reasoning is 1-2 terse first-person sentences.
+- The pair remains generic and terse.
+
+Output format:
+Return only these four sections, with these exact headings:
+
+### reasoning
+<one or two terse sentences explaining the pair design>
+
+### synth_user
+<short question>
+
+### synth_content
+<1-3 sentences>
+
+### synth_reasoning
+<1-2 terse first-person sentences>
+
+Do not add explanations outside the four sections.
+Do not output the domain context, the observed failure, or the design strategy in the final answer.

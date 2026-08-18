@@ -484,7 +484,7 @@ path under the skill dir (`dirname of location`) + `scripts/`, run via
 
 **Reliability notes (2.6B + shared endpoint).** Tool-call behavior for
 the 2.6B model is bimodal and the shared inference endpoint
-(`oai.tangledgroup.com`) drifts between states: the same wire payload
+drifts between states: the same wire payload
 scores 5/5 in one window and 0/5 in another (observed for the bare-URL
 invocation), while explicit-verb tasks stay ~100% across windows. The
 endpoint also returns an *empty* response body when the
