@@ -63,8 +63,46 @@ OUT_SYNTH = os.path.join(HERE, "synthetic.json")
 OUT_JSON = os.path.join(HERE, "optimized.json")
 
 MAX_TOKENS = 2048  # the skill reply is a short mode-name line; keep synthesis cheap
-MAX_TRIALS = 16    # number of synthetic pairs to propose and evaluate
-THRESHOLD = 0.6    # keep a synthetic pair only if the student scores >= this
+
+# Condensed Agent Skills specification (from https://agentskills.io, spec section).
+# The teacher LM reads this to SELF-DERIVE the general skill-usage rules, keeping
+# the synthetic teaching grounded in the real spec and fully generic.
+_SPEC = """
+Agent Skills -- a standardized, open format for extending AI agent capabilities.
+
+A skill is a folder containing a SKILL.md file (required). SKILL.md has YAML
+frontmatter (`name`, `description`, and optional fields) followed by a Markdown
+body of instructions. A skill may bundle scripts/ (executable code), references/
+(documents), and assets/ (templates/resources).
+
+Progressive disclosure (how agents load skills):
+1. Discovery: at startup the agent loads only each skill's `name` and `description`
+   (from the system prompt's available-skills list).
+2. Activation: when a task/request matches a skill, the agent loads the FULL
+   SKILL.md body into context. In this harness an ACTIVATION arrives as a user
+   message whose content is a `<skill name="..." location="...">` block holding the
+   loaded SKILL.md body, followed by the user's argument text (e.g. a mode, target,
+   or question).
+3. Execution: the agent FOLLOWS the loaded SKILL.md body -- it does what the body
+   instructs, in the exact reply format the body specifies, optionally running
+   bundled scripts (scripts/...) or loading referenced files as needed.
+
+Execution rules:
+- On activation, the SKILL.md body is the authoritative instruction for THIS turn.
+- The text after the <skill> block is the skill's ARGUMENT; apply it (e.g. select
+  the requested mode/target). Do not ignore it and do not substitute a default when
+  the argument explicitly selects an option.
+- Produce the reply the skill's body requires for that argument (e.g. the exact
+  activation/confirmation line the skill tells the agent to say) -- do not explain,
+  summarize, or describe the skill.
+- An activation is a fresh instruction for the current turn; do not re-answer
+  earlier, unrelated questions from the conversation.
+- Resolve relative paths inside a skill against the skill's directory (its location).
+"""
+MAX_TRIALS = 10      # distinct candidate rules drafted per proposal round
+CANDIDATE_ROUNDS = 6 # proposal rounds (fresh sampling) to build the candidate pool
+EVALS_PER_CANDIDATE = 2  # evaluate each candidate N times, keep the best (reliability)
+THRESHOLD = 0.6    # (informational) keep a synthetic pair only if the student scores >= this
 
 '''
 # NOTE: this is how you instantiate dspy.LM - keep this string/comment
@@ -240,64 +278,95 @@ def _norm(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip()).lower()
 
 
-def _similarity(a: str, b: str) -> float:
-    return difflib.SequenceMatcher(None, a, b).ratio()
-
-
-def score(text, teacher_answer):
-    got, want = _norm(text), _norm(teacher_answer)
-    return 1.0 if got == want else _similarity(got, want)
+def judge(judge_lm, student_text, teacher_answer, invoke):
+    """LLM-as-judge (teacher model): does the STUDENT reply match the TEACHER reply
+    and correctly execute the invoked skill? Purely LLM-based -- no edit-distance.
+    Returns (score 0..1, verdict)."""
+    prompt = (
+        "You are judging whether a weak model handled a skill invocation correctly.\n"
+        "\nA coding agent was given this skill-invocation message (a <skill ...> block "
+        "with the loaded SKILL.md body, followed by the user's argument text):\n"
+        f"---\n{invoke}\n---\n\n"
+        f"The CORRECT reply (from a strong model) is:\n---\n{teacher_answer}\n---\n\n"
+        f"The weak model's reply is:\n---\n{student_text}\n---\n\n"
+        "Judge the weak model's reply:\n"
+        "- Does it correctly EXECUTE the skill for the user's argument (the option "
+        "selected in the argument, not a default), in the reply format the skill "
+        "specifies?\n"
+        "- Does it match what the correct reply does?\n\n"
+        "Respond with ONLY a JSON object: {\"score\": <0.0 to 1.0>, \"verdict\": "
+        "<one short sentence>}. score=1.0 means it matches the correct reply and "
+        "executes the skill for the right argument; lower scores for wrong option, "
+        "an explanation of the skill, or re-answering earlier questions."
+    )
+    raw = judge_lm(prompt, temperature=0.0)
+    data = _parse_json(_completion_text(raw))
+    if data is None or "score" not in data:
+        return 0.0, "judge parse failed"
+    try:
+        s = float(data["score"])
+    except Exception:
+        s = 0.0
+    return max(0.0, min(1.0, s)), str(data.get("verdict", "")).strip()
 
 
 # --------------------------------------------------------------------------- #
 # Proposal + evaluation
 # --------------------------------------------------------------------------- #
-def propose_synthetics(propose_lm, n):
-    """Ask a strong LM for `n` candidate synthetic user+assistant pairs that teach
-    a small coding assistant the GENERAL rules for using the agent-skills system
-    (so whatever skill is invoked it handles it correctly). The candidates must NOT
-    mention the specific skill/answer being tested -- they must stay generic.
-    Returns a list of {"user","assistant","reasoning"} dicts."""
+def _derive_skill_rules(propose_lm):
+    """Stage 1: have the strong LM READ the agent-skills spec and SELF-DERIVE the
+    general, execution-oriented rules for using a skill. This keeps the rules
+    grounded in the real spec and generic (no hard-coding, no leak)."""
     prompt = (
-        "A small coding assistant (tools: read, write, edit, bash) is unreliable at "
-        "using the Agent Skills system. I will insert ONE synthetic user turn and ONE "
-        "synthetic assistant turn into its conversation, right before a skill is "
-        "invoked, to teach it the GENERAL rules for using skills. After that it must "
-        "correctly handle ANY skill, whatever skill is invoked.\n\n"
-        "Facts about the Agent Skills system (from https://agentskills.io):\n"
-        "- A skill is a folder with a SKILL.md file (YAML frontmatter with `name` and "
-        "`description`, then a Markdown body of instructions). A skill may bundle "
-        "scripts/, references/, assets/.\n"
-        "- The system prompt lists available skills as name/description/location.\n"
-        "- An INVOCATION arrives as a user message whose content is a `<skill name=... "
-        "location=...>` block containing the loaded SKILL.md body, followed by the "
-        "user's argument text (e.g. a mode, a target, a question). That message means "
-        "the skill is now activated and the trailing text is its argument.\n"
-        "- On activation the agent EXECUTES the skill for THIS turn: it takes the "
-        "trailing user text and USES IT as the skill's argument (do not ignore it, do "
-        "not substitute a default), then PRODUCES the reply the skill's body specifies "
-        "for THAT argument (e.g. the exact activation/confirmation line the skill tells "
-        "it to say, with the argument filled in). It does NOT explain, describe, or "
-        "summarize the skill -- it does the action and emits the skill's own required "
-        "output. It runs any bundled scripts the skill says to run.\n"
-        "- The skill file is a fresh instruction for THIS turn. It overrides/answers "
-        "the current request; the agent must NOT re-answer earlier unrelated questions "
-        "from the conversation.\n"
-        "- Relative paths inside a skill resolve against the skill's directory (the "
-        "location given in the message).\n\n"
-        f"Produce {n} DISTINCT candidate synthetic turns. Each has:\n"
-        "- `user`: a short question the user could ask about how to use a skill.\n"
-        "- `assistant`: a concise GENERAL, EXECUTION-ORIENTED rule set for when a skill "
-        "is invoked. It must stress: recognize the <skill> block as an activation; the "
-        "trailing text is the argument; DO the skill's action and EMIT the exact reply "
-        "the skill's body requires for that argument (the skill's own format, e.g. its "
-        "activation line) -- NOT an explanation or summary of the skill; and do not "
-        "re-answer earlier questions. Keep it short and directive (imperative).\n"
-        "- `reasoning`: the agent's short internal rationale for that rule.\n\n"
-        "STRICT: do NOT name the specific skill being tested (no 'tzip'), do NOT give "
-        "any specific answer such as a mode name like 'tzip full activated', and do NOT "
-        "hard-code the tested output. Keep it fully generic so it works for any skill.\n"
-        "Keep each field SHORT (one or two sentences each).\n\n"
+        "Read this Agent Skills specification, then derive the GENERAL rules a coding "
+        "agent must follow to correctly use and EXECUTE a skill once it is invoked. "
+        "The rules must be fully generic (apply to ANY skill), and must be phrased as "
+        "short imperative instructions a weak model can follow.\n\n"
+        f"SPECIFICATION:\n---\n{_SPEC}\n---\n\n"
+        "Pay special attention to: how a skill is discovered, activated, and executed; "
+        "what an invocation message looks like (a <skill ...> block with the loaded "
+        "SKILL.md body, followed by the user's argument text); that on activation the "
+        "agent must EXECUTE the skill for that argument and produce the exact reply the "
+        "SKILL.md body specifies (not an explanation/summary of the skill); that the "
+        "invocation is a fresh instruction for the current turn (do not re-answer "
+        "earlier questions); and how bundled scripts/references are used.\n\n"
+        "Respond with ONLY a JSON object: {\"rules\": [str, ...]} where each str is one "
+        "short, general, imperative rule. 5-8 rules. No specific skill names or "
+        "specific answer examples."
+    )
+    raw = propose_lm(prompt, temperature=0.7)
+    data = _parse_json(_completion_text(raw))
+    rules = [str(r).strip() for r in (data or {}).get("rules", []) if str(r).strip()]
+    return rules or list(FALLBACK_RULES)
+
+
+def propose_synthetics(propose_lm, n, rules):
+    """Stage 2: from the general `rules`, draft `n` DISTINCT synthetic user+assistant
+    pairs (phrased many different ways) that teach a small coding assistant those
+    rules, so whatever skill is invoked it handles it. Candidates must stay generic.
+    Returns a list of {"user","assistant","reasoning"} dicts."""
+    rule_block = "\n".join(f"- {r}" for r in rules)
+    prompt = (
+        "A small, weak coding assistant (tools: read, write, edit, bash) is unreliable "
+        "at using skills. I will insert ONE synthetic user turn and ONE synthetic "
+        "assistant turn into its conversation, right before a skill is invoked, to "
+        "teach it the following GENERAL rules (derived from the Agent Skills spec):\n"
+        f"{rule_block}\n\n"
+        f"Write {n} DISTINCT candidate synthetic turns that teach these rules. Vary the "
+        "phrasing, the angle, and the emphasis across candidates. Each has:\n"
+        "- `user`: a short question the user could ask about using a skill.\n"
+        "- `assistant`: the concise GENERAL rule the agent must follow on skill "
+        "activation. It MUST be an imperative EXECUTION mandate, in this spirit: 'Treat "
+        "the <skill> block as an activation. Take the text after it as the skill's "
+        "argument. EXECUTE the skill for that argument -- fill in the argument and emit "
+        "the exact reply the skill's body requires (the skill's own format/activation "
+        "line). Do NOT explain, describe, or summarize the skill. If the argument selects "
+        "a specific option, use THAT option, not a default. Do not re-answer earlier "
+        "questions.' Vary the wording/angle per candidate but keep that core mandate.\n"
+        "- `reasoning`: the agent's short internal rationale for the rule.\n\n"
+        "STRICT: do NOT name the specific skill being tested, do NOT give any specific "
+        "mode/answer example, do NOT hard-code the tested output. Fully generic.\n"
+        "Keep each field short.\n\n"
         "Respond with ONLY a JSON object: {\"candidates\": [{\"user\": str, "
         "\"assistant\": str, \"reasoning\": str}, ...]}"
     )
@@ -319,6 +388,18 @@ def propose_synthetics(propose_lm, n):
             continue
         out.append({"user": u, "assistant": a, "reasoning": r})
     return out or list(DEFAULT_CANDIDATES[:n])
+
+
+# Generic, spec-grounded rules used if the stage-1 self-derivation fails.
+FALLBACK_RULES = [
+    "Recognize a user message containing a <skill name=... location=...> block as a skill ACTIVATION.",
+    "The text after the <skill> block is the skill's ARGUMENT for this turn.",
+    "EXECUTE the skill: apply the argument and produce the exact reply the SKILL.md body specifies for it.",
+    "Emit the skill's own required output (e.g. its activation/confirmation line); do not explain, summarize, or describe the skill.",
+    "When the argument selects a specific option, use that option -- do not fall back to a default.",
+    "A skill activation is a fresh instruction for the current turn; do not re-answer earlier, unrelated questions.",
+    "Run any bundled scripts the skill says to run, resolving relative paths against the skill's location.",
+]
 
 
 # Fallback candidates: generic agent-skills rules (used if the LM proposal fails).
@@ -348,17 +429,19 @@ DEFAULT_CANDIDATES = [
 ]
 
 
-def evaluate_candidate(lm, prefix, invoke, syn, teacher_answer):
-    """Run `lm` on the faithful request (originals + this synthetic pair) and
-    score the reply vs the teacher answer. `lm` is an LM instance whose `forward`
-    merges its default kwargs (extra_body/extra_headers) into the request."""
+def evaluate_candidate(lm, judge_lm, prefix, invoke, syn, teacher_answer):
+    """Run `lm` on the faithful request (originals + this synthetic pair), then let
+    `judge_lm` (teacher, LLM-as-judge) score the reply against the teacher answer.
+    `lm` is an LM instance whose `forward` merges its default kwargs (extra_body / "
+    extra_headers) into the request."""
     adapter = InsertAdapter(prefix, invoke, syn)
     # format() ignores the signature (uses self.prefix/invoke/synthetic); a valid
     # 2-field signature just satisfies the signature contract.
     messages = adapter.format(dspy.Signature("query: str -> response: str"), [], {})
     raw = lm(messages=messages)
     text = _completion_text(raw)
-    return text, score(text, teacher_answer)
+    sc, verdict = judge(judge_lm, text, teacher_answer, invoke)
+    return text, sc, verdict
 
 
 def _completion_text(raw):
@@ -417,31 +500,58 @@ def main():
     teacher = make_lm(TEACHER_MODEL, api_base, api_key, provider, max_tokens=6144)
 
     # Baseline: NO synthetic messages (original request, student model).
-    base_text, base_score = evaluate_candidate(student, prefix, invoke,
-                                               {"user": "", "assistant": "", "reasoning": ""},
-                                               teacher_answer)
-    log(f"\nbaseline (no synthetic): {base_text!r}  score={base_score:.3f}")
+    base_text, base_score, base_verdict = evaluate_candidate(
+        student, teacher, prefix, invoke,
+        {"user": "", "assistant": "", "reasoning": ""}, teacher_answer)
+    log(f"\nbaseline (no synthetic): score={base_score:.3f}  verdict: {base_verdict}")
+    log(f"  reply: {base_text!r}")
 
-    log("\n--- proposing synthetic turns (teacher LM, generic skill-usage rules) ---")
-    candidates = propose_synthetics(teacher, MAX_TRIALS)
+    log("\n--- stage 1: teacher self-derives general skill rules from the spec ---")
+    rules = _derive_skill_rules(teacher)
+    for r in rules:
+        log(f"  - {r}")
 
-    best_syn, best_text, best_score = None, None, -1.0
+    # Search: draft several distinct candidate rules; evaluate each one more than
+    # once (best-of-N) so we keep a rule the student follows RELIABLY, not a lucky
+    # one-shot hit. The student's temperature is low, so repeated evals are near-
+    # deterministic and cheap to reason about.
+    log(f"\n--- stage 2: drafting + evaluating {CANDIDATE_ROUNDS} rounds of "
+        f"{MAX_TRIALS} candidates (best-of-{EVALS_PER_CANDIDATE}) ---")
+    seen, candidates = set(), []
+    for _ in range(CANDIDATE_ROUNDS):
+        for syn in propose_synthetics(teacher, MAX_TRIALS, rules):
+            key = _norm(syn["assistant"])
+            if key and key not in seen:
+                seen.add(key)
+                candidates.append(syn)
+        if len(candidates) >= MAX_TRIALS * 2:
+            break
+    log(f"unique candidates to evaluate: {len(candidates)}")
+
+    def best_of(syn):
+        """Score a synthetic rule best-of-N (keep the max over N student runs,
+        judged by the teacher LLM)."""
+        runs = [evaluate_candidate(student, teacher, prefix, invoke, syn, teacher_answer)
+                for _ in range(EVALS_PER_CANDIDATE)]
+        k = max(range(len(runs)), key=lambda j: runs[j][1])
+        text, sc, verdict = runs[k]
+        return sc, text, verdict
+
+    best_syn, best_text, best_score, best_verdict = None, None, -1.0, ""
     for i, syn in enumerate(candidates, 1):
-        text, sc = evaluate_candidate(student, prefix, invoke, syn, teacher_answer)
-        log(f"\ncandidate {i}: score={sc:.3f}")
-        log(f"  user      : {syn['user']!r}")
+        sc, text, verdict = best_of(syn)
+        log(f"\ncandidate {i}: best score={sc:.3f}  verdict: {verdict}")
         log(f"  assistant : {syn['assistant']!r}")
-        log(f"  reasoning : {syn['reasoning']!r}")
         log(f"  student   : {text!r}")
         if sc > best_score:
-            best_syn, best_text, best_score = syn, text, sc
+            best_syn, best_text, best_score, best_verdict = syn, text, sc, verdict
 
-    log(f"\n--- best synthetic ---")
+    log(f"\n--- best synthetic (rule the student follows most reliably) ---")
     log(f"user      : {best_syn['user']!r}")
     log(f"assistant : {best_syn['assistant']!r}")
     log(f"reasoning : {best_syn['reasoning']!r}")
     log(f"student reply : {best_text!r}")
-    log(f"score : {best_score:.3f}  (baseline {base_score:.3f})")
+    log(f"score : {best_score:.3f}  (baseline {base_score:.3f})  verdict: {best_verdict}")
 
     # Show the final request the student sees (originals + the synthetic pair).
     log("\n--- final request (originals + inserted synthetic) ---")

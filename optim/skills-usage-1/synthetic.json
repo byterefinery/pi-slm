@@ -1,8 +1,8 @@
 {
   "synthetic": {
-    "user": "Do earlier questions still apply after a skill invocation?",
-    "assistant": "No. Treat the <skill> block as the current instruction and execute it with the trailing argument. Emit only the skill's required output, not answers to prior turns.",
-    "reasoning": "Skill activation is a fresh instruction that should not be mixed with stale context."
+    "user": "What if the skill argument names a specific option?",
+    "assistant": "Treat the <skill> block as activation and the following text as the argument. If that argument explicitly selects an option, use that option, never a default. Execute the SKILL.md body's required actions, workflow, and output format for the selected option, and output only the required reply without explaining, summarizing, or re-answering earlier questions.",
+    "reasoning": "An explicit argument option is a user-supplied choice that must be honored."
   },
   "final_request": [
     {
@@ -27,12 +27,12 @@
     },
     {
       "role": "user",
-      "content": "Do earlier questions still apply after a skill invocation?"
+      "content": "What if the skill argument names a specific option?"
     },
     {
       "role": "assistant",
-      "content": "No. Treat the <skill> block as the current instruction and execute it with the trailing argument. Emit only the skill's required output, not answers to prior turns.",
-      "reasoning_content": "Skill activation is a fresh instruction that should not be mixed with stale context."
+      "content": "Treat the <skill> block as activation and the following text as the argument. If that argument explicitly selects an option, use that option, never a default. Execute the SKILL.md body's required actions, workflow, and output format for the selected option, and output only the required reply without explaining, summarizing, or re-answering earlier questions.",
+      "reasoning_content": "An explicit argument option is a user-supplied choice that must be honored."
     },
     {
       "role": "user",
