@@ -63,7 +63,7 @@ OUT_SYNTH = os.path.join(HERE, "synthetic.json")
 OUT_JSON = os.path.join(HERE, "optimized.json")
 
 MAX_TOKENS = 2048  # the skill reply is a short mode-name line; keep synthesis cheap
-MAX_TRIALS = 4     # number of synthetic pairs to propose and evaluate
+MAX_TRIALS = 16    # number of synthetic pairs to propose and evaluate
 THRESHOLD = 0.6    # keep a synthetic pair only if the student scores >= this
 
 '''
@@ -143,7 +143,7 @@ def _sampling(model):
     return sp.get("temperature"), body
 
 
-def make_lm(model_id, api_base, api_key, provider):
+def make_lm(model_id, api_base, api_key, provider, max_tokens=MAX_TOKENS):
     """Build a dspy.LM for a model id using its sampling params from models.json."""
     temperature, body = _sampling(_model_cfg(provider, model_id))
     kwargs = dict(
@@ -151,7 +151,7 @@ def make_lm(model_id, api_base, api_key, provider):
         api_key=api_key,
         model_type="chat",
         temperature=temperature,
-        max_tokens=MAX_TOKENS,
+        max_tokens=max_tokens,
         extra_headers={"x-session-affinity": "dspy-optim"},
     )
     if body:
@@ -252,62 +252,98 @@ def score(text, teacher_answer):
 # --------------------------------------------------------------------------- #
 # Proposal + evaluation
 # --------------------------------------------------------------------------- #
-def propose_synthetics(propose_lm, prefix, invoke, teacher_answer, student_answer, n):
-    """Ask a strong LM for `n` candidate synthetic user+assistant pairs that make
-    a small coding assistant reliably answer a skill-invoke in the skill's own
-    reply format. Returns a list of {"user","assistant","reasoning"} dicts."""
+def propose_synthetics(propose_lm, n):
+    """Ask a strong LM for `n` candidate synthetic user+assistant pairs that teach
+    a small coding assistant the GENERAL rules for using the agent-skills system
+    (so whatever skill is invoked it handles it correctly). The candidates must NOT
+    mention the specific skill/answer being tested -- they must stay generic.
+    Returns a list of {"user","assistant","reasoning"} dicts."""
     prompt = (
-        "You are tuning the system prompt of a small, weak coding assistant so it "
-        "behaves reliably. The assistant is a coding agent (tools: read, write, edit, "
-        "bash). Skills are instruction files; when a user invokes a skill, the agent "
-        "must answer ONLY that skill's request, following the skill's own reply format.\n\n"
-        "CONTEXT: the assistant has a fixed system prompt and a short prior "
-        "conversation, then the user invokes a skill.\n\n"
-        f"SKILL INVOKE (last user message):\n---\n{invoke}\n---\n\n"
-        f"CORRECT reply (from a strong model):\n---\n{teacher_answer}\n---\n\n"
-        f"WRONG reply (from the weak model being fixed):\n---\n{student_answer}\n---\n\n"
-        f"Produce {n} DISTINCT candidate synthetic turns to insert just before the "
-        "skill invoke. Each candidate has: a `user` line (a short nudge/question the "
-        "user could ask about how to handle an invoked skill), an `assistant` line "
-        "(the concise rule the agent should follow), and an optional `reasoning` line "
-        "(the agent's short internal rationale for that rule). The assistant's rule "
-        "should make the agent answer only the skill's request in the skill's reply "
-        "format and ignore earlier questions.\n\n"
-        "Respond with JSON: {\"candidates\": [{\"user\": str, \"assistant\": str, "
-        "\"reasoning\": str}, ...]}"
+        "A small coding assistant (tools: read, write, edit, bash) is unreliable at "
+        "using the Agent Skills system. I will insert ONE synthetic user turn and ONE "
+        "synthetic assistant turn into its conversation, right before a skill is "
+        "invoked, to teach it the GENERAL rules for using skills. After that it must "
+        "correctly handle ANY skill, whatever skill is invoked.\n\n"
+        "Facts about the Agent Skills system (from https://agentskills.io):\n"
+        "- A skill is a folder with a SKILL.md file (YAML frontmatter with `name` and "
+        "`description`, then a Markdown body of instructions). A skill may bundle "
+        "scripts/, references/, assets/.\n"
+        "- The system prompt lists available skills as name/description/location.\n"
+        "- An INVOCATION arrives as a user message whose content is a `<skill name=... "
+        "location=...>` block containing the loaded SKILL.md body, followed by the "
+        "user's argument text (e.g. a mode, a target, a question). That message means "
+        "the skill is now activated and the trailing text is its argument.\n"
+        "- On activation the agent EXECUTES the skill for THIS turn: it takes the "
+        "trailing user text and USES IT as the skill's argument (do not ignore it, do "
+        "not substitute a default), then PRODUCES the reply the skill's body specifies "
+        "for THAT argument (e.g. the exact activation/confirmation line the skill tells "
+        "it to say, with the argument filled in). It does NOT explain, describe, or "
+        "summarize the skill -- it does the action and emits the skill's own required "
+        "output. It runs any bundled scripts the skill says to run.\n"
+        "- The skill file is a fresh instruction for THIS turn. It overrides/answers "
+        "the current request; the agent must NOT re-answer earlier unrelated questions "
+        "from the conversation.\n"
+        "- Relative paths inside a skill resolve against the skill's directory (the "
+        "location given in the message).\n\n"
+        f"Produce {n} DISTINCT candidate synthetic turns. Each has:\n"
+        "- `user`: a short question the user could ask about how to use a skill.\n"
+        "- `assistant`: a concise GENERAL, EXECUTION-ORIENTED rule set for when a skill "
+        "is invoked. It must stress: recognize the <skill> block as an activation; the "
+        "trailing text is the argument; DO the skill's action and EMIT the exact reply "
+        "the skill's body requires for that argument (the skill's own format, e.g. its "
+        "activation line) -- NOT an explanation or summary of the skill; and do not "
+        "re-answer earlier questions. Keep it short and directive (imperative).\n"
+        "- `reasoning`: the agent's short internal rationale for that rule.\n\n"
+        "STRICT: do NOT name the specific skill being tested (no 'tzip'), do NOT give "
+        "any specific answer such as a mode name like 'tzip full activated', and do NOT "
+        "hard-code the tested output. Keep it fully generic so it works for any skill.\n"
+        "Keep each field SHORT (one or two sentences each).\n\n"
+        "Respond with ONLY a JSON object: {\"candidates\": [{\"user\": str, "
+        "\"assistant\": str, \"reasoning\": str}, ...]}"
     )
-    raw = propose_lm(prompt)
+    raw = propose_lm(prompt, temperature=1.0)  # fresh sampling -> diverse candidates
     text = _completion_text(raw)
-    m = re.search(r"\{.*\}", text, re.S)
-    try:
-        data = json.loads(m.group(0) if m else text)
-    except Exception:
+    data = _parse_json(text)
+    if data is None:
         log("!! could not parse proposal JSON; using built-in default candidates")
         data = {"candidates": DEFAULT_CANDIDATES[:n]}
     out = []
     for c in data.get("candidates", [])[:n]:
-        out.append({
-            "user": str(c.get("user", "")).strip(),
-            "assistant": str(c.get("assistant", "")).strip(),
-            "reasoning": str(c.get("reasoning", "")).strip(),
-        })
+        u = str(c.get("user", "")).strip()
+        a = str(c.get("assistant", "")).strip()
+        r = str(c.get("reasoning", "")).strip()
+        if not a:
+            continue
+        # Hard guard: never leak the specific skill or its answer into the rule.
+        if "tzip" in (u + " " + a + " " + r).lower():
+            continue
+        out.append({"user": u, "assistant": a, "reasoning": r})
     return out or list(DEFAULT_CANDIDATES[:n])
 
 
+# Fallback candidates: generic agent-skills rules (used if the LM proposal fails).
 DEFAULT_CANDIDATES = [
     {
-        "user": "When the user invokes a skill, how should I respond?",
-        "assistant": "Answer only the skill's request, using the skill's own reply "
-                     "format (for tzip: the mode name, e.g. 'tzip full activated'). "
-                     "Ignore any earlier questions in the conversation.",
-        "reasoning": "The skill file and the mode word in the user message define the "
-                     "reply; earlier turns are irrelevant context.",
+        "user": "How do I handle a skill when it is invoked in the conversation?",
+        "assistant": "A user message that contains a <skill name=... location=...> "
+                     "block means that skill's SKILL.md has just been loaded and its "
+                     "body is the instruction for THIS turn. Follow the body exactly: "
+                     "do what it says, reply in the exact format it specifies, and treat "
+                     "any text after the skill block as the skill's argument. Do not "
+                     "re-answer earlier questions in the conversation.",
+        "reasoning": "The loaded SKILL.md is the authoritative instruction for the "
+                     "current request; the trailing text is its argument, so the reply "
+                     "follows the skill's own format, not prior turns.",
     },
     {
-        "user": "Should I re-answer earlier questions after a skill is loaded?",
-        "assistant": "No. A skill invocation is a self-contained command: respond to it "
-                     "alone, in the format the skill specifies.",
-        "reasoning": "Re-answering prior questions ignores the latest instruction.",
+        "user": "What should I do when the skill's instructions differ from an earlier reply?",
+        "assistant": "The invoked skill's SKILL.md body wins for the current turn. If it "
+                     "says to run a bundled script (scripts/...), run it with the bash tool; "
+                     "if it references files, resolve relative paths against the skill's "
+                     "location. Answer only the current skill request in the skill's own "
+                     "reply format.",
+        "reasoning": "Skills use progressive disclosure: the full SKILL.md is loaded on "
+                     "activation and is the instruction to execute now.",
     },
 ]
 
@@ -337,6 +373,24 @@ def _completion_text(raw):
     return str(raw).strip()
 
 
+def _parse_json(text):
+    """Robustly extract a JSON object from a possibly-fenced/truncated LLM reply."""
+    candidates = []
+    fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
+    if fence:
+        candidates.append(fence.group(1))
+    # largest brace-delimited substring
+    i, j = text.find("{"), text.rfind("}")
+    if i != -1 and j > i:
+        candidates.append(text[i:j + 1])
+    for cand in candidates:
+        try:
+            return json.loads(cand)
+        except Exception:
+            pass
+    return None
+
+
 # --------------------------------------------------------------------------- #
 # Train
 # --------------------------------------------------------------------------- #
@@ -359,7 +413,8 @@ def main():
     log(f"prefix messages: {len(prefix)}  (system + {len(prefix) - 1} turns)")
 
     student = make_lm(STUDENT_MODEL, api_base, api_key, provider)
-    teacher = make_lm(TEACHER_MODEL, api_base, api_key, provider)
+    # The teacher only proposes the synthetic text; give it a larger budget.
+    teacher = make_lm(TEACHER_MODEL, api_base, api_key, provider, max_tokens=6144)
 
     # Baseline: NO synthetic messages (original request, student model).
     base_text, base_score = evaluate_candidate(student, prefix, invoke,
@@ -367,9 +422,8 @@ def main():
                                                teacher_answer)
     log(f"\nbaseline (no synthetic): {base_text!r}  score={base_score:.3f}")
 
-    log("\n--- proposing synthetic turns (teacher LM) ---")
-    candidates = propose_synthetics(teacher, prefix, invoke, teacher_answer,
-                                    student_answer, MAX_TRIALS)
+    log("\n--- proposing synthetic turns (teacher LM, generic skill-usage rules) ---")
+    candidates = propose_synthetics(teacher, MAX_TRIALS)
 
     best_syn, best_text, best_score = None, None, -1.0
     for i, syn in enumerate(candidates, 1):

@@ -1,8 +1,8 @@
 {
   "synthetic": {
-    "user": "If the user asks about tools and then invokes tzip full, which answer comes first?",
-    "assistant": "Answer the skill invoke only: reply exactly 'tzip full activated.' Treat the earlier tools question as not answered this turn.",
-    "reasoning": "The last user message is a skill invocation, so its required reply takes precedence."
+    "user": "Do earlier questions still apply after a skill invocation?",
+    "assistant": "No. Treat the <skill> block as the current instruction and execute it with the trailing argument. Emit only the skill's required output, not answers to prior turns.",
+    "reasoning": "Skill activation is a fresh instruction that should not be mixed with stale context."
   },
   "final_request": [
     {
@@ -27,12 +27,12 @@
     },
     {
       "role": "user",
-      "content": "If the user asks about tools and then invokes tzip full, which answer comes first?"
+      "content": "Do earlier questions still apply after a skill invocation?"
     },
     {
       "role": "assistant",
-      "content": "Answer the skill invoke only: reply exactly 'tzip full activated.' Treat the earlier tools question as not answered this turn.",
-      "reasoning_content": "The last user message is a skill invocation, so its required reply takes precedence."
+      "content": "No. Treat the <skill> block as the current instruction and execute it with the trailing argument. Emit only the skill's required output, not answers to prior turns.",
+      "reasoning_content": "Skill activation is a fresh instruction that should not be mixed with stale context."
     },
     {
       "role": "user",
