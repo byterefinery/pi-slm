@@ -74,8 +74,19 @@ import dspy
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MODELS_JSON = os.path.expanduser("~/.pi/agent/models.json")
-API_BASE = ...
-API_KEY = ...
+
+
+def load_api() -> tuple[str, str]:
+    """Read (api_base, api_key) from pi's models.json - the first provider with both."""
+    text = open(MODELS_JSON).read()
+    cfg = json.loads(re.sub(r",\s*([}\]])", r"\1", text))  # pi's file may have trailing commas
+    for prov in cfg.get("providers", {}).values():
+        if prov.get("baseUrl") and prov.get("apiKey"):
+            return prov["baseUrl"], prov["apiKey"]
+    raise SystemExit(f"no provider with baseUrl+apiKey in {MODELS_JSON}")
+
+
+API_BASE, API_KEY = load_api()
 
 STUDENT_MODEL = "LiquidAI/LFM2.5-2.6B"
 TEACHER_MODEL = "Qwen/Qwen3.8-27B"
