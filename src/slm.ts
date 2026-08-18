@@ -611,12 +611,12 @@ export default function slmExtension(pi: ExtensionAPI) {
 			display: true,
 		});
 		sm.appendMessage(state.toolsAssistant);
-		pi.sendMessage({
-			customType: USAGE_CUSTOM_TYPE,
-			content: USAGE_ASK,
-			display: true,
-		});
-		sm.appendMessage(state.usageAssistant);
+		// pi.sendMessage({
+		// 	customType: USAGE_CUSTOM_TYPE,
+		// 	content: USAGE_ASK,
+		// 	display: true,
+		// });
+		// sm.appendMessage(state.usageAssistant);
 	});
 
 	// ------------------------------------------------------------------
