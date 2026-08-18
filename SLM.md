@@ -10,7 +10,7 @@ Reliability extension for Small Language Models.
     4. user: `What are available tools?` (simulated)
     5. assistant: short synthetic thinking/reasoning, then the answer — available tools as YAML framed in natural language (header line, list, closing "These are tools, not skills.") in the main content
     6. user: `How can a skill be used?` (simulated)
-    7. assistant: short synthetic thinking/reasoning, then the answer — a static one-shot example of a skill invocation: a generic `example` skill (name that collides with no real or popular skill) whose SKILL.md lists harmless example usages (bash script with a positional arg; python script with a positional arg plus a flag), and the assistant picking the usage that matches the task, resolving the script path from the skill dir, and running it with the bash tool
+    7. assistant: short synthetic thinking/reasoning, then the answer — a static one-shot that teaches the whole skill-invocation pattern: the `/skill:<name> [task]` trigger, pi's `<skill>` block expansion, the task after the block, and two branches — A) the block names a script file → exactly one bash tool call (4-step recipe: match the usage line, map task wording only to shown flags, take the positional argument from the task, resolve the absolute script path from the `location` attribute, run PEP 723 scripts via `uv run --script`); B) the block names no script (a mode/instruction skill such as `tzip`) → follow it and reply as it tells you (e.g. the mode name), no bash call, never create or look for a script
     8. the first-ever user request
   - Skills YAML: name (single line text), description (single line text), reference file paths as absolute paths, script file paths as absolute paths. If the model supports reasoning, insert short synthetic reasoning (on the wire it must be visible on the assistant message, not dropped). Available skills come from `pi` internal API.
   - The first real user request is sent exactly as typed; the top-level `tools` field of the provider request is pi core's native function-calling definitions (active tools), not something the extension adds.
@@ -131,60 +131,103 @@ params and types; `null` when the tool has no parameters).
 
 **Skill-usage one-shot (third pair)** — the simulated user asks `How can
 a skill be used?` (custom type `skill-usage`) and the assistant answers
-with a static one-shot example that teaches the whole skill-invocation
-pattern in a single exchange: the user types `/skill:<name> [task]`, pi
-expands it into a user message containing the skill's SKILL.md body in a
-`<skill name=... location=...>` block (plus the task after the block),
-and the assistant performs the task by running the matching example
-command with the bash tool. The example uses a deliberately generic
-`example` skill — a name that collides with no real or popular skill —
-with two harmless usages so the SLM sees both common script shapes (bash
-script with a positional arg, python script with a positional arg plus a
-flag) and that the right usage must be *identified* for the current task.
-The block also carries the rule that the text after `</skill>` is the
-task (a sentence or bare arguments like a URL or a search query) and that
-the skill is *performed*, never explained. The answer text (four-backtick
-fence: the text itself contains triple-backtick fences):
+with a static one-shot that teaches the whole skill-invocation pattern in
+a single exchange: the user types `/skill:<name> [task]`, pi expands it
+into a user message containing the skill's SKILL.md body in a `<skill
+name=... location=...>` block (plus the task after the block), and the
+assistant performs the task — never explains the skill. The answer opens
+with a first check that splits into two branches: **A)** the block names
+a script file (a usage code block with a script name like `example.py`)
+→ exactly one bash tool call, built by a 4-step recipe (match the usage
+line to the task, mapping task wording only to flags the skill shows;
+take the positional argument from the task — a URL for webfetch, a search
+query for websearch — and quote arguments containing spaces; resolve the
+script's absolute path as `dirname(location)` + `scripts/`, never a bare
+or relative name; run self-contained PEP 723 Python scripts via
+`uv run --script <absolute path> <args>`, never directly, never with
+`python`/`python3`); **B)** the block names no script — only instructions,
+for example a communication mode with commands like `tzip on` / `tzip
+lite` to follow, not run → reply as the block tells you (a second
+mini one-shot shows the `tzip` block plus `lite` and `ultra` tasks
+producing the one-line replies `tzip lite activated` /
+`tzip ultra activated`), no bash call, no listing/searching the skill
+dir, never creating or running a script the block does not name. Branch
+A's example uses a deliberately generic `example` skill (a name that
+collides with no real or popular skill) with two harmless usages (python
+script with a positional arg; same script with a flag) so the SLM sees
+that the right usage must be *identified* for the current task. The
+message also states that a `<skill>` message is a task to perform, never
+a question about the skill. The answer text (four-backtick fence: the
+text itself contains triple-backtick fences):
 
 ````
-A skill is invoked by the user with /skill:<name> [task]. Example: the user types
-
-/skill:example List the files in /data.
-
-and pi expands it into a user message with the skill's SKILL.md body in a <skill> block:
-
-<skill name="example" location="/tmp/skills/example/SKILL.md">
-References are relative to /tmp/skills/example.
+A skill is invoked by the user with /skill:<name> [task], and pi expands it into a user message with the skill's SKILL.md body in a <skill> block:
+```
+<skill name="example" location="/home/user/project/.agents/skills/example/SKILL.md">
 
 # example
 
 ## Usage
 
 ```bash
-example.sh DIR           # list the files in DIR
-example.py DIR --json    # count the files in DIR, as JSON
+example.py DIR            # list the files in DIR
+example.py DIR --json     # count the files in DIR, as JSON
 ```
 </skill>
-
 List the files in /data.
+```
+The text after the </skill> block is the task - a sentence, or bare arguments like a URL or a search query.
 
-The text after the </skill> block is the task - a sentence or bare arguments
-like a URL or a search query. I perform that task, I do not explain the skill.
-If the <skill> block shows script or command usages, I identify the right one
-for the task, resolve its path from the skill dir (dirname of location), and
-run it with the bash tool:
+A user message with a <skill> block is a task to perform, never a question about the skill. I perform the task; I do not explain the skill. My first check: does the <skill> block name a script file (like example.py or my.sh)?
 
-bash: /tmp/skills/example/scripts/example.sh /data
+- No: it is a mode or instruction skill - I follow the block and reply as it tells me; my reply is the action (for example the mode name). No bash call.
+- Yes: I run the script with exactly one bash tool call (recipe A below):
+
+A) If it lists how to run a script - a script file name like example.py or my.sh in a usage code block (like the example above) - I produce exactly one bash tool call:
+1. I pick the usage line in the block that matches the task, mapping task wording only to flags the skill shows ("raw HTML" -> --html, "save to X" -> --file X, "JSON" -> --json, "no sanitization" -> --no-ai-targeted, "force fetcher" -> --tool TOOL). I do not invent flags.
+2. I take the positional argument from the task - a URL for webfetch, a search query for websearch - and quote arguments that contain spaces.
+3. I resolve the script's absolute path: the skill dir is the dirname of the <skill> location attribute, and scripts live in <skill-dir>/scripts/ (location /home/user/project/.agents/skills/example/SKILL.md -> /home/user/project/.agents/skills/example/scripts/example.py). I never use a bare script name or a relative path.
+4. I run self-contained Python scripts (PEP 723 header) with uv - never directly, never with python/python3:
+```bash
+uv run --script /home/user/project/.agents/skills/example/scripts/example.py '/data'
+```
+
+B) If it shows no script file name - only instructions to follow, for example a communication mode with commands like `tzip on` or `tzip lite` that I follow, not run - I reply as the block tells me:
+
+user message:
+<skill name="tzip" location="/home/user/project/.agents/skills/tzip/SKILL.md">
+## Usage
+
+- `tzip` / `tzip on` / `tzip lite` → Lite (default): drop filler, keep articles and full sentences
+- `tzip full` → Drop articles, fragments OK
+- `tzip ultra` → Abbreviate (DB, auth, config)
+- `tzip off` → Deactivate token pruning
+
+Reply with mode name (e.g. "tzip lite activated", "tzip deactivated")
+</skill>
+lite
+my reply: tzip lite activated
+
+same <skill> block, task after </skill> is `ultra`:
+my reply: tzip ultra activated
+
+Activating a mode is not a script run: a mode skill names no script, so there is nothing to run - my reply is the action (the mode name), and from then on I apply the mode to my replies. The <skill> block is all I need: no bash call, no listing or searching the skill dir, and I never read, create, or run a script the block does not name.
 ````
 
-The `<skill>` block in the example matches pi's real expansion byte-for-byte
-in shape (`_expandSkillCommand`: `<skill name="<name>" location="<SKILL.md
-path>">` + `References are relative to <skill dir>.` + the SKILL.md body
-with the frontmatter stripped + the task after the block). The script-path
-lesson (script lives in the skill dir, `dirname of location`, here
-`scripts/<name>.<ext>`) is what lets the SLM run real skill scripts by
-absolute path without a prior `read` — the skills YAML from pair 1 lists
-the same absolute paths in its `scripts:` fields.
+The `<skill>` block in the example matches pi's real expansion shape
+(`_expandSkillCommand`: `<skill name="<name>" location="<SKILL.md
+path>">` + the SKILL.md body with the frontmatter stripped + the task
+after the block) except the `References are relative to <skill dir>.`
+line is omitted to save tokens — the path lesson is taught through the
+`location` attribute instead (skill dir = `dirname(location)`, scripts
+under `<skill-dir>/scripts/`), which is what lets the SLM run real skill
+scripts by absolute path without a prior `read`. The fictitious paths
+(`/home/user/project/.agents/skills/...`) make the SLM substitute the
+real paths from the incoming block rather than reuse the example's. The
+4-step recipe in branch A is the GEPA-learned instruction distilled into
+first person (see `optim/skills-usage/SKILL_USAGE_OPTIM.md`); the branch
+B one-shot is a direct model of the `tzip` mode skill
+(`.agents/skills-byterefinery/tzip`).
 
 **Synthetic reasoning** — if the active model supports reasoning
 (`ctx.model.reasoning === true`, e.g. `LiquidAI/LFM2.5-2.6B`), each
@@ -196,9 +239,21 @@ real `thinking` content block before the answer text block:
   listed below.`
 - tools: `I found <n> tools. I will pick the narrowest tool that fits the
   task.`
-- skill-usage: `I will show one example: the user invokes a skill with
-  /skill:<name>, pi puts its SKILL.md in a <skill> block of the user
-  message, and I run the matching example command with the bash tool.`
+- skill-usage: `The user asks how a skill can be used. I will show one
+  example: the user invokes a skill with /skill:<name>, pi puts the
+  skill's SKILL.md body in a <skill name=... location=...> block of the
+  user message, and the text after the block is the task. I do not
+  explain the skill - I perform the task: if the block lists how to run a
+  script (a script file name like example.py in a usage code block), I
+  pick the usage line that matches the task (mapping task wording to the
+  flags the skill shows), take the positional argument from the task,
+  resolve the script's absolute path from the skill dir (dirname of the
+  location attribute, scripts under <skill-dir>/scripts/), and run the
+  PEP 723 script via \`uv run --script <absolute path> <args>\` with the
+  bash tool. If the block shows no script file name - only instructions,
+  for example a communication mode - I follow it and reply as it tells
+  me: the mode name itself is my reply (activating a mode is not a
+  script run; there is nothing to run).`
 
 For the OpenAI Completions API (the llama.cpp server path) the block
 additionally carries `thinkingSignature: "reasoning_content"`. Pi's
@@ -378,7 +433,7 @@ by the suite at all: S1/S6/S8-style checks would need the third ask
 
 The dialogue is also validated end-to-end against real skills: for each
 skill a random temp dir is created under `/tmp`
-(`mktemp -d /tmp/slm-f2-<skill>-XXXXXX`), the skill is copied into
+(`mktemp -d /tmp/slm-fN-<skill>-XXXXXX`), the skill is copied into
 `<root>/work/.agents/skills/<skill>/` (pi's project skill dir), an
 isolated temp `HOME` is used (minimal `models.json` with only the LFM
 model, so no global skills/settings leak in), the uv cache is shared via
@@ -388,24 +443,56 @@ the run is `pi --offline -a -e src/slm.ts -e tests/payload-logger.ts
 `<root>/work`. The `/skill:` expansion is pi core's (the user message in
 the session file is the expanded `<skill>` block + task — the extension
 touches neither), so this also validates that the one-shot's example
-matches the real block shape.
+matches the real block shape. Because the 2.6B model's tool-call
+behavior is bimodal (see below), live runs are complemented by **wire
+replays**: `optim/skills-usage/replay3.py` replays the three example
+invocations against the seed session (`seed.json`), and
+`replay_payload.py` / `replay_tzip.py` replay the *exact* wire payload of
+a finished live run (payloads.jsonl, candidate answer swapped in at the
+skill-usage slot) with fresh session-affinity keys — isolating the
+message from live-run noise (uv installs, tool loops, server state).
 
-Results (model `LiquidAI/LFM2.5-2.6B`, pi 0.84.2):
+Results (model `LiquidAI/LFM2.5-2.6B`, pi 0.84.2; replay scores are
+"perfect bash tool call" — single call, `uv run --script` (or the
+script's own executable shebang), absolute script path, correct task
+argument):
 
-| Prompt (after the dialogue) | Outcome |
-|---|---|
-| `/skill:webfetch fetch https://tangledgroup.com/ and summarize it` | **success** — single `bash` tool call with the exact absolute path `<root>/work/.agents/skills/webfetch/scripts/webfetch.py https://tangledgroup.com`, real page fetched, answer summarizes the live content. Reproduced 2/2 runs, first try, no flailing. |
-| `/skill:websearch look for tangled group repos` | **success after flailing** — 7 tool calls: `find`/`ls` in the work dir, two malformed attempts at the SKILL.md path, a `read` of SKILL.md, then the correct `bash: <root>/work/.agents/skills/websearch/scripts/websearch.py "tangled group repos"`; final answer grounded in the real DuckDuckGo results (tangled.org repos, TangledRust, github.com/orgs/tangledgroup). A second run of the same prompt degenerated into a repeated `grep`-in-skill-dir loop (1000 calls until the run timeout) — a known SLM derailment, independent of the extension. |
-| `/skill:webfetch https://tangledgroup.com/` (bare URL) | **meta-explanation** — 0 tool calls; the model re-answers the immediately preceding synthetic question `How can a skill be used?` instead of performing the task. Same for bare search queries. The 2.6B model does not treat a bare argument after the block as a task; explicit task phrasing (verb + argument) is required. |
+| Prompt (after the dialogue) | Replay (n=5 each) | Live pi run |
+|---|---|---|
+| `/skill:webfetch fetch https://tangledgroup.com/ and summarize it` | **5/5** | **success** — single `uv run --script <root>/work/.agents/skills/webfetch/scripts/webfetch.py "https://tangledgroup.com"` (one round: bare-name misfire first, then the correct call after a `which uv` check), real page fetched, answer summarizes the live content (judge: PASS). |
+| `/skill:websearch look for tangled group repos` | **5/5** | **success** — single `bash` call of the script with the quoted query `"tangled group repos"` (absolute path, one run; another run used `python3` + relative path, hit the missing-dependency traceback, and improvised with curl/GitHub API — judge: FAIL on call form, but the model did act, not explain). |
+| `/skill:webfetch https://tangledgroup.com/` (bare URL) | **5/5** in the seed context and in the exact-context replay of a failed live run (`replay_payload.py`) | unstable — when the live run fails, the model re-answers the preceding meta question `How can a skill be used?` (0 tool calls); the same wire payload replayed moments later scores 5/5. The difference tracks the shared inference endpoint's state (see below), not the extension. |
+| `/skill:tzip <lite|full|ultra|off>` (mode skill, no scripts) | activation (mode-name reply, no tools): **lite 3/3, off 2/2, ultra 2/3, full 0/3** in the last window | **no tool calls at all** (the earlier "hallucinate and create `tzip.py`" behavior — 6–19 calls per level — is gone); `lite`/`ultra` reply with the mode name ("tzip lite activated"), `off` almost ("tzip off activated" instead of canonical "tzip deactivated"), `full` still meta-explains. Content replies after activation are correct but mostly unpruned (2.6B does not hold a style regime). |
+
+Judge (per the user's setup): `Qwen/Qwen3.8-27B` via
+`pi --no-session --no-tools -p <judge prompt>` (prompts in
+`/tmp/slm-f9-logs/judge/`, harness `slm-f9-judge.py`). Final-round
+verdicts: webfetch-verb **correct-call/no-explain/grounded PASS**;
+tzip-**lite** **activation/no-tools/style/accuracy PASS**; tzip-ultra
+activation+no-tools PASS, style FAIL (mode not applied to the content
+reply); tzip-off activation FAIL (non-canonical mode name), style PASS;
+tzip-full activation FAIL (claims a `tzip.py` script exists in the reply
+without calling it), style FAIL. Accuracy PASS in every tzip case.
 
 What the live runs confirm: the three-pair dialogue sits at the head of
 the session and of the wire context (system → 3×(ask, assistant with
 `reasoning_content`) → user request), the skills YAML lists the real
-skill with its absolute `scripts/` path, and when the SLM does engage the
-one-shot pattern it resolves the script exactly as taught — absolute path
-under the skill dir (`dirname of location`) + `scripts/`, run through
-`bash`, task arguments appended — matching the `bash: …/scripts/example.sh
-/data` line of the example.
+skill with its absolute `scripts/` path, and when the SLM engages the
+one-shot pattern it resolves the script exactly as taught — absolute
+path under the skill dir (`dirname of location`) + `scripts/`, run via
+`uv run --script`, task arguments appended and quoted.
+
+**Reliability notes (2.6B + shared endpoint).** Tool-call behavior for
+the 2.6B model is bimodal and the shared inference endpoint
+(`oai.tangledgroup.com`) drifts between states: the same wire payload
+scores 5/5 in one window and 0/5 in another (observed for the bare-URL
+invocation), while explicit-verb tasks stay ~100% across windows. The
+endpoint also returns an *empty* response body when the
+`x-session-affinity` header is absent (the pi client always sends it). 
+Practical consequence: explicit task phrasing (verb + argument) is the
+reliable form for script skills; bare-argument tasks and mode-skill
+activation replies (exact mode-name line, sustained style) are the known
+weak spots of the 2.6B model and of the current one-shot.
 
 ### Notes
 
@@ -449,18 +536,26 @@ under the skill dir (`dirname of location`) + `scripts/`, run through
 - Works in all run modes (validated via `-p` and `--mode json`; TUI/RPC
   share the same hook path).
 - The skill-usage answer is static (no live data): the `example` skill
-  name collides with no real or popular skill, and the paths inside it
-  (`/tmp/skills/example/...`) are fictitious — the SLM must substitute
-  the real skill dir from the incoming `<skill>` block, not reuse the
-  example's paths.
+  name collides with no real or popular skill, and the paths inside the
+  one-shot (`/home/user/project/.agents/skills/...`) are fictitious —
+  the SLM must substitute the real skill dir from the incoming `<skill>`
+  block, not reuse the example's paths. The branch-B example uses the
+  real `tzip` skill shape on purpose (it is the mode-skill class the
+  SLM must learn to handle without scripts).
 - The one-shot's `<skill>` block mirrors pi's real expansion shape
-  (`_expandSkillCommand` in pi 0.84.2), including the `References are
-  relative to <skill dir>.` line and the SKILL.md body with frontmatter
-  stripped; the nested ``` fences are authentic (real SKILL.md bodies
-  contain them).
+  (`_expandSkillCommand` in pi 0.84.2) — `<skill name=... location=...>`
+  tag, SKILL.md body with frontmatter stripped, task after the block —
+  with the `References are relative to <skill dir>.` line omitted to
+  save tokens (the path lesson is carried by the `location` attribute);
+  the nested ``` fences are authentic (real SKILL.md bodies contain
+  them).
 - Skill usage with a 2.6B model is task-phrasing sensitive: explicit
-  tasks (verb + argument) trigger the script call, bare arguments after
-  the `<skill>` block tend to be answered as the meta question `How can
-  a skill be used?` (see Live test).
+  tasks (verb + argument) reliably trigger the script call; bare
+  arguments after the `<skill>` block are performed in the wire-replay
+  harness but flake in live runs (meta-explanation); mode skills (no
+  scripts) are the other branch — the one-shot's branch B + the
+  anti-script-creation rule removed the `tzip.py` hallucination
+  entirely, leaving the exact mode-name reply and sustained style as
+  the remaining 2.6B weak spots (see Live test).
 
 ---

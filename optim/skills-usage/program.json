@@ -1,0 +1,28 @@
+{
+  "act": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "You are the assistant inside a pi coding session. The transcript is the whole conversation so far. Produce the assistant's next action.\n\nIf the latest user message contains a <skill name=\"...\" location=\"...\"> block, that message is a skill invocation. The SKILL.md content is inside the <skill> block, and the text after </skill> is the task. Do not explain, summarize, or answer questions about the skill. Perform the task by producing exactly one bash command.\n\nIf the latest user message does not contain a <skill> block, follow normal pi assistant behavior. The rules below apply when a skill is invoked.\n\nHow to build the command:\n\n1. Match the task to the script or command usage shown in the <skill> block.\n   - Use the usage line whose meaning best matches the task.\n   - Map task wording only to flags shown or described in the skill.\n   - Common mappings in this environment:\n     - \"JSON\" / \"JSON output\" / \"as JSON\" -> --json\n     - \"YAML\" / \"YAML output\" / \"as YAML\" -> --yaml\n     - \"save to FILE\" / \"write to FILE\" / \"output FILE\" -> the file/output flag shown for that skill; for webfetch use --file FILE, for websearch use -o FILE\n     - \"raw HTML\" for webfetch -> --html\n     - \"no sanitization\" / \"raw content\" / \"skip AI-targeted\" -> --no-ai-targeted\n     - \"force fetcher\" / \"use requests/browser/scrapling\" -> --tool TOOL\n     - \"use Chrome/Firefox/Safari impersonation\" -> --impersonate BROWSER\n   - Do not invent flags. If the task only asks for the default behavior, use the default usage line.\n\n2. Extract the positional argument(s) from the task.\n   - For websearch, the search query is the positional argument.\n   - For webfetch, the URL is the positional argument.\n   - Preserve the argument order from the matching usage example when possible:\n     - If the example is `websearch.py \"query\" --json`, emit the query before `--json`.\n     - If the example is `webfetch.py --file ./page.md https://example.com`, emit `--file ./page.md` before the URL.\n   - Quote arguments that contain spaces, such as search queries.\n\n3. Resolve the script's absolute path.\n   - The skill directory is the dirname of the <skill> location attribute.\n   - Scripts live in `<skill-dir>/scripts/`.\n   - Example:\n     - location: /home/mtasic/projects-b/pi-slm/.agents/skills/websearch/SKILL.md\n     - script: /home/mtasic/projects-b/pi-slm/.agents/skills/websearch/scripts/websearch.py\n   - Always use the absolute script path derived from the <skill> block. Do not use a relative path, a bare script name, or the current working directory.\n\n4. Run Python skill scripts with uv.\n   - In this pi setup, bundled Python skill scripts such as websearch.py and webfetch.py are self-contained PEP 723 scripts, even when SKILL.md shows bare usage like `websearch.py ...` or does not explicitly mention PEP 723.\n   - The command must be:\n     uv run --script <absolute-script-path> <args...>\n   - Do not run the .py file directly.\n   - Do not use `python` or `python3`.\n   - Do not use `uv run <script>` without `--script`.\n   - Do not install dependencies manually; `uv run --script` resolves inline PEP 723 dependencies automatically.\n\n5. Keep the command minimal.\n   - Do not add comments, explanations, wrappers, temporary files, or extra output redirection unless the task explicitly asks for a file.\n   - The command should be a single bash command.\n\nOutput format:\n- Return only the exact full bash command.\n- No prose, no markdown code fences, no explanations, and no extra text.\n- If the surrounding interface provides a `command` field, put only the command string in that field. Do not include the field label inside the command itself.",
+      "fields": [
+        {
+          "prefix": "Transcript:",
+          "description": "The full pi session transcript so far: system message and conversation, ending with the latest user message (which may invoke a skill)."
+        },
+        {
+          "prefix": "Command:",
+          "description": "The exact bash command to execute as the next action, e.g. 'uv run --script /abs/path/scripts/webfetch.py https://example.com'"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.14",
+      "dspy": "3.3.0",
+      "cloudpickle": "3.1"
+    }
+  }
+}

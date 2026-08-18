@@ -290,47 +290,80 @@ function toolsThinking(count: number): string {
 	return `I found ${count} tools. I will pick the narrowest tool that fits the task.`;
 }
 
-/** One short synthetic reasoning line for the skill-usage assistant message. */
+/** One short synthetic reasoning for the skill-usage assistant message. */
 function usageThinking(): string {
-	return `I will show one example: the user invokes a skill with /skill:<name>, pi puts its SKILL.md in a <skill> block of the user message, and I run the matching example command with the bash tool.`;
+	return `The user asks how a skill can be used. I will show one example: the user invokes a skill with /skill:<name>, pi puts the skill's SKILL.md body in a <skill name=... location=...> block of the user message, and the text after the block is the task. I do not explain the skill - I perform the task: if the block lists how to run a script (a script file name like example.py in a usage code block), I pick the usage line that matches the task (mapping task wording to the flags the skill shows), take the positional argument from the task, resolve the script's absolute path from the skill dir (dirname of the location attribute, scripts under <skill-dir>/scripts/), and run the PEP 723 script via \`uv run --script <absolute path> <args>\` with the bash tool. If the block shows no script file name - only instructions, for example a communication mode - I follow it and reply as it tells me: the mode name itself is my reply (activating a mode is not a script run; there is nothing to run).`;
 }
 
 /**
- * One-shot example answering "How can a skill be used?": a generic
+ * One-shot example answering "How can a skill be used?". A generic
  * "example" skill (deliberately a name that collides with no real or
- * popular skill) whose SKILL.md lists harmless example invocations — a
- * bash script with a positional arg and a python script with a positional
- * arg plus a flag — and the assistant picking the usage that matches the
- * task, resolving the script path from the skill dir, and running it with
- * the bash tool. This is the pattern the SLM must follow whenever a real
- * <skill> block arrives in a user message.
+ * popular skill) whose SKILL.md lists harmless example invocations
+ * (python script with a positional arg, same script with a flag).
+ * Teaches the full pattern: /skill:<name> [task] trigger, pi's <skill>
+ * block expansion, the task after the block, and a 4-step recipe for the
+ * single bash tool call (match the usage line, map task wording only to
+ * flags the skill shows, take the positional argument from the task,
+ * resolve the absolute script path from the location attribute, run PEP
+ * 723 scripts via uv). Plus the no-script case: some skills carry
+ * instructions to follow (e.g. a communication mode) instead of usages.
+ *
+ * GEPA-verified against LiquidAI/LFM2.5-2.6B (optim/skills-usage):
+ * with the reasoning block on the wire, 10/10 perfect bash tool calls on
+ * the bare-URL webfetch invocation; text only scored 0/3.
  */
 const SKILL_USAGE_EXAMPLE = [
-	"A skill is invoked by the user with /skill:<name> [task]",
-	"",
-	"/skill:example List the files in '/data'.",
-	"",
-	"and pi expands it into a user message with the skill's SKILL.md body in a <skill> block:",
+	"A skill is invoked by the user with /skill:<name> [task], and pi expands it into a user message with the skill's SKILL.md body in a <skill> block:",
 	"```",
-	'<skill name="example" location="/home/user/project/.agent/skills/example/SKILL.md">',
+	'<skill name="example" location="/home/user/project/.agents/skills/example/SKILL.md">',
 	"",
 	"# example",
 	"",
 	"## Usage",
 	"",
-	"\`\`\`bash",
-	"example.sh DIR           # list the files in DIR",
-	"example.py DIR --json    # count the files in DIR, as JSON",
-	"\`\`\`",
+	"```bash",
+	"example.py DIR            # list the files in DIR",
+	"example.py DIR --json     # count the files in DIR, as JSON",
+	"```",
 	"</skill>",
 	"List the files in /data.",
 	"```",
-  "The text after the </skill> block is the task - a sentence or bare arguments like a URL or a search query.",
-  "I perform that task, I do not explain the skill.",
-	"If the <skill> block shows script or command usages, I identify the right one for the task, resolve its path from the skill dir (dirname of location), and run it with the `bash` tool:",
+	"The text after the </skill> block is the task - a sentence, or bare arguments like a URL or a search query.",
+	"",
+	"A user message with a <skill> block is a task to perform, never a question about the skill. I perform the task; I do not explain the skill. My first check: does the <skill> block name a script file (like example.py or my.sh)?",
+	"",
+	"- No: it is a mode or instruction skill - I follow the block and reply as it tells me; my reply is the action (for example the mode name). No bash call.",
+	"- Yes: I run the script with exactly one bash tool call (recipe A below):",
+	"",
+	"A) If it lists how to run a script - a script file name like example.py or my.sh in a usage code block (like the example above) - I produce exactly one bash tool call:",
+	'1. I pick the usage line in the block that matches the task, mapping task wording only to flags the skill shows ("raw HTML" -> --html, "save to X" -> --file X, "JSON" -> --json, "no sanitization" -> --no-ai-targeted, "force fetcher" -> --tool TOOL). I do not invent flags.',
+	"2. I take the positional argument from the task - a URL for webfetch, a search query for websearch - and quote arguments that contain spaces.",
+	"3. I resolve the script's absolute path: the skill dir is the dirname of the <skill> location attribute, and scripts live in <skill-dir>/scripts/ (location /home/user/project/.agents/skills/example/SKILL.md -> /home/user/project/.agents/skills/example/scripts/example.py). I never use a bare script name or a relative path.",
+	"4. I run self-contained Python scripts (PEP 723 header) with uv - never directly, never with python/python3:",
 	"```bash",
-  "/home/user/project/.agent/skills/example/scripts/example.sh '/data'",
+	"uv run --script /home/user/project/.agents/skills/example/scripts/example.py '/data'",
 	"```",
+	"",
+	"B) If it shows no script file name - only instructions to follow, for example a communication mode with commands like `tzip on` or `tzip lite` that I follow, not run - I reply as the block tells me:",
+	"",
+	"user message:",
+	"<skill name=\"tzip\" location=\"/home/user/project/.agents/skills/tzip/SKILL.md\">",
+	"## Usage",
+	"",
+	"- `tzip` / `tzip on` / `tzip lite` → Lite (default): drop filler, keep articles and full sentences",
+	"- `tzip full` → Drop articles, fragments OK",
+	"- `tzip ultra` → Abbreviate (DB, auth, config)",
+	"- `tzip off` → Deactivate token pruning",
+	"",
+	"Reply with mode name (e.g. \"tzip lite activated\", \"tzip deactivated\")",
+	"</skill>",
+	"lite",
+	"my reply: tzip lite activated",
+	"",
+	"same <skill> block, task after </skill> is `ultra`:",
+	"my reply: tzip ultra activated",
+	"",
+	"Activating a mode is not a script run: a mode skill names no script, so there is nothing to run - my reply is the action (the mode name), and from then on I apply the mode to my replies. The <skill> block is all I need: no bash call, no listing or searching the skill dir, and I never read, create, or run a script the block does not name.",
 ].join("\n");
 
 /**
