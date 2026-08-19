@@ -1,6 +1,0 @@
-{
-    "reasoning": "Use a first-person question so the visible reply can commit with 'I will' and close the turn. The reply teaches treating the latest skill block as active, using the current argument or the skill default, and replying only with the required confirmation.",
-    "synth_user": "When a skill block is in my latest message, with or without an argument, what do I do?",
-    "synth_content": "I will follow the latest skill block, use the argument after it or its default if none, let later arguments win, ignore earlier questions/example words, reply text only: skill name, argument or default wording, required wording, no extra/markdown/bullets/quotes/headings/period, skills not tools.",
-    "synth_reasoning": "The user wants the rule for an active skill. I will follow the latest skill block, use the current argument after it, not an example word, let later arguments win, and ignore earlier questions. I will reply only with the required confirmation, or the skill's default wording if no argument."
-}

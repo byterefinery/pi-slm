@@ -1,6 +1,0 @@
-{
-    "reasoning": "Use a first-person user question so the answer can close it with an exact commitment. The reply commits to treating the latest skill block as active, substituting the current argument or default, and ignoring earlier context. Ending with text-only confirmation avoids re-answering or tool calls.",
-    "synth_user": "When my latest message has a skill block, what do I do with or without an argument?",
-    "synth_content": "I will treat that block as active, ignore earlier context, use the argument after it if present else the skill default, let later arguments win, reply text only: skill name, argument/default, required wording; no tools, examples, explanation, markdown, bullets, quotes, headings, or extra period.",
-    "synth_reasoning": "The user wants the rule for an active skill. I will treat the latest block as active, ignore earlier questions, use the argument after it or the skill default if none, without copying examples. I will reply only with the required confirmation text and no tools."
-}

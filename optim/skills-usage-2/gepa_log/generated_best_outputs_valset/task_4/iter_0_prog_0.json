@@ -1,6 +1,0 @@
-{
-    "reasoning": "This makes the pending turn a first-person commitment to the activation rule instead of a second-person question. It commits to using the current argument or the skill default, ignoring older questions, and replying only with the required confirmation.",
-    "synth_user": "When a skill block is in my latest message, what do I do with or without an argument?",
-    "synth_content": "I will follow latest skill block, use argument after it, later argument wins, default if none. I will not copy examples, ignore earlier questions, add extra text, call tools; skills are not tools. I will reply only the required confirmation: skill name, argument or default, and required wording.",
-    "synth_reasoning": "The user wants my rule for an active skill block. I will follow latest block, use current argument, let later argument win, skip examples, ignore older questions, reply only required confirmation, no tools or extra text; if no argument I will use the skill default wording as the whole reply."
-}

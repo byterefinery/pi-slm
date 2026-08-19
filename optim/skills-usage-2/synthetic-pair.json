@@ -1,5 +1,5 @@
 {
-  "synth_user": "How should you answer when a skill is activated with an argument?",
-  "synth_content": "I will treat latest skill block as active, use argument after it (or default), let later arguments win. I will ignore earlier questions or activations and example words. I will reply text only: skill name, argument or default, required wording; no tools, markdown, lists, or extra period.",
-  "synth_reasoning": "The user wants the rule for an active skill. I will follow the latest skill block, use the argument after it, not an example word, ignore earlier questions, and skip tools. Let me reply only with the required confirmation."
+  "synth_user": "When a skill block appears in my latest message, how do I handle the argument and reply?",
+  "synth_content": "I will follow the skill block in my latest message as the active instruction. I will use the argument after that block as the current argument, or the skill's default wording if no argument is present. I will ignore earlier questions and older activations. I will reply text only with the exact required confirmation: skill name, current argument or default, and the skill's required wording. I will not copy example words from the skill, call tools, or add extra text.",
+  "synth_reasoning": "The user wants the rule for handling a skill activation. I will treat the latest skill block as the active instruction. I will substitute the current argument into the required reply pattern, not an example word. I will ignore earlier questions. I will commit to replying only with the text confirmation, using the default wording if no argument is given."
 }

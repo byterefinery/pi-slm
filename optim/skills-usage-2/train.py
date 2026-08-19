@@ -101,7 +101,7 @@ STUDENT = dspy.LM(
     api_key=API_KEY,
     model_type="chat",
     temperature=0.1,
-    max_tokens=4096,  # cap thinking loops; skill confirmations need far fewer tokens
+    max_tokens=16384,
     timeout=300,      # fail fast instead of clogging the shared server queue
     extra_headers={"x-session-affinity": "dspy-optim"},
     extra_body={"top_k": 50, "repeat_penalty": 1.1, "reasoning_effort": "high"},
@@ -122,8 +122,9 @@ TEACHER = dspy.LM(
         "min_p": 0.0,
         "presence_penalty": 0.0,
         "repeat_penalty": 1.0,
-        # teacher is a thinking model; keep reasoning on (pi's qwen-chat-template)
-        "chat_template_kwargs": {"enable_thinking": True, "preserve_thinking": True},
+        # teacher runs with thinking OFF: reasoning takes too long; drafting and
+        # reflection are faster and just as effective without it (student stays on)
+        "chat_template_kwargs": {"enable_thinking": False, "preserve_thinking": False},
     },
     cache=False,  # coach must get fresh pair drafts for every candidate
     timeout=300,
