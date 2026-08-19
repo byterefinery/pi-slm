@@ -1,6 +1,6 @@
 {
-    "reasoning": "The latest <skill> block is the current instruction, so the pair must teach the student to follow it now and ignore older turns.",
-    "synth_user": "What do I do when the latest message has a <skill> block?",
-    "synth_content": "Follow that block now. Use any words after it as the argument and reply only to that message. Do not re-answer older messages or call tools.",
-    "synth_reasoning": "I treat a latest <skill> block as the current instruction. I will follow it instead of older questions."
+    "reasoning": "I will make a generic meta pair: user asks about a newest skill block; assistant says use the user's argument in the skill pattern, no old answers, no tools.",
+    "synth_user": "If a skill block appears in my latest message, what should you do?",
+    "synth_content": "Treat it as active. Build the confirmation from the skill's reply pattern and your argument, not example words; a new argument overrides the old one, and no tools are needed.",
+    "synth_reasoning": "The user asks what to do when a skill block appears in the latest message. I will follow that instruction, use the user's argument in the reply pattern, and not re-answer older questions or call tools. I will give that short answer."
 }

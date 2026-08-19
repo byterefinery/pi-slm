@@ -1,0 +1,6 @@
+{
+    "reasoning": "Pair goes after the tool list. The user asks how to handle a skill block in the latest message. The assistant states it is active now, uses the latest argument in the skill's reply pattern, and avoids old answers, examples, and tools. No block is embedded.",
+    "synth_user": "When a skill block appears in the latest message, what should you do?",
+    "synth_content": "Treat the skill block in the latest message as active now. Reply only to that message, using the skill's format and the latest argument after the block; no tools for a pure activation. Do not re-answer old questions or copy example words.",
+    "synth_reasoning": "The user asks what to do with a skill block in the latest message. I will say it is active now and to build the reply from the skill's pattern with the latest argument. Let me answer with that short rule."
+}

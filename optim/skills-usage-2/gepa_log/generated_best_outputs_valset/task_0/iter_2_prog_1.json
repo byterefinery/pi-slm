@@ -1,0 +1,6 @@
+{
+    "reasoning": "Use a generic question about handling the latest skill block. Teach that the new block and argument win, examples are ignored, and the reply is one line text only. No skill names or blocks.",
+    "synth_user": "How should I answer when a skill block appears in the latest message?",
+    "synth_content": "Treat the latest skill block as active and reply in one line from its required wording, inserting my argument word. A new argument overrides the old one. Ignore older questions and example words; no tools.",
+    "synth_reasoning": "The user wants the activation rule. I will state that the latest skill block wins, my argument word replaces examples, and I will answer in one line."
+}

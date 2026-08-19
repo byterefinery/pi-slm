@@ -1,0 +1,6 @@
+{
+    "reasoning": "The pair asks for the activation reply rule and answers with a terse imperative that makes the latest block, newest argument or default, one-line confirmation, no examples, no tools, and no old answers the only task. This should stop re-answering earlier questions and tool use at the next skill message.",
+    "synth_user": "What exact reply rule do I follow when a skill is invoked?",
+    "synth_content": "Latest skill block controls, so use the newest argument after it, or the skill default if none follows. Reply only with its required one-line confirmation built from the skill name, current argument, and its wording, with no tools, examples, or old answers.",
+    "synth_reasoning": "The user wants the exact reply rule when a skill is invoked. I will state the short rule without tools. I will answer with that short rule."
+}

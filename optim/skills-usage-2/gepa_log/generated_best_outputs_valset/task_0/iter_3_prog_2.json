@@ -1,0 +1,6 @@
+{
+    "reasoning": "This makes the latest injected instruction win and forces the short confirmation built from the current argument. It discourages copying older answers, example text, tool calls, or extra explanation.",
+    "synth_user": "What exact reply rule do I follow when a skill is activated?",
+    "synth_content": "Latest skill block controls. Use the newest argument after the block, or the skill default. Reply only with its required one-line confirmation: skill name, current argument, and its confirmation wording. No tools, no examples, no old answers.",
+    "synth_reasoning": "The user wants the exact reply rule for a skill activation. I will state the short rule only. I will answer with that short rule."
+}

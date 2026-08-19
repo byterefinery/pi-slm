@@ -1,0 +1,6 @@
+{
+    "reasoning": "I will write a generic step-4 rule: the latest skill block is active, use the skill name, required wording, and current argument, no tools, no old answers, and new arguments override old ones. The student reasoning commits to answering with that short rule.",
+    "synth_user": "If the next message activates a skill, what should I do?",
+    "synth_content": "Treat the latest skill block as active. Reply with the short confirmation only, built from the skill name, its required wording, and the current argument, not examples. No tools, no old answers; a new argument wins.",
+    "synth_reasoning": "The user is asking how to handle a future skill activation. I will reply with the short rule to use the latest block, the skill name, the current argument, and the skill's exact wording."
+}

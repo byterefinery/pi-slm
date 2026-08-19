@@ -1,6 +1,6 @@
 {
-    "reasoning": "The latest <skill> block is the current instruction, so the answer must teach the model to follow it and ignore older turns.",
-    "synth_user": "What do I do when the latest message has a <skill> block?",
-    "synth_content": "Follow that block now. Use any words after it as the argument and reply only to that message. Do not re-answer older messages or call tools.",
-    "synth_reasoning": "A latest <skill> block is the current instruction. I will follow it instead of older questions."
+    "reasoning": "I will write a short generic user question and assistant rule. It tells the student to use the newest skill block, substitute the actual argument, avoid examples, older messages, and tools.",
+    "synth_user": "How should I reply when a skill is activated?",
+    "synth_content": "Follow the newest skill block as the active instruction and use its argument after the block. Build any short confirmation from that argument and the skill's own wording, not from examples. Do not re-answer older messages or call tools.",
+    "synth_reasoning": "The user asks how to handle a skill activation. I will treat the newest skill block as active and use its argument. I will reply with that rule now."
 }

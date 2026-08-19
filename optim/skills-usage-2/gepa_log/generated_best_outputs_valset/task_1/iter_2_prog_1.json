@@ -1,0 +1,6 @@
+{
+    "reasoning": "Use a generic rule exchange before the real activation. The user asks what to do on activation; the assistant commits to following the latest block, using the current argument, and no tools. This should bias the student to treat the next skill block as active.",
+    "synth_user": "If my next message contains a skill activation, what should you do?",
+    "synth_content": "Treat the skill in that latest message as active now. Follow its required wording, put my current argument in its place, and let a new argument override the old one. Answer only that confirmation, with no tools.",
+    "synth_reasoning": "The user is asking for a rule about skill activations. I will say the latest activation is active and the current argument wins."
+}

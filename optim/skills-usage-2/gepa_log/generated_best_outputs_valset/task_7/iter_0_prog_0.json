@@ -1,0 +1,6 @@
+{
+    "reasoning": "The pair must teach the latest activation wins. I will use a short question and a three-sentence answer that names the rule, substitution, and no re-answering/tool calls. It avoids skill names and blocks.",
+    "synth_user": "How should I act when a skill is activated?",
+    "synth_content": "Treat the latest skill block as an active instruction for this reply. Build its confirmation from the skill's reply pattern and the user's actual argument, not example words. Do not re-answer older questions or call tools.",
+    "synth_reasoning": "The user asks how to act when a skill is activated. I will answer with the short rule to follow the latest block and substitute the user's argument."
+}

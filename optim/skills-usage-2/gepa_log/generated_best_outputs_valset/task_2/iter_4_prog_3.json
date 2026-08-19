@@ -1,0 +1,6 @@
+{
+    "reasoning": "Use the known-good short question and imperative rule so the student binds to the latest skill block and current argument, without examples or tools.",
+    "synth_user": "What do I do when a skill is active?",
+    "synth_content": "Treat the latest skill block as the current instruction. Build the reply from the skill's pattern and my argument word, not example words. Ignore older questions and do not call tools.",
+    "synth_reasoning": "The user asks how I handle an active skill. I will follow the latest skill block, use my argument word, and answer only with the requested confirmation."
+}

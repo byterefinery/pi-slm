@@ -2,7 +2,7 @@
 #
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["dspy", "gepa[full]"]
+# dependencies = ["dspy", "gepa[full]", "openai"]
 # ///
 
 '''
@@ -101,7 +101,8 @@ STUDENT = dspy.LM(
     api_key=API_KEY,
     model_type="chat",
     temperature=0.1,
-    max_tokens=8192,
+    max_tokens=4096,  # cap thinking loops; skill confirmations need far fewer tokens
+    timeout=300,      # fail fast instead of clogging the shared server queue
     extra_headers={"x-session-affinity": "dspy-optim"},
     extra_body={"top_k": 50, "repeat_penalty": 1.1, "reasoning_effort": "high"},
     cache=True,  # same conversation -> same reply; different pair -> fresh call
@@ -125,6 +126,7 @@ TEACHER = dspy.LM(
         "chat_template_kwargs": {"enable_thinking": True, "preserve_thinking": True},
     },
     cache=False,  # coach must get fresh pair drafts for every candidate
+    timeout=300,
     num_retries=5,
 )
 
@@ -175,24 +177,35 @@ def load_cases() -> list[dict]:
     real_target = t_msgs[6]["content"].strip()
     real_reasoning = t_msgs[6].get("reasoning_content", "")
 
-    # (user argument after </skill>, expected teacher-style reply, is_real_teacher_pair)
-    variants = [
-        ("full", "tzip full activated.", True),   # the recorded teacher answer
-        ("tzip", "tzip lite activated", False),   # skill: bare `tzip` -> lite (default)
-        ("tzip ultra", "tzip ultra activated", False),
-        ("tzip off", "tzip deactivated", False),  # skill: reply "tzip deactivated"
+    def block_invoke(arg: str) -> str:
+        return f"{skill_block}</skill>" + (f"\n\n{arg}" if arg else "")
+
+    def simple(name: str, arg: str, target: str, is_real: bool = False) -> dict:
+        return {"name": name, "arg": arg,
+                "turns": [{"invoke": block_invoke(arg), "reply": None}],
+                "target": target, "is_real": is_real}
+
+    def switch(name: str, arg1: str, reply1: str, reasoning1: str, arg2: str, target: str) -> dict:
+        """Mode already active, user re-invokes the skill with a different argument."""
+        return {"name": name, "arg": arg2,
+                "turns": [{"invoke": block_invoke(arg1), "reply": reply1, "reply_reasoning": reasoning1},
+                          {"invoke": block_invoke(arg2), "reply": None}],
+                "target": target, "is_real": False}
+
+    # Full tzip matrix: default (no arg), lite, full (the recorded teacher pair),
+    # ultra, off - plus mode switches (a later skill message with a new argument).
+    return [
+        simple("tzip-default", "", "tzip lite activated"),
+        simple("tzip-lite", "lite", "tzip lite activated"),
+        simple("tzip-full", "full", real_target, is_real=True),
+        simple("tzip-ultra", "ultra", "tzip ultra activated"),
+        simple("tzip-off", "off", "tzip deactivated"),
+        switch("tzip-full-to-lite", "full", "tzip full activated.", real_reasoning,
+               "lite", "tzip lite activated"),
+        switch("tzip-lite-to-full", "", "tzip lite activated",
+               "The user invoked the tzip skill with no mode - the default is lite. Per the skill: reply with the mode name.",
+               "full", "tzip full activated."),
     ]
-    cases = []
-    for arg, target, is_real in variants:
-        cases.append({
-            "name": f"tzip-{arg.replace('tzip', '').strip() or 'default'}",
-            "arg": arg,
-            "invoke": f"{skill_block}</skill>\n\n{arg}",
-            "target": target,
-            "target_reasoning": real_reasoning if is_real else "",
-            "is_real": is_real,
-        })
-    return cases
 
 
 def build_examples(cases: list[dict]) -> list:
@@ -201,9 +214,8 @@ def build_examples(cases: list[dict]) -> list:
     for c in cases:
         for _ in range(3 if c["is_real"] else 1):
             exs.append(dspy.Example(
-                spec=SPEC,
-                invoke=c["invoke"], target=c["target"],
-                target_reasoning=c["target_reasoning"], name=c["name"], arg=c["arg"],
+                spec=SPEC, turns=c["turns"], target=c["target"],
+                name=c["name"], arg=c["arg"],
             ).with_inputs("spec"))
     return exs
 
@@ -214,15 +226,24 @@ PREFIX: list[dict] = []  # filled in main(): system + the two existing synthetic
 TOOLS: list[dict] = []   # filled in main(): the pi tools array (fidelity to deployment)
 
 
-def student_rollout(invoke: str, pair: dict | None) -> dict:
-    """One student completion: fixed prefix (+ optional synthetic pair) + skill invoke."""
+def student_rollout(turns: list[dict], pair: dict | None) -> dict:
+    """Student completion: fixed prefix (+ optional synthetic pair) + skill turn(s).
+
+    Each turn: {invoke: user text, reply: known assistant reply (None = model generates)}.
+    """
     messages = list(PREFIX)
     if pair:
         messages.append({"role": "user", "content": pair["synth_user"]})
         messages.append({"role": "assistant", "content": pair["synth_content"],
                          "reasoning_content": pair["synth_reasoning"]})
-    messages.append({"role": "user", "content": invoke})
-    out = STUDENT(messages=messages, max_tokens=8192, tools=TOOLS)
+    for t in turns:
+        messages.append({"role": "user", "content": t["invoke"]})
+        if t.get("reply"):  # intermediate turn of a multi-turn (mode switch) case
+            msg = {"role": "assistant", "content": t["reply"]}
+            if t.get("reply_reasoning"):
+                msg["reasoning_content"] = t["reply_reasoning"]
+            messages.append(msg)
+    out = STUDENT(messages=messages, max_tokens=4096, tools=TOOLS)
     last = out[-1] if out else {}
     if isinstance(last, str):
         last = {"text": last}
@@ -291,7 +312,7 @@ def coach_metric(example, pred, trace=None, pred_name=None, pred_trace=None):
                                feedback="Coach produced an empty field in the pair. "
                                         "All three fields (synth_user, synth_content, synth_reasoning) are required.")
     try:
-        got = student_rollout(example.invoke, pair)
+        got = student_rollout(example.turns, pair)
     except Exception as e:  # provider hiccup -> treat as failure, do not crash GEPA
         return dspy.Prediction(score=0.0, feedback=f"Student rollout failed: {type(e).__name__}: {e}")
     score, problem = grade(example.target, got)
@@ -300,8 +321,8 @@ def coach_metric(example, pred, trace=None, pred_name=None, pred_trace=None):
         f"STUDENT REPLY:   {got['text'][:400]!r}\n"
         f"STUDENT THINKING: {got['reasoning'][:300]!r}\n"
         f"TEACHER TARGET:  {example.target!r}\n"
-        f"USER ARGUMENT AFTER </skill>: {example.arg!r} - the skill instructions in the <skill> "
-        f"block define the required reply, which must use this argument.\n"
+        f"USER ARGUMENT AFTER </skill> IN THE LAST USER MESSAGE: {example.arg!r} - the skill "
+        f"instructions in the <skill> block define the required reply, which must use this argument.\n"
         f"SYNTHETIC PAIR TRIED:\n  user:      {pair['synth_user'][:300]!r}\n"
         f"  assistant: {pair['synth_content'][:300]!r}\n"
         f"  reasoning: {pair['synth_reasoning'][:200]!r}\n"
@@ -316,6 +337,8 @@ def coach_metric(example, pred, trace=None, pred_name=None, pred_trace=None):
 
 
 # ----------------------------------------------------------------------------- coach program
+
+REASONING_DOC = open(os.path.join(HERE, "REASONING-LFM2.5-2.6B.md")).read().strip()
 
 SPEC = """CONTEXT
 You design ONE synthetic user message and ONE synthetic assistant message (content + reasoning_content)
@@ -355,6 +378,8 @@ After your pair, on step 5 (and any future skill invocation) the student must:
 - treat the <skill> block in the latest user message as an active instruction,
 - follow the skill's instructions and the user argument,
 - reply in the exact format the skill asks for (here: match the teacher's reply),
+- if a later message re-invokes the skill with a different argument, the new argument wins
+  (a mode switch) and the student confirms the new state in the same format,
 - never re-answer an older question, never call tools for a pure skill activation.
 
 STYLE RULES FOR YOUR PAIR
@@ -363,9 +388,17 @@ STYLE RULES FOR YOUR PAIR
   "websearch", "find-skills"). The pair is reused for every skill that will ever be invoked.
   (Generic pattern words are fine, e.g. teaching that a confirmation is built from the skill name,
   the user's argument, and the skill's own wording.)
-- The assistant message must include reasoning_content: 1-2 terse sentences in the style of the
-  existing pairs' reasoning (e.g. "I found 4 tools. I will pick the narrowest tool that fits the task.").
-- No markdown headers, no code fences, at most a couple of short bullets, <= ~300 chars per field."""
+- The assistant message must include reasoning_content written in the STUDENT's native reasoning
+  voice (see the STUDENT REASONING STYLE section below): open by naming the situation,
+  commit to the action with "I will ..." / "Let me ...", short form (1-3 sentences) for this
+  simple rule, and END by committing to the exact next action - the student's answer follows
+  whatever action its reasoning last commits to.
+- No markdown headers, no code fences, at most a couple of short bullets, <= ~300 chars per field.
+- NEVER embed a <skill> block inside a synthetic message: the student treats any <skill> block it
+  sees as a real activation and gets derailed (it starts answering that block instead of the real one).
+  Demonstrate the rule with plain words only (e.g. 'the skill name, then my argument word').
+
+""" + "\nSTUDENT REASONING STYLE (write the synthetic reasoning_content following this guide):\n\n" + REASONING_DOC
 
 
 class WriteSkillCoachPair(dspy.Signature):
@@ -386,8 +419,9 @@ SEED_INSTRUCTION = (
     "no tool calls for a pure skill activation. Teach the student to build any short confirmation "
     "from the skill's reply pattern with the user's actual argument substituted in, never copying "
     "example words from inside the skill. Keep the user message a short question like the earlier "
-    "synthetic pairs; keep the assistant answer 1-3 sentences; keep reasoning_content to 1-2 terse "
-    "sentences. The pair must be generic: no specific skill names or skill-specific words."
+    "synthetic pairs; keep the assistant answer 1-3 sentences; write reasoning_content in the "
+    "student's native voice per the style guide in the spec (situation, 'I will/let me', end by "
+    "committing to the exact action). The pair must be generic: no specific skill names."
 )
 
 
@@ -418,7 +452,7 @@ class SkillCoach(dspy.Module):
 def run_eval(cases: list[dict], tag: str, pair: dict | None = None):
     log(f"--- {tag} ---")
     for c in cases:
-        got = student_rollout(c["invoke"], pair)
+        got = student_rollout(c["turns"], pair)
         score, problem = grade(c["target"], got)
         log(f"{tag} {c['name']:<12} score={score:.3f}")
         log(f"  teacher: {c['target']!r}")
@@ -438,7 +472,7 @@ def score_pair(cases: list[dict], pair: dict) -> float:
     total, weight = 0.0, 0
     for c in cases:
         w = 3 if c["is_real"] else 1
-        got = student_rollout(c["invoke"], pair)
+        got = student_rollout(c["turns"], pair)
         s, _ = grade(c["target"], got)
         s = min(s, genericity([pair["synth_user"], pair["synth_content"], pair["synth_reasoning"]]))
         total, weight = total + s * w, weight + w
@@ -496,7 +530,7 @@ def main():
             metric=coach_metric,
             max_metric_calls=budget,
             reflection_lm=TEACHER,           # teacher reflects on failures, rewrites instruction
-            num_threads=2,
+            num_threads=1,  # shared server: one in-flight request at a time
             reflection_minibatch_size=3,
             log_dir=os.path.join(HERE, "gepa_log"),
             seed=42,
@@ -508,7 +542,7 @@ def main():
         # Persist the state-only program (re-instantiate with SkillCoach().load(...))
         # and the winning coach instruction.
         best.save(os.path.join(HERE, "coach-optimized.json"))
-        coach_pred = dict(best.named_predictors())["SkillCoach.coach.predict"]
+        _, coach_pred = list(best.named_predictors())[0]  # the module has one predictor
         log(f"coach instruction:\n{coach_pred.signature.instructions}\n")
         open(os.path.join(HERE, "coach-instruction.txt"), "w").write(coach_pred.signature.instructions)
 

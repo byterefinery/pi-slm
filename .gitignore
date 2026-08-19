@@ -148,4 +148,6 @@ __pycache__/
 
 .agents
 .pi
+venv/
+.venv/
 misc/

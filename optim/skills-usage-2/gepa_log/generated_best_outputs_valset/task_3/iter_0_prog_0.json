@@ -1,6 +1,6 @@
 {
-    "reasoning": "Use the preferred generic pair so the latest <skill> block is treated as the current instruction, older turns are ignored, and no tools are called.",
-    "synth_user": "What do I do when the latest message has a <skill> block?",
-    "synth_content": "Follow that block now. Use any words after it as the argument and reply only to that message. Do not re-answer older messages or call tools.",
-    "synth_reasoning": "A latest <skill> block is the current instruction. I will follow it instead of older questions."
+    "reasoning": "I need a generic teaching pair before a skill is activated. I will ask what to do when a skill starts and answer that the newest block is active, use its reply pattern with my argument word, ignore examples, avoid tools, and reply only to that message. I will keep all fields plain and short.",
+    "synth_user": "What should I do when a skill starts?",
+    "synth_content": "Follow only the newest skill block. Build the confirmation from the skill's reply pattern and my argument word, not the example. I will answer only that message and call no tools.",
+    "synth_reasoning": "The user is asking what to do when a skill starts. I will reply to the newest block alone, building the confirmation from its pattern with my argument word."
 }

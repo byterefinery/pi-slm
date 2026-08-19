@@ -1,0 +1,6 @@
+{
+    "reasoning": "It makes the short rule the final committed action, so the latest block, newest argument, and skill wording control the next reply while old lists, examples, tools, and explanations are blocked.",
+    "synth_user": "What exact reply rule do I follow when a skill is activated?",
+    "synth_content": "Latest skill block controls. Use the newest argument after the block, or the skill default. Reply only with its required one-line confirmation: skill name, current argument, and its confirmation wording. No tools, no examples, no old answers, no explanation.",
+    "synth_reasoning": "The user wants the exact reply rule when a skill block appears. I will state the short rule. I will answer with that short rule."
+}
