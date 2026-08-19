@@ -197,19 +197,43 @@ def load_cases() -> list[dict]:
                           {"invoke": block_invoke(arg2), "reply": None}],
                 "target": target, "is_real": False}
 
+    def sw(name: str, mode1: str, mode2: str) -> dict:
+        """Mode switch from mode1 (already active, confirmed) to mode2 (the argument of the latest block)."""
+        reply1 = "tzip deactivated" if mode1 == "off" else f"tzip {mode1} activated"
+        reasoning1 = (f"The user invoked the tzip skill with {mode1} mode. Per the skill, "
+                      "I will reply with the short mode confirmation.")
+        target = "tzip deactivated" if mode2 == "off" else f"tzip {mode2} activated"
+        return switch(name, mode1, reply1, reasoning1, mode2, target)
+
     # Full tzip matrix: default (no arg), lite, full, ultra, off
-    # - plus mode switches (a later skill message with a new argument).
+    # - plus ALL 12 mode switches (a later skill message with a new argument wins).
     return [
         simple("tzip-default", "", "tzip lite activated"),
         simple("tzip-lite", "lite", "tzip lite activated"),
         simple("tzip-full", "full", "tzip full activated"),
         simple("tzip-ultra", "ultra", "tzip ultra activated"),
         simple("tzip-off", "off", "tzip deactivated"),
-        switch("tzip-full-to-lite", "full", "tzip full activated.", real_reasoning,
-               "lite", "tzip lite activated"),
+        # lite <-> ultra
+        sw("tzip-lite-to-ultra", "lite", "ultra"),
+        sw("tzip-ultra-to-lite", "ultra", "lite"),
+        # lite <-> full (existing recorded-context variants)
         switch("tzip-lite-to-full", "", "tzip lite activated",
                "The user invoked the tzip skill with no mode - the default is lite. Per the skill: reply with the mode name.",
                "full", "tzip full activated"),
+        switch("tzip-full-to-lite", "full", "tzip full activated.", real_reasoning,
+               "lite", "tzip lite activated"),
+        # full <-> ultra
+        sw("tzip-full-to-ultra", "full", "ultra"),
+        sw("tzip-ultra-to-full", "ultra", "full"),
+        # lite <-> off
+        sw("tzip-lite-to-off", "lite", "off"),
+        sw("tzip-off-to-lite", "off", "lite"),
+        # full <-> off
+        sw("tzip-full-to-off", "full", "off"),
+        sw("tzip-off-to-full", "off", "full"),
+        # ultra <-> off
+        sw("tzip-ultra-to-off", "ultra", "off"),
+        sw("tzip-off-to-ultra", "off", "ultra"),
     ]
 
 
