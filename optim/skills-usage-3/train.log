@@ -2,38 +2,48 @@ Loaded provider 'llamacpp' config for LiquidAI/LFM2.5-2.6B (thinking on) and Qwe
 API base: https://*** (masked)
 Teacher probe: 'pong'
 Student probe: 'pong'
-Goal 1: creating skill-example-LiquidAI-LFM2.5-2.6B.json from the Qwen file (LFM voice).
-  wrote skill-example-LiquidAI-LFM2.5-2.6B.json (17 messages)
-Step 5: generating tzip invocations with the teacher model (thinking off)...
-  tzip[1/9] arg=(none) -> 'tzip lite activated'
-  tzip[2/9] arg=on -> 'tzip lite activated'
-  tzip[3/9] arg=lite -> 'tzip lite activated'
-  tzip[4/9] arg=full -> 'tzip full activated'
-  tzip[5/9] arg=ultra -> 'tzip ultra activated'
-  tzip[6/9] arg=on -> 'tzip lite activated'
-  tzip[7/9] arg=ultra -> 'tzip ultra activated'
-  tzip[8/9] arg=lite -> 'tzip lite activated'
-  tzip[9/9] arg=off -> 'tzip deactivated'
-  example 'call script' -> 'example.sh output:\n\n```\nThis is example.sh output.\n```'
-Wrote skill-tzip-LiquidAI-LFM2.5-2.6B.json (35 messages).
-Goal 2: GEPA optimization — 10 validation items, max_metric_calls=150.
-GEPA Optimization:   0%|          | 0/150 [00:00<?, ?rollouts/s]GEPA Optimization:   0%|          | 0/150 [01:13<?, ?rollouts/s]
-Iteration 0: Base program full valset score: 1.0 over 10 / 10 examples
-GEPA done: best val score = 1.000 over 10 items.
+Goal 1: skill-example-LiquidAI-LFM2.5-2.6B.json is not empty — considered fulfilled, loading it.
+Step 5: generating 15 interleaved invocations with the teacher model (thinking off)...
+  seq[ 1/15] tzip (none)       -> 'tzip lite activated'
+  seq[ 2/15] tzip full         -> 'tzip full activated'
+  seq[ 3/15] example Hello        -> 'world'
+  seq[ 4/15] tzip ultra        -> 'tzip ultra activated'
+  seq[ 5/15] example call script  -> '`This is example.sh output.`'
+  seq[ 6/15] tzip on           -> 'tzip lite activated'
+  seq[ 7/15] tzip lite         -> 'tzip lite activated'
+  seq[ 8/15] example (none)       -> 'This is an example skill.'
+  seq[ 9/15] tzip full         -> 'tzip full activated'
+  seq[10/15] example Test123      -> 'Output: `This is example.sh output.`'
+  seq[11/15] tzip ultra        -> 'tzip ultra activated'
+  seq[12/15] tzip lite         -> 'tzip lite activated'
+  seq[13/15] tzip ultra        -> 'tzip ultra activated'
+  seq[14/15] tzip off          -> 'tzip deactivated'
+  seq[15/15] example Hello        -> 'world'
+Wrote skill-tzip-LiquidAI-LFM2.5-2.6B.json (55 messages).
+Goal 2: GEPA optimization — 15 validation items, max_metric_calls=200.
+GEPA Optimization:   0%|          | 0/200 [00:00<?, ?rollouts/s]GEPA Optimization:   0%|          | 0/200 [00:00<?, ?rollouts/s]
+Loading gepa state from run dir
+Iteration 0: Base program full valset score: 1.0 over 15 / 15 examples
+GEPA done: best val score = 1.000 over 15 items.
 
 Final validation of the optimized step-1 pair:
-  [PASS   ] tzip #1 (default): 1.0 | student: 'tzip lite activated'
-  [PASS   ] tzip #2 (on): 1.0 | student: 'tzip lite activated'
-  [PASS   ] tzip #3 (lite): 1.0 | student: 'tzip lite activated'
-  [PASS   ] tzip #4 (full): 1.0 | student: 'tzip full activated'
-  [PASS   ] tzip #5 (ultra): 1.0 | student: 'tzip ultra activated'
-  [PASS   ] tzip #6 (on): 1.0 | student: 'tzip lite activated'
-  [PASS   ] tzip #7 (ultra): 1.0 | student: 'tzip ultra activated'
-  [PASS   ] tzip #8 (lite): 1.0 | student: 'tzip lite activated'
-  [PASS   ] tzip #9 (off): 1.0 | student: 'tzip deactivated'
-  [PASS   ] example 'call script' (no parameters): 1.0 | student: 'example.sh output:\n\n```\nThis is example.sh output.\n```'
+  [PASS   ] tzip (default) #1: 1.0 | student: 'tzip lite activated'
+  [PASS   ] tzip full #2: 1.0 | student: 'tzip full activated'
+  [PASS   ] example Hello #3: 1.0 | student: 'world'
+  [PASS   ] tzip ultra #4: 1.0 | student: 'tzip ultra activated'
+  [PASS   ] example call script #5: 1.0 | student: '`This is example.sh output.`'
+  [PASS   ] tzip on #6: 1.0 | student: 'tzip lite activated'
+  [PASS   ] tzip lite #7: 1.0 | student: 'tzip lite activated'
+  [PASS   ] example (default) #8: 1.0 | student: 'This is an example skill.'
+  [PASS   ] tzip full #9: 1.0 | student: 'tzip full activated'
+  [PASS   ] example Test123 #10: 1.0 | student: 'Output: `This is example.sh output.`'
+  [PASS   ] tzip ultra #11: 1.0 | student: 'tzip ultra activated'
+  [PASS   ] tzip lite #12: 1.0 | student: 'tzip lite activated'
+  [PASS   ] tzip ultra #13: 1.0 | student: 'tzip ultra activated'
+  [PASS   ] tzip off #14: 1.0 | student: 'tzip deactivated'
+  [PASS   ] example Hello #15: 1.0 | student: 'world'
   aggregate: 1.000
-Wrote skill-tzip-LiquidAI-LFM2.5-2.6B.json (35 messages).
+Wrote skill-tzip-LiquidAI-LFM2.5-2.6B.json (55 messages).
 Saved optimized step-1 pair to step1-pair-optimized.json and into skill-tzip-LiquidAI-LFM2.5-2.6B.json.
 
 Optimized step-1 pair:
