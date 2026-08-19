@@ -169,6 +169,7 @@ def load_cases() -> list[dict]:
     Canonical required behaviors (checked every round, reported per case):
       /skill:tzip full  -> "tzip full activated"
       /skill:tzip       -> "tzip lite activated"   (no argument: the skill's default)
+      The skill's default is Lite for 'tzip', 'tzip on' and 'tzip lite' alike.
     """
     t_msgs = json.load(open(TEACHER_FILE))["messages"]
     s_msgs = json.load(open(STUDENT_FILE))["messages"]
@@ -209,6 +210,7 @@ def load_cases() -> list[dict]:
     # - plus ALL 12 mode switches (a later skill message with a new argument wins).
     return [
         simple("tzip-default", "", "tzip lite activated"),
+        simple("tzip-on", "on", "tzip lite activated"),
         simple("tzip-lite", "lite", "tzip lite activated"),
         simple("tzip-full", "full", "tzip full activated"),
         simple("tzip-ultra", "ultra", "tzip ultra activated"),

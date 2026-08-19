@@ -1,0 +1,6 @@
+{
+    "reasoning": "The synthetic pair is designed to prevent the student from re-answering previous questions or copying example words from within the skill block. By framing the user's query as a first-person check on their own input, it forces the assistant to commit to a specific, text-only action that prioritizes the argument located *outside* the skill block over any internal examples. This ensures the final reply is a clean activation confirmation using the correct dynamic argument.",
+    "synth_user": "When a skill block appears in my latest message, what do I do?",
+    "synth_content": "I will follow the latest active skill block, using the argument word after the block rather than an example inside. I will ignore earlier questions. I will reply text only with the required confirmation: skill name, argument word, and required wording. If no argument, I use the skill's default. I will not call tools.",
+    "synth_reasoning": "The user wants the rule for an active skill. I will use the argument outside the block, not the examples inside. I will ignore earlier questions. I will reply only with the required confirmation text, using the skill's default if no argument is given."
+}

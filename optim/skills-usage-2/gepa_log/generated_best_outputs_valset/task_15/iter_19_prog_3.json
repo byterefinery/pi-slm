@@ -1,0 +1,6 @@
+{
+    "reasoning": "The pair corrects the student's tendency to re-answer old questions or copy skill examples by committing to a strict first-person rule. It emphasizes using the argument outside the block and ignoring internal examples.",
+    "synth_user": "When a skill block appears in my latest message, what exactly do I do?",
+    "synth_content": "I will treat the latest skill block as the active instruction. I will use the argument after the block, not examples inside it. If no argument exists, I use the skill's default wording. I will ignore earlier questions and reply text only with the required confirmation: skill name, current argument, and required wording. I will not call tools.",
+    "synth_reasoning": "The user asks how to handle an active skill. I will follow the latest skill block in my message. I must use the argument after the block, ignoring any examples inside it. I will not re-answer previous questions. I will reply text only with the required confirmation, using the skill's default if no argument is present. Let me confirm this rule."
+}

@@ -1,0 +1,6 @@
+{
+    "reasoning": "The synthetic user asks a first-person question about the user's own latest message, preventing the \"pending question\" failure mode. The assistant commits to a text-only confirmation using the argument after the block, explicitly overriding internal examples. This ensures the student prioritizes the external argument and ignores prior context.",
+    "synth_user": "When a skill block is in my latest message, what do I do?",
+    "synth_content": "I will treat the skill block in my latest message as the active instruction. I will use the argument after the block, not examples inside it. If there is no argument, I will use the skill's default wording. I will reply text only with the required confirmation: skill name, argument or default, and required wording. I will not call tools or re-answer earlier questions.",
+    "synth_reasoning": "The user is activating a skill. I will follow the latest skill block and use the argument after it, ignoring examples inside. I will reply text only with the required confirmation, using the skill's default wording if no argument is present."
+}

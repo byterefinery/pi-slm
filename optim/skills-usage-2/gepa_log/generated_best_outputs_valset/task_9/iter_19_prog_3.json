@@ -1,0 +1,6 @@
+{
+    "reasoning": "This pair establishes a first-person commitment to prioritize the skill block in the latest message over any previous context. By explicitly stating that the user's argument outside the block overrides examples inside the block, it prevents the student from copying static example text or re-answering earlier questions. The reasoning closes by committing to output only the required confirmation, ensuring the student acts immediately rather than explaining the rule.",
+    "synth_user": "When a skill block appears in my latest message, what is the exact rule for my reply?",
+    "synth_content": "I will follow the instructions in the latest skill block. I will use the argument word after the block as the current argument, not any example word inside the block. If there is no argument, I will use the skill's default wording. I will ignore earlier questions and reply text only with the required confirmation, without tools or extra formatting.",
+    "synth_reasoning": "The user is asking for the rule on skill activation. I will commit to using the latest skill block and the argument provided after it. I will not copy examples from inside the block or re-answer older questions. I will reply with only the required confirmation text, using the skill name, the current argument or default, and the skill's specific wording."
+}
