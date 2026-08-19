@@ -93,6 +93,7 @@ TEACHER_MODEL = "Qwen/Qwen3.8-27B"
 
 TEACHER_FILE = os.path.join(HERE, "tzip-full-Qwen-Qwen3.8-27B.json")
 STUDENT_FILE = os.path.join(HERE, "tzip-full-LiquidAI-LFM2.5-2.6B.json")
+TZIP_SKILL = "/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/tzip/SKILL.md"
 
 # Sampling params from ~/.pi/agent/models.json for each model.
 STUDENT = dspy.LM(
@@ -149,14 +150,6 @@ def warmup(lm: dspy.LM, name: str, tries: int = 40, sleep_s: float = 15.0) -> No
     raise RuntimeError(f"{name} never became ready")
 
 
-def text_of(msg: dict) -> str:
-    """Flatten a message content that may be a string or a list of parts."""
-    c = msg.get("content")
-    if isinstance(c, list):
-        return "\n".join(p.get("text", "") for p in c if isinstance(p, dict))
-    return c or ""
-
-
 def norm(s: str) -> str:
     return " ".join((s or "").lower().split())
 
@@ -178,10 +171,14 @@ def load_cases() -> list[dict]:
     # 0 system | 1 user(what skills) | 2 assistant | 3 user(what tools) | 4 assistant
     # 5 user(skill invocation) | 6 assistant(failed answer)
     assert [m["role"] for m in s_msgs[:6]] == ["system", "user", "assistant", "user", "assistant", "user"]
-    invoke = text_of(s_msgs[5])
-    assert "</skill>" in invoke, "expected a <skill> block in the last user message"
-    skill_block, arg = invoke.rsplit("</skill>", 1)
     real_reasoning = t_msgs[6].get("reasoning_content", "")
+
+    # Skill block: built from the LIVE SKILL.md (same format the harness injects),
+    # so evals always match the current skill definition.
+    skill_md = open(TZIP_SKILL).read().strip()
+    skill_block = (f'<skill name="tzip" location="{TZIP_SKILL}">\n'
+                   f"References are relative to {os.path.dirname(TZIP_SKILL)}.\n\n"
+                   f"{skill_md}\n</skill>")
 
     def block_invoke(arg: str) -> str:
         return f"{skill_block}</skill>" + (f"\n\n{arg}" if arg else "")
