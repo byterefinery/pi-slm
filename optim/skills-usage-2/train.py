@@ -164,7 +164,12 @@ def norm(s: str) -> str:
 # ----------------------------------------------------------------------------- data
 
 def load_cases() -> list[dict]:
-    """Build eval cases: the real teacher pair + skill-derived tzip variants."""
+    """Build eval cases: the full tzip matrix (default/lite/full/ultra/off + mode switches).
+
+    Canonical required behaviors (checked every round, reported per case):
+      /skill:tzip full  -> "tzip full activated"
+      /skill:tzip       -> "tzip lite activated"   (no argument: the skill's default)
+    """
     t_msgs = json.load(open(TEACHER_FILE))["messages"]
     s_msgs = json.load(open(STUDENT_FILE))["messages"]
 
@@ -175,7 +180,6 @@ def load_cases() -> list[dict]:
     invoke = text_of(s_msgs[5])
     assert "</skill>" in invoke, "expected a <skill> block in the last user message"
     skill_block, arg = invoke.rsplit("</skill>", 1)
-    real_target = t_msgs[6]["content"].strip()
     real_reasoning = t_msgs[6].get("reasoning_content", "")
 
     def block_invoke(arg: str) -> str:
@@ -193,12 +197,11 @@ def load_cases() -> list[dict]:
                           {"invoke": block_invoke(arg2), "reply": None}],
                 "target": target, "is_real": False}
 
-    # Full tzip matrix: default (no arg), lite, full (the recorded teacher pair),
-    # ultra, off - plus mode switches (a later skill message with a new argument).
+    # Full tzip matrix: default (no arg), lite, full, ultra, off
+    # - plus mode switches (a later skill message with a new argument).
     return [
         simple("tzip-default", "", "tzip lite activated"),
         simple("tzip-lite", "lite", "tzip lite activated"),
-        # simple("tzip-full", "full", real_target, is_real=True),
         simple("tzip-full", "full", "tzip full activated"),
         simple("tzip-ultra", "ultra", "tzip ultra activated"),
         simple("tzip-off", "off", "tzip deactivated"),
@@ -206,7 +209,7 @@ def load_cases() -> list[dict]:
                "lite", "tzip lite activated"),
         switch("tzip-lite-to-full", "", "tzip lite activated",
                "The user invoked the tzip skill with no mode - the default is lite. Per the skill: reply with the mode name.",
-               "full", "tzip full activated."),
+               "full", "tzip full activated"),
     ]
 
 
