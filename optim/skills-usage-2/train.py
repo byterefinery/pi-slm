@@ -483,9 +483,13 @@ class SkillCoach(dspy.Module):
 def run_eval(cases: list[dict], tag: str, pair: dict | None = None):
     log(f"--- {tag} ---")
     for c in cases:
-        got = student_rollout(c["turns"], pair)
+        try:
+            got = student_rollout(c["turns"], pair)
+        except Exception as e:  # server hiccup: score 0, keep going, do not crash the run
+            log(f"{tag} {c['name']:<18} score=0.000  [rollout failed: {type(e).__name__}: {e}]")
+            continue
         score, problem = grade(c["target"], got)
-        log(f"{tag} {c['name']:<12} score={score:.3f}")
+        log(f"{tag} {c['name']:<18} score={score:.3f}")
         log(f"  teacher: {c['target']!r}")
         log(f"  student: {got['text'][:160]!r}" + (f"  [tools: {got['tool_calls']}]" if got["tool_calls"] else ""))
         if score < 1.0:
@@ -503,7 +507,11 @@ def score_pair(cases: list[dict], pair: dict) -> float:
     total, weight = 0.0, 0
     for c in cases:
         w = 3 if c["is_real"] else 1
-        got = student_rollout(c["turns"], pair)
+        try:
+            got = student_rollout(c["turns"], pair)
+        except Exception as e:  # server hiccup on one case: score 0 for it, keep going
+            log(f"  scoring {c['name']}: rollout failed ({type(e).__name__}), counting 0")
+            got = {"text": "", "reasoning": "", "tool_calls": []}
         s, _ = grade(c["target"], got)
         s = min(s, genericity([pair["synth_user"], pair["synth_content"], pair["synth_reasoning"]]))
         total, weight = total + s * w, weight + w
@@ -520,8 +528,13 @@ def pick_best_pair(best: SkillCoach, cases: list[dict], n: int) -> dict:
         log(f"  user:      {pair['synth_user'][:150]!r}")
         log(f"  assistant: {pair['synth_content'][:150]!r}")
         log(f"  reasoning: {pair['synth_reasoning'][:120]!r}")
+        # full untruncated pair - the log is the recovery source if the run dies later
+        log(f"  pair_json: {json.dumps(pair)}")
         if avg > best_avg:
             best_avg, best_pair = avg, pair
+        if best_pair is not None:
+            # checkpoint the current best after every draft (survives crashes)
+            json.dump(best_pair, open(os.path.join(HERE, "synthetic-pair.json"), "w"), indent=2)
     return best_pair
 
 

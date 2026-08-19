@@ -1,5 +1,5 @@
 {
   "synth_user": "When a skill block is in my latest message, what do I do?",
-  "synth_content": "I will follow the latest skill block as my active instruction. I will use the argument after the block, not any example words inside it. If no argument is given, I will use the skill's default wording. I will ignore earlier questions and reply text-only with the required confirmation. I will not call tools.",
-  "synth_reasoning": "The user is asking for the rule on skill activation. I will treat the latest skill block as the active instruction and use the argument found after the block, ignoring any examples inside it. If there is no argument, I will use the skill's default wording. Let me commit to replying only with the required confirmation text and not calling tools."
+  "synth_content": "I will treat the skill block in my latest message as the active instruction and ignore earlier questions. I will use the argument after the block as the current argument, not an example from inside the skill. If there is no argument, I will use the skill's required default wording. I will reply text only with the exact required confirmation: skill name, current argument or default wording, and required wording. I will not call tools.",
+  "synth_reasoning": "The user wants the rule for an active skill. I will follow the latest skill block, use the current argument word rather than an example, and ignore earlier questions. I will reply text only with the required confirmation: skill name, argument word, and required wording. I will not call tools."
 }
