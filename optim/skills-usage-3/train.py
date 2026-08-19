@@ -9,7 +9,7 @@
 Teach the student LM (LiquidAI/LFM2.5-2.6B) to handle pi skill invocations like the teacher LM (Qwen/Qwen3.8-27B, use it without thinking/reasoning, so it works fast) using dspy with gepa optimizer.
 
 Steps:
-1. Add synthetic user/assistant pair (content + reasoning_content) inserted into the student conversation just AFTER the existing synthetic skills/tools Q&A pairs how skill system works: invoke skill `<skill> SKILL BODY </skill> [USER MESSAGE]` block with user message.
+1. Add synthetic user/assistant pair (content + reasoning_content) inserted into the student conversation just AFTER the existing synthetic skills/tools Q&A pairs how skill system works: invoke skill `<skill> SKILL BODY </skill> [USER MESSAGE]` block with user message. Currently, I have placeholder user message, so you can find this part where user asks "How does skill system work? When a skill block is in my latest message, what do I do?".
 2. Add synthetic user/assistant pair (content + reasoning_content), one-shot usage of `example` skill (dummy fake skill just as reference), and answer to it: Invoked with no extra text
 3. Add synthetic user/assistant pair (content + reasoning_content), one-shot usage of `example` skill (dummy fake skill just as reference), and answer to it: Invoked with "Hello"
 4. Add synthetic user/assistant pair (content + reasoning_content), one-shot usage of `example` skill (dummy fake skill just as reference), and answer to it: Invoked with any other text, or asked to "call script"
@@ -27,8 +27,8 @@ Since reasoning in `skill-example-Qwen-Qwen3.8-27B.json` is based on `Qwen/Qwen3
 Set model and sampling params to one from LiquidAI/LFM2.5-2.6B (you can find them in `~/.pi/agent/models.json`).
 
 Goal 2:
-We need to optimize for any skill usage, so work on synthetic user/assistant pair in step 1.
 You can find minimal conversations in `skill-example-LiquidAI-LFM2.5-2.6B.json` based on `Qwen/Qwen3.8-27B` but written in style of `LiquidAI/LFM2.5-2.6B`.
+We need to optimize for any skill usage, so work on synthetic user/assistant pair in step 1. You are allowed to optimize only user and assistant from step 1. Other messages should stay the same, but at the end of conversation, you can invoke other skills to test if it is working explaine in step 5.
 Do not touch system message and next two synthetic pairs of messages how to use skills and tools because that is already optimized for this model.
 
 ---

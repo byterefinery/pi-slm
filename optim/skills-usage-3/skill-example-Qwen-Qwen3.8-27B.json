@@ -38,6 +38,20 @@
       "content": [
         {
           "type": "text",
+          "text": "How does skill system work? When a skill block is in my latest message, what do I do?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "I will treat the skill block in my latest message as the active instruction and ignore earlier questions. I will use the argument after the block as the current argument, not an example from inside the skill. If there is no argument, I will use the skill's required default wording. I will reply text only with the exact required confirmation: skill name, current argument or default wording, and required wording.",
+      "reasoning_content": "The user wants the rule for an active skill. I will follow the latest skill block, use the current argument word rather than an example, and ignore earlier questions. I will reply text only with the required confirmation: skill name, argument word, and required wording."
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
           "text": "<skill name=\"example\" location=\"/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md\">\nReferences are relative to /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example.\n\n# example\n\nA minimal skill that demonstrates the shape of an agent skill without doing anything special.\n\n## Overview\n\n`example` exists to show what a skill is made of — frontmatter metadata, a SKILL.md body, a helper script in `scripts/`, and on-demand docs in `references/` — with the least possible behavior. Its only jobs are replying with a fixed message or running `example.sh`.\n\n## Usage\n\n- **Invoked with no extra text** — reply exactly `This is an example skill.` Nothing else. No explanations, no script.\n- **Invoked with \"Hello\"** — do not guess the response. Load [03-hello](references/03-hello.md) and follow it exactly; the instructions for this case live there and nowhere else.\n- **Invoked with any other text, or asked to \"call script\"** — pass the user's text (if any) as CLI parameters to `example.sh` and report the output; running with no parameters is fine:\n\n  ```bash\n  bash scripts/example.sh any given text\n  ```\n\nScript paths are relative to this skill's directory. The script echoes a fixed line regardless of the parameters; the parameters only demonstrate how the agent forwards input to a script.\n\n## References\n\n- [01-structure](references/01-structure.md) — What each part of this skill is for\n- [02-invocation](references/02-invocation.md) — How invocation and script calls behave\n- [03-hello](references/03-hello.md) — Full instructions for the \"Invoked with 'Hello'\" scenario\n</skill>"
         }
       ]
