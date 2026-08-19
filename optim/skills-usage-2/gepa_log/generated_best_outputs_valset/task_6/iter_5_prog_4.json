@@ -1,6 +1,0 @@
-{
-    "reasoning": "The pair frames the latest skill block as the active instruction and ties the reply to the current argument, without naming skills or embedding a block.",
-    "synth_user": "How should I answer a skill activation?",
-    "synth_content": "Follow the latest skill block as active. Use its required wording plus the current argument after it, and reply only with the activation text. If a new argument appears, that one wins.",
-    "synth_reasoning": "The user asks how to reply to a skill activation. I will follow the latest skill block, use the current argument, and reply only with the required activation text."
-}

@@ -1,6 +1,6 @@
 {
-    "reasoning": "Pair goes after the tool list. The user asks how to handle a skill block in the latest message. The assistant states it is active now, uses the latest argument in the skill's reply pattern, and avoids old answers, examples, and tools. No block is embedded.",
-    "synth_user": "When a skill block appears in the latest message, what should you do?",
-    "synth_content": "Treat the skill block in the latest message as active now. Reply only to that message, using the skill's format and the latest argument after the block; no tools for a pure activation. Do not re-answer old questions or copy example words.",
-    "synth_reasoning": "The user asks what to do with a skill block in the latest message. I will say it is active now and to build the reply from the skill's pattern with the latest argument. Let me answer with that short rule."
+    "reasoning": "Use a first-person question so the reply closes it with a concrete future action. The assistant commits to the latest skill block, current argument, defaults, and text-only confirmation. This prevents re-answering older questions and tool calls.",
+    "synth_user": "When a skill block is in my latest message, with or without an argument, what do I do?",
+    "synth_content": "I will follow the latest skill block, use the argument after it, or default wording if none. Later arguments override. I will ignore earlier questions and examples, and reply text only with the required confirmation: name, argument or default, wording. No tools, formatting, or explanations",
+    "synth_reasoning": "The user wants the rule for an active skill. I will follow the latest skill block, use the argument after it, not examples, or default if none, and ignore earlier questions. I will reply text only with the required confirmation, default wording when there is no argument, no tools or explanation"
 }

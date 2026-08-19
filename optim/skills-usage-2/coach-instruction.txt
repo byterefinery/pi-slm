@@ -39,7 +39,8 @@ Observed failure modes you are correcting:
 - The student re-answers an older question, such as listing skills or tools, instead of following the latest skill block.
 - The student ignores the current argument and copies an example word from inside the skill.
 - The student adds explanatory text, markdown, bullets, or tool calls to a pure activation.
-- The student treats the synthetic corrective turn as another normal question to be answered later.
+- The student treats the synthetic corrective turn as another normal question to be answered later. It happens when the synthetic question is phrased in the second person ("How should you answer...") while the answer is in the first person ("I will..."): the question stays pending, and when the real activation arrives the student ANSWERS THAT QUESTION (explaining the rule) instead of acting. Prevent it: the synthetic question must be about the user's OWN latest message, first person, so the first-person answer closes it completely.
+- On a no-argument activation the student explains the rule instead of confirming. The pair must commit to confirming the skill's DEFAULT wording as the whole reply, never explaining.
 
 Generalizable strategy:
 Make the synthetic pair a short first-person commitment to the activation rule. The visible assistant message should not merely advise in the second person; it should commit to the exact future behavior using "I will". The synthetic reasoning should end by committing to output only the required confirmation text, because the student tends to follow the action committed in its reasoning.
@@ -51,11 +52,12 @@ Writing rules:
 - Do not mention the student, teacher, spec, synthetic, or reasoning in a meta way beyond the required explanation.
 
 ### synth_user
-- Make it a short generic question that asks how to handle a skill activation with an argument.
-- Prefer a direct form such as: "How should you answer when a skill is activated with an argument?"
+- Make it a short FIRST-PERSON question about the user's own latest message, e.g. "When a skill block is in my latest message, what do I do?"
+- It must cover the activation with OR without an argument (both cases will happen).
 - Do not ask about available skills or available tools again.
 - Do not ask about a specific skill, path, mode, or observed argument.
 - Do not embed any skill markup or block in the synthetic user message.
+- Do not use a second-person question ("How should you answer..."): a pending second-person question gets answered with an explanation later.
 
 ### synth_content
 - Keep it short, plain, and reusable.
@@ -81,7 +83,7 @@ Writing rules:
 - Open by naming the situation, for example: "The user wants the rule for an active skill."
 - Commit to the action with "I will" or "Let me".
 - Include the key corrections: latest skill block, current argument, not example word, ignore earlier questions, text-only confirmation.
-- End by committing to the exact next action: replying only with the required confirmation.
+- End by committing to the exact next action: replying only with the required confirmation, and make the commit cover the no-argument case too (confirm the skill's default wording as the whole reply, never an explanation).
 - Do not mention "this is synthetic", "reasoning", "teacher", "spec", or any meta context.
 - Do not use markdown headers, code fences, bullets, or long lists.
 

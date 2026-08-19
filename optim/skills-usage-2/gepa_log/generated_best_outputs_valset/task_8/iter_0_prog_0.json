@@ -1,6 +1,1 @@
-{
-    "reasoning": "Make step 4 a plain rule: latest skill block is active; answer only it; build confirmation from skill pattern plus user argument, not examples; no tools; no re-answering older questions.",
-    "synth_user": "What should you do when a skill block appears in my latest message?",
-    "synth_content": "Treat the latest skill block as active. Build the reply from the skill's own pattern and the user's actual argument, not example words. Do not re-answer older questions or call tools.",
-    "synth_reasoning": "The user asks how to handle a skill block in the latest message. I will say I will follow that block, substitute the user's argument, and not re-answer older questions."
-}
+{}

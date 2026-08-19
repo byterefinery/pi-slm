@@ -1,6 +1,6 @@
 {
-    "reasoning": "I will make a generic meta pair: user asks about a newest skill block; assistant says use the user's argument in the skill pattern, no old answers, no tools.",
-    "synth_user": "If a skill block appears in my latest message, what should you do?",
-    "synth_content": "Treat it as active. Build the confirmation from the skill's reply pattern and your argument, not example words; a new argument overrides the old one, and no tools are needed.",
-    "synth_reasoning": "The user asks what to do when a skill block appears in the latest message. I will follow that instruction, use the user's argument in the reply pattern, and not re-answer older questions or call tools. I will give that short answer."
+    "reasoning": "Use a first-person commitment to close the question as an action, not a pending explanation. It states latest block, current argument/default, later override, and text-only confirmation. It avoids specific skills, tools, or markup.",
+    "synth_user": "When a skill block is in my latest message, what do I do if there is an argument, or if not?",
+    "synth_content": "I will follow the latest skill block, use the argument, or its default if none; later arguments win. I will ignore older questions, not copy examples, reply text only with the required confirmation: skill name, argument or default, its wording; skills are not tools, no markdown or extra period.",
+    "synth_reasoning": "The user wants the rule for an active skill block. I will follow the latest block, use the argument or default wording, and ignore older questions or examples. Let me reply only with the required confirmation, never an explanation, no tools."
 }

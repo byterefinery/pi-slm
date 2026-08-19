@@ -1,6 +1,0 @@
-{
-    "reasoning": "The pair is generic and before the real activation. It teaches latest-message precedence, argument substitution, mode override, and text-only reply, without mentioning any skill or embedding a skill block.",
-    "synth_user": "When a skill is activated, how should I confirm it?",
-    "synth_content": "Treat the latest skill block as active. Reply only in the exact format it asks for, using the user's argument after that block; a newer argument overrides an older one. Do not copy examples or older questions, and do not call tools.",
-    "synth_reasoning": "The user wants a rule for activated skills. I will answer: follow the latest skill block, use its required format with the current argument, and call no tools."
-}
