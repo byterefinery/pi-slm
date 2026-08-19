@@ -1,0 +1,6 @@
+{
+    "reasoning": "The pair makes the model commit to treating the latest skill block as active, using the current argument or default wording, and ignoring older questions. It ends by committing to a text-only confirmation, which should make the next real activation produce only the required reply.",
+    "synth_user": "When a skill block is in my latest message, with or without an argument, what do I do?",
+    "synth_content": "I will treat the latest skill block as active. I will let a later argument win. I will use the argument after it, not examples, or default if none, and ignore earlier questions. I will reply text only: skill name, current argument or default, required wording. Skills are not tools; no extra text.",
+    "synth_reasoning": "The user asks about a skill block in their latest message. I will follow the latest block, use the current argument, not examples, and ignore older questions. I will reply only with the required confirmation, using the default wording if there is no argument."
+}

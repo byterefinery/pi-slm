@@ -1,0 +1,6 @@
+{
+    "reasoning": "The pair makes the reply commit to treating the latest skill block as active and outputting only the required confirmation with the current argument or default. It prevents re-answering earlier questions, copying example words, adding markdown, or calling tools.",
+    "synth_user": "When a skill block is in my latest message, what do I do?",
+    "synth_content": "I will follow latest skill block, use current argument or default, let later argument win, ignore earlier questions/activations, and never copy examples. I will reply text only: skill name, argument/default, and required wording. No tool calls, markdown, bullets, quotes, headings, extra period.",
+    "synth_reasoning": "The user asks how I will handle an active skill. I will follow the latest skill block, use its current argument or default, ignore earlier questions, and never copy example words. I will not call tools, and I will reply only with the required confirmation, or the default wording if no argument."
+}

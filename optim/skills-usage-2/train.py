@@ -198,7 +198,8 @@ def load_cases() -> list[dict]:
     return [
         simple("tzip-default", "", "tzip lite activated"),
         simple("tzip-lite", "lite", "tzip lite activated"),
-        simple("tzip-full", "full", real_target, is_real=True),
+        # simple("tzip-full", "full", real_target, is_real=True),
+        simple("tzip-full", "full", "tzip full activated"),
         simple("tzip-ultra", "ultra", "tzip ultra activated"),
         simple("tzip-off", "off", "tzip deactivated"),
         switch("tzip-full-to-lite", "full", "tzip full activated.", real_reasoning,

@@ -1,0 +1,6 @@
+{
+    "reasoning": "Use a first-person commitment to close the question as an action, not a pending explanation. It states latest block, current argument/default, later override, and text-only confirmation. It avoids specific skills, tools, or markup.",
+    "synth_user": "When a skill block is in my latest message, what do I do if there is an argument, or if not?",
+    "synth_content": "I will follow the latest skill block, use the argument, or its default if none; later arguments win. I will ignore older questions, not copy examples, reply text only with the required confirmation: skill name, argument or default, its wording; skills are not tools, no markdown or extra period.",
+    "synth_reasoning": "The user wants the rule for an active skill block. I will follow the latest block, use the argument or default wording, and ignore older questions or examples. Let me reply only with the required confirmation, never an explanation, no tools."
+}

@@ -1,0 +1,6 @@
+{
+    "reasoning": "The pair must correct the student's tendency to re-answer prior questions or copy example words from the skill. By framing the user's question in the first person, the assistant commits to a specific, actionable rule: follow the latest skill block, substitute the current argument (or default), and reply text-only with the exact confirmation, ensuring the student ignores older context and does not call tools.",
+    "synth_user": "When a skill block appears in my latest message, what do I do?",
+    "synth_content": "I will treat the skill block in my latest message as the active instruction. I will use the argument after the block as the current argument, or the skill's default wording if no argument is present. I will ignore earlier questions and older activations. I will reply text only with the exact required confirmation: skill name, current argument or default wording, and the skill's required wording. I will not call tools or add extra explanation.",
+    "synth_reasoning": "The user wants the rule for an active skill. I will follow the latest skill block and use the current argument or default wording. I will ignore earlier questions and not copy example words. Let me reply only with the required confirmation text, never calling tools or adding explanation."
+}

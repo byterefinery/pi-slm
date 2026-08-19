@@ -1,0 +1,6 @@
+{
+    "reasoning": "It commits to the latest skill block, current argument or default, and text-only confirmation, preventing re-answered older questions and example copying.",
+    "synth_user": "When a skill block is in my latest message, what do I reply with or without an argument?",
+    "synth_content": "I will follow only the latest skill block. I will use its current argument or default, let later arguments win, and ignore older questions/activations. I will reply text only with the required confirmation: skill name, argument/default, wording; no tools, examples, markdown/bullets, extra text.",
+    "synth_reasoning": "The user wants the rule for an active skill. I will follow only the latest skill block, use its current argument or default, ignore older questions/activations, and not copy examples or call tools. I will reply only with the required confirmation as the whole reply, using default if none."
+}

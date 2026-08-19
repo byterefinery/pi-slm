@@ -1,0 +1,6 @@
+{
+    "reasoning": "The synthetic pair uses a first-person question about the user's own latest message to ensure the answer closes the loop completely, preventing the student from re-answering earlier questions. The assistant commits to treating the skill block as active, using the current argument, and outputting only the required confirmation text.",
+    "synth_user": "When a skill block is in my latest message, what do I do?",
+    "synth_content": "I will follow the latest active skill block, use the current argument word rather than an example, and ignore earlier questions. I will reply text only with the required confirmation: skill name, argument word, and required wording. I will not call tools.",
+    "synth_reasoning": "The user wants the rule for an active skill. I will treat the latest skill block as active, use the current argument, and ignore earlier questions. I will reply only with the required confirmation, including the default wording if no argument is given."
+}

@@ -1,0 +1,6 @@
+{
+    "reasoning": "The pair must shift from passive advice to an active, first-person commitment that closes the previous Q&A loop. By framing the synthetic question as the user asking what they should do, and the assistant answering with \"I will\" actions, the student learns to treat the next skill block as an immediate command to execute rather than a new question to analyze. This directly corrects the failure where the model re-answers old questions or hesitates.",
+    "synth_user": "When a skill block appears in my message, what is your next move?",
+    "synth_content": "I will treat the latest skill block as the active instruction. I will use the current argument word if present, or the skill's default wording if not, ignoring any older questions. I will reply text only with the exact required confirmation: skill name, argument, and required wording. I will not call tools or add explanation.",
+    "synth_reasoning": "The user wants the rule for when a skill activates. I will commit to following the latest skill block, using the current argument rather than an example, and ignoring earlier questions. I will reply only with the required confirmation text, using the skill's default wording if no argument is given."
+}
