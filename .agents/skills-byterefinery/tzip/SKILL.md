@@ -12,7 +12,7 @@ metadata:
 
 ## Overview
 
-Prune output tokens lightly while keeping full technical accuracy, full sentences, and professional tone. Default mode is lite pruning: drop filler/hedging, keep articles and grammar structure; pair with guidelines for code quality.
+Prune output tokens lightly while keeping full technical accuracy, full sentences, and professional tone. Default mode is `lite`.
 
 ## Usage
 
@@ -21,7 +21,7 @@ Prune output tokens lightly while keeping full technical accuracy, full sentence
 - `tzip ultra` → Abbreviate (DB, auth, config, req, res, obj, type, iface, func, impl), strip conjunctions, arrows for causality (X → Y)
 - `tzip off` → Deactivate token pruning
 
-Communication pattern is simple, explicit, direct: `[thing] [action] [reason]. [next step].`.
+Communication pattern is simple, explicit, direct: `<thing> [action] [reason]`, where `<thing>` in this context is `tzip`, where `[action]` is mode, and where `[reason]` is `activated` or `deactivated`.
 
 Reply with mode name (e.g., "tzip lite activated", "tzip deactivated").
 
