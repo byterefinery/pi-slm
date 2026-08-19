@@ -9,9 +9,19 @@ Reliability extension for Small Language Models.
     3. assistant: short synthetic thinking/reasoning, then the answer — available skills as YAML framed in natural language (header line, list, closing "These are skills, not tools.") in the main content
     4. user: `What are available tools?` (simulated)
     5. assistant: short synthetic thinking/reasoning, then the answer — available tools as YAML framed in natural language (header line, list, closing "These are tools, not skills.") in the main content
-    6. user: `How can a skill be used?` (simulated)
-    7. assistant: short synthetic thinking/reasoning, then the answer — a static one-shot that teaches the whole skill-invocation pattern: the `/skill:<name> [task]` trigger, pi's `<skill>` block expansion, the task after the block, and two branches — A) the block names a script file → exactly one bash tool call (4-step recipe: match the usage line, map task wording only to shown flags, take the positional argument from the task, resolve the absolute script path from the `location` attribute, run PEP 723 scripts via `uv run --script`); B) the block names no script (a mode/instruction skill such as `tzip`) → follow it and reply as it tells you (e.g. the mode name), no bash call, never create or look for a script
-    8. the first-ever user request
+    6. user: `How does skill system work? When a skill block is in my latest message, what do I do?` (simulated)
+    7. assistant: short synthetic thinking/reasoning, then the `<skill>` block contract: a skill invocation is a `<skill> SKILL BODY </skill>` block, the text after the closing tag is the argument for this invocation, the block in the latest message is the active instruction, and the reply is exactly what the skill's Usage rules require for the current argument
+    8. user: a real `<skill>` block (the `example` skill, rooted at `<cwd>/.agents/skills/example`), no argument (simulated)
+    9. assistant: the exact fixed reply the skill requires: `This is an example skill.`
+    10. user: same `<skill>` block + `Hello` (simulated)
+    11. assistant: synthetic `read` tool call (the skill's `references/03-hello.md`, absolute path under the block's skill dir)
+    12. tool result: the reference file content (says to reply exactly `world`)
+    13. assistant: `world`
+    14. user: same `<skill>` block + `Hi` (simulated)
+    15. assistant: synthetic `bash` tool call (`bash <skill-dir>/scripts/example.sh Hi`)
+    16. tool result: the script output
+    17. assistant: the script output report
+    18. the first-ever user request
   - Skills YAML: name (single line text), description (single line text), reference file paths as absolute paths, script file paths as absolute paths. If the model supports reasoning, insert short synthetic reasoning (on the wire it must be visible on the assistant message, not dropped). Available skills come from `pi` internal API.
   - The first real user request is sent exactly as typed; the top-level `tools` field of the provider request is pi core's native function-calling definitions (active tools), not something the extension adds.
   - Tools YAML: name (single line), description (single line), whole function signature (`parameters` JSON schema as YAML, all params and types). Available tools come from `pi` internal API.
@@ -47,26 +57,46 @@ bookkeeping entries:
 
 ```
 [model_change / thinking_level_change]
-[custom_message available-skills]  "What are available skills?"  (simulated user, display: true)
-[message assistant]                thinking + skills answer (natural language + YAML)
-[custom_message available-tools]  "What are available tools?"    (simulated user, display: true)
-[message assistant]                thinking + tools answer (natural language + YAML)
-[custom_message skill-usage]       "How can a skill be used?"     (simulated user, display: true)
-[message assistant]                thinking + skill-usage one-shot example (static text)
-[user message]                     the first real request
+[custom_message available-skills]    "What are available skills?"  (simulated user, display: true)
+[message assistant]                  thinking + skills answer (natural language + YAML)
+[custom_message available-tools]     "What are available tools?"   (simulated user, display: true)
+[message assistant]                  thinking + tools answer (natural language + YAML)
+[custom_message skill-system]        "How does skill system work? ..." (simulated user, display: true)
+[message assistant]                  thinking + <skill> block contract (static text)
+[custom_message skill-example-plain] <skill> block, no argument (simulated user, display: false)
+[message assistant]                  thinking + "This is an example skill."
+[custom_message skill-example-hello] <skill> block + "Hello"       (simulated user, display: false)
+[message assistant]                  thinking + read toolCall (references/03-hello.md), stopReason: toolUse
+[message toolResult]                 the reference file content
+[message assistant]                  thinking + "world"
+[custom_message skill-example-script] <skill> block + "Hi"        (simulated user, display: false)
+[message assistant]                  thinking + bash toolCall (scripts/example.sh Hi), stopReason: toolUse
+[message toolResult]                 the script output
+[message assistant]                  thinking + the script output report
+[user message]                       the first real request
 ```
 
 The resulting context sent to the provider is exactly:
 
 ```
-1. system message            (pi default, untouched)
-2. user:      "What are available skills?"
-3. assistant: <skills answer: header + YAML list + "These are skills, not tools.">  (thinking block kept in pi, see below)
-4. user:      "What are available tools?"
-5. assistant: <tools answer: header + YAML list + "These are tools, not skills.">
-6. user:      "How can a skill be used?"
-7. assistant: <skill-usage one-shot: /skill:<name> trigger, <skill> block expansion, run-the-matching-usage rule>
-8. user:      first real user request
+1.  system message            (pi default, untouched)
+2.  user:      "What are available skills?"
+3.  assistant: <skills answer: header + YAML list + "These are skills, not tools.">  (thinking block kept in pi, see below)
+4.  user:      "What are available tools?"
+5.  assistant: <tools answer: header + YAML list + "These are tools, not skills.">
+6.  user:      "How does skill system work? When a skill block is in my latest message, what do I do?"
+7.  assistant: <the <skill> block contract: block = active instruction, text after the block = current argument, reply exactly what the Usage rules require>
+8.  user:      <skill> block (example skill, <cwd>/.agents/skills/example), no argument
+9.  assistant: "This is an example skill."
+10. user:      <skill> block + "Hello"
+11. assistant: read toolCall (absolute path <skill-dir>/references/03-hello.md)
+12. tool:      the reference file content
+13. assistant: "world"
+14. user:      <skill> block + "Hi"
+15. assistant: bash toolCall (bash <skill-dir>/scripts/example.sh Hi)
+16. tool:      the script output
+17. assistant: the script output report
+18. user:      first real user request
 ```
 
 **Mechanics — three parts:**
@@ -91,8 +121,10 @@ The resulting context sent to the provider is exactly:
    extension also subscribes to the official `context` event
    (`transformContext`), which fires on every provider call with the full
    `AgentMessage[]`: when the session is the one this process injected
-   into, it re-inserts the three synthetic assistant messages right after
-   each simulated user message if they are missing from the live state.
+   into, it re-inserts the missing synthetic replies (assistant messages
+   and tool results) right after each simulated user message — it matches
+   the expected reply sequence against what already follows the ask and
+   splices in only the missing tail.
    For resumed/continued sessions the state is restored from the session
    file and already contains the full dialogue, the per-session check
    no-ops, and nothing is duplicated.
@@ -101,16 +133,22 @@ The resulting context sent to the provider is exactly:
 phrased the way a real exchange would be, so the SLM treats it as an
 actually-answered question it can rely on: the simulated user asks the full
 questions `What are available skills?` / `What are available tools?` /
-`How can a skill be used?`, and each of the first two assistant answers is
+`How does skill system work? When a skill block is in my latest message,
+what do I do?`, and each of the first two assistant answers is
 natural language wrapping the YAML list — a header line (`Available skills
 are:` / `Available tools are:`), the YAML entries, and a closing
 disambiguation line (`These are skills, not tools.` / `These are tools,
 not skills.`); the empty case is a plain phrase (`No available skills: []`
-/ `No available tools: []`). The third answer is the static skill-usage
-one-shot (see below). The framing makes later skill/tool use more
-deterministic: the listing is not stray system noise, and skills are never
-conflated with tools. The simulated user messages carry the custom types
-`available-skills` / `available-tools` / `skill-usage`.
+/ `No available tools: []`). The third answer is the static `<skill>`
+block contract (see below), followed by a few-shot of three real skill
+invocations covering the `example` skill's three Usage branches. The
+framing makes later skill/tool use more deterministic: the listing is not
+stray system noise, and skills are never conflated with tools. The
+simulated user messages carry the custom types `available-skills` /
+`available-tools` / `skill-system` / `skill-example-plain` /
+`skill-example-hello` / `skill-example-script` (the three few-shot block
+messages use `display: false` — they stay in the session file and the LLM
+context without flooding the TUI).
 Note: with the closing line, the answer body is prose containing a YAML
 list, not a single parseable YAML document — the list itself (from the
 header line through the last entry) remains valid YAML.
@@ -129,36 +167,57 @@ one-line system-prompt snippet from `toolSnippets`, fallback flattened
 `parameters` JSON schema from `pi.getAllTools()` converted to YAML (all
 params and types; `null` when the tool has no parameters).
 
-**Skill-usage one-shot (third pair)** — the simulated user asks `How can
-a skill be used?` (custom type `skill-usage`) and the assistant answers
-with a static one-shot that teaches the whole skill-invocation pattern in
-a single exchange: the user types `/skill:<name> [task]`, pi expands it
-into a user message containing the skill's SKILL.md body in a `<skill
-name=... location=...>` block (plus the task after the block), and the
-assistant performs the task — never explains the skill. The answer opens
-with a first check that splits into two branches: **A)** the block names
-a script file (a usage code block with a script name like `example.py`)
-→ exactly one bash tool call, built by a 4-step recipe (match the usage
-line to the task, mapping task wording only to flags the skill shows;
-take the positional argument from the task — a URL for webfetch, a search
-query for websearch — and quote arguments containing spaces; resolve the
-script's absolute path as `dirname(location)` + `scripts/`, never a bare
-or relative name; run self-contained PEP 723 Python scripts via
-`uv run --script <absolute path> <args>`, never directly, never with
-`python`/`python3`); **B)** the block names no script — only instructions,
-for example a communication mode with commands like `tzip on` / `tzip
-lite` to follow, not run → reply as the block tells you (a second
-mini one-shot shows the `tzip` block plus `lite` and `ultra` tasks
-producing the one-line replies `tzip lite activated` /
-`tzip ultra activated`), no bash call, no listing/searching the skill
-dir, never creating or running a script the block does not name. Branch
-A's example uses a deliberately generic `example` skill (a name that
-collides with no real or popular skill) with two harmless usages (python
-script with a positional arg; same script with a flag) so the SLM sees
-that the right usage must be *identified* for the current task. The
-message also states that a `<skill>` message is a task to perform, never
-a question about the skill. The answer text (four-backtick fence: the
-text itself contains triple-backtick fences):
+**Skill-system contract + few-shot (third pair and the three invocations)** —
+replaces the earlier static skill-usage one-shot (which taught the pattern
+in prose; the 2.6B model failed to abstract the path-substitution recipe
+out of it and reused the example's fictitious paths). The simulated user
+now asks `How does skill system work? When a skill block is in my latest
+message, what do I do?` (custom type `skill-system`) and the assistant
+answers with the static `<skill>` block contract: a skill invocation is a
+`<skill> SKILL BODY </skill>` block with the user message after it — the
+block carries the skill's instructions, the text after the closing tag is
+the argument for this invocation, the block in the latest message is the
+active instruction (earlier questions are ignored), and the reply is
+exactly what the skill's Usage rules require for the current argument
+(exact fixed wording; the argument or the default wording, never an
+example from inside the skill).
+
+The dialogue then continues as a few-shot of three real invocations of
+the `example` skill (`.agents/skills-byterefinery/example` in this repo),
+covering its three Usage branches:
+
+- **no argument** → the assistant replies exactly `This is an example skill.`
+- **`Hello`** → the assistant makes a synthetic `read` tool call
+  (content block `toolCall`, `stopReason: "toolUse"`) for
+  `<skill-dir>/references/03-hello.md`, a synthetic tool result carries
+  the file content, and the assistant replies exactly `world`
+- **`Hi`** (any other text) → the assistant makes a synthetic `bash`
+  tool call `bash <skill-dir>/scripts/example.sh Hi`, a synthetic tool
+  result carries `This is example.sh output.`, and the assistant reports
+  it in a code block
+
+The three `<skill>` blocks are the exact expansion shape of pi's
+`_expandSkillCommand` (tag with `name`/`location` attributes, the
+`References are relative to <skill dir>.` line, the SKILL.md body with
+frontmatter stripped, the argument after the block separated by a single
+newline) — but rooted at the session's current working directory:
+`<cwd>/.agents/skills/example/...` (pi's standard project skill
+location). The few-shot's absolute paths (the block's `location`
+attribute, the `read` path, the `bash` command) are therefore the
+session's real absolute paths, so the SLM derives the absolute paths of a
+real incoming block by the same rule it just saw applied — skill dir =
+`dirname(location)`, references/scripts under it. With a fictitious
+example path the 2.6B model failed this substitution (it reused the
+example's path verbatim and tried to create the missing script at the
+example's location); with the cwd-rooted path the same invocation
+replays 5/5 perfect bash tool calls.
+
+The contract answer text (four-backtick fence: the text contains
+backticks):
+
+````
+A skill invocation is a `<skill> SKILL BODY </skill>` block with the user message after it: the block carries the skill's instructions, and the text after the closing tag is the argument for this invocation. I will treat the skill block in my latest message as the active instruction and ignore earlier questions. I will use the argument after the block as the current argument, not an example from inside the skill. If there is no argument, I will use the skill's required default wording. I will follow the skill's Usage rules for the current argument and reply text only with the exact required confirmation: skill name, current argument or default wording, and required wording.
+````
 
 ````
 A skill is invoked by the user with /skill:<name> [task], and pi expands it into a user message with the skill's SKILL.md body in a <skill> block:
@@ -214,20 +273,13 @@ my reply: tzip ultra activated
 Activating a mode is not a script run: a mode skill names no script, so there is nothing to run - my reply is the action (the mode name), and from then on I apply the mode to my replies. The <skill> block is all I need: no bash call, no listing or searching the skill dir, and I never read, create, or run a script the block does not name.
 ````
 
-The `<skill>` block in the example matches pi's real expansion shape
-(`_expandSkillCommand`: `<skill name="<name>" location="<SKILL.md
-path>">` + the SKILL.md body with the frontmatter stripped + the task
-after the block) except the `References are relative to <skill dir>.`
-line is omitted to save tokens — the path lesson is taught through the
-`location` attribute instead (skill dir = `dirname(location)`, scripts
-under `<skill-dir>/scripts/`), which is what lets the SLM run real skill
-scripts by absolute path without a prior `read`. The fictitious paths
-(`/home/user/project/.agents/skills/...`) make the SLM substitute the
-real paths from the incoming block rather than reuse the example's. The
-4-step recipe in branch A is the GEPA-learned instruction distilled into
-first person (see `optim/skills-usage/SKILL_USAGE_OPTIM.md`); the branch
-B one-shot is a direct model of the `tzip` mode skill
-(`.agents/skills-byterefinery/tzip`).
+The few-shot is a verbatim transcript (user blocks, assistant answers,
+reasoning, tool calls, tool results) of one session driving the real
+`example` skill, rewritten onto the cwd-rooted paths. The synthetic
+tool-call assistant messages carry `stopReason: "toolUse"`; the tool
+results use pi's `toolResult` role (`toolCallId`/`toolName`/`content`/
+`isError`) and are serialized on the wire as `role: "tool"` messages
+paired with their tool calls.
 
 **Synthetic reasoning** — if the active model supports reasoning
 (`ctx.model.reasoning === true`, e.g. `LiquidAI/LFM2.5-2.6B`), each
@@ -239,21 +291,18 @@ real `thinking` content block before the answer text block:
   listed below.`
 - tools: `I found <n> tools. I will pick the narrowest tool that fits the
   task.`
-- skill-usage: `The user asks how a skill can be used. I will show one
-  example: the user invokes a skill with /skill:<name>, pi puts the
-  skill's SKILL.md body in a <skill name=... location=...> block of the
-  user message, and the text after the block is the task. I do not
-  explain the skill - I perform the task: if the block lists how to run a
-  script (a script file name like example.py in a usage code block), I
-  pick the usage line that matches the task (mapping task wording to the
-  flags the skill shows), take the positional argument from the task,
-  resolve the script's absolute path from the skill dir (dirname of the
-  location attribute, scripts under <skill-dir>/scripts/), and run the
-  PEP 723 script via \`uv run --script <absolute path> <args>\` with the
-  bash tool. If the block shows no script file name - only instructions,
-  for example a communication mode - I follow it and reply as it tells
-  me: the mode name itself is my reply (activating a mode is not a
-  script run; there is nothing to run).`
+- skill-system: `The user wants the rule for a skill block in my latest
+  message. I will explain the \`<skill> SKILL BODY </skill> [USER
+  MESSAGE]\` shape: the block is the active instruction, the text after
+  the block is the current argument, and the reply is the exact
+  confirmation the skill requires.`
+- few-shot invocations: one short first-person line per synthetic
+  assistant message, each stating the Usage rule being applied and the
+  exact action, e.g. `The user invoked the example skill with "Hi". That
+  is any other text, so I will pass it as CLI parameters to
+  scripts/example.sh and report the output. Let me run the script.` (the
+  full lines live in `src/slm.ts`, constants `SKILLSYS_THINKING`,
+  `SKILL_EXAMPLE_THINKING`, `SKILL_HELLO_*`, `SKILL_SCRIPT_*`)
 
 For the OpenAI Completions API (the llama.cpp server path) the block
 additionally carries `thinkingSignature: "reasoning_content"`. Pi's
@@ -356,10 +405,17 @@ the real provider payload (`before_provider_request`). Net wire order for
 the first request (llamacpp/LFM, reasoning on):
 
 ```
-system  → user "What are available skills?" → assistant <skills answer> + reasoning_content
-       → user "What are available tools?"  → assistant <tools answer> + reasoning_content
-       → user "How can a skill be used?"   → assistant <skill-usage one-shot> + reasoning_content
-       → user <first real request>
+system  → user "What are available skills?"  → assistant <skills answer> + reasoning_content
+        → user "What are available tools?"   → assistant <tools answer> + reasoning_content
+        → user "How does skill system work? ..." → assistant <contract> + reasoning_content
+        → user <skill block, no argument>     → assistant "This is an example skill." + reasoning_content
+        → user <skill block + "Hello">        → assistant read toolCall + reasoning_content
+                                              → tool (reference file content)
+                                              → assistant "world" + reasoning_content
+        → user <skill block + "Hi">           → assistant bash toolCall + reasoning_content
+                                              → tool (script output)
+                                              → assistant <output report> + reasoning_content
+        → user <first real request>
 ```
 
 The OpenAI Completions serializer sends the assistant reply `content` as a
@@ -424,10 +480,14 @@ Status: the suite still encodes an earlier reminder format (ask texts,
 exact `skills: []`/`tools: []` bodies in S4/S5, and whole-body
 `yaml.safe_load` in S1/S2 — the answer body is no longer a single YAML
 document), so it must be synced to the natural-language Q&A format
-before it passes again. The skill-usage pair (this change) is not covered
-by the suite at all: S1/S6/S8-style checks would need the third ask
-(`skill-usage`) + third assistant entry, the `prompt_index` shifted from
-5 to 7, and the wire history expectations extended by one pair.
+before it passes again. The skill-system contract + few-shot (this
+change) is not covered by the suite at all: S1/S6/S8-style checks would
+need the `skill-system` ask + contract assistant entry plus the three
+few-shot segments (each: a `skill-example-*` custom entry, then the
+assistant reply — and for `skill-example-hello`/`skill-example-script`,
+the toolCall assistant + toolResult + final assistant entries), and the
+wire history expectations extended accordingly (the first real request
+now sits at wire index 17, not 7).
 
 ### Live test: real skills in a random temp dir
 
@@ -449,7 +509,7 @@ replays**: `optim/skills-usage/replay3.py` replays the three example
 invocations against the seed session (`seed.json`), and
 `replay_payload.py` / `replay_tzip.py` replay the *exact* wire payload of
 a finished live run (payloads.jsonl, candidate answer swapped in at the
-skill-usage slot) with fresh session-affinity keys — isolating the
+skill-system contract slot) with fresh session-affinity keys — isolating the
 message from live-run noise (uv installs, tool loops, server state).
 
 Results (model `LiquidAI/LFM2.5-2.6B`, pi 0.84.2; replay scores are
@@ -535,18 +595,23 @@ weak spots of the 2.6B model and of the current one-shot.
   style, flow style for scalar arrays, plain scalars when safe.
 - Works in all run modes (validated via `-p` and `--mode json`; TUI/RPC
   share the same hook path).
-- The skill-usage answer is static (no live data): the `example` skill
-  name collides with no real or popular skill, and the paths inside the
-  one-shot (`/home/user/project/.agents/skills/...`) are fictitious —
-  the SLM must substitute the real skill dir from the incoming `<skill>`
-  block, not reuse the example's paths. The branch-B example uses the
-  real `tzip` skill shape on purpose (it is the mode-skill class the
-  SLM must learn to handle without scripts).
-- The one-shot's `<skill>` block mirrors pi's real expansion shape
+- The skill-system contract answer and the three few-shot invocations
+  are static (no live data). The few-shot's `<skill>` blocks are rooted
+  at the session's cwd (`<cwd>/.agents/skills/example`) — pi's standard
+  project skill location — so the absolute paths inside the few-shot
+  (the `location` attribute, the `read` path, the `bash` command) are
+  the session's real absolute paths, and the SLM derives the real
+  script/reference paths from an incoming block by the exact rule it
+  just saw applied. A fictitious example path (`/home/user/project/...`,
+  `/home/dev/...`) made the 2.6B model reuse the example's paths
+  verbatim on live invocations (it even tried to create the missing
+  script at the example's location); the cwd-rooted paths removed that
+  failure mode (wire replay 5/5 perfect bash tool calls; live runs use
+  the real absolute path).
+- The few-shot's `<skill>` blocks mirror pi's real expansion shape
   (`_expandSkillCommand` in pi 0.84.2) — `<skill name=... location=...>`
-  tag, SKILL.md body with frontmatter stripped, task after the block —
-  with the `References are relative to <skill dir>.` line omitted to
-  save tokens (the path lesson is carried by the `location` attribute);
+  tag, the `References are relative to <skill dir>.` line, SKILL.md body
+  with frontmatter stripped, argument after the block (single newline);
   the nested ``` fences are authentic (real SKILL.md bodies contain
   them).
 - Skill usage with a 2.6B model is task-phrasing sensitive: explicit

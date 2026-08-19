@@ -8,26 +8,49 @@
  * All extension state is in-memory. Works in all modes (interactive TUI,
  * -p, --mode json, --mode rpc).
  *
- * Feature 1: Available skills and tools reminder (simulated dialogue).
+ * Feature: simulated dialogue at the start of every new session.
  *
- * Small language models frequently forget which skills/tools are available
- * when that information only lives in the system prompt. On the first prompt
- * of a new session, this extension simulates a short user/assistant dialogue
- * at the very beginning of the conversation, so the context itself reminds
- * the model:
+ * Small language models forget which skills/tools are available and how
+ * pi's skill system works when that information only lives in the system
+ * prompt. On the first prompt of a new session, this extension simulates a
+ * short user/assistant dialogue at the very beginning of the conversation,
+ * so the context itself reminds the model:
  *
- *   1. system message                (pi default, untouched)
- *   2. user:       "Available skills"  (simulated)
- *   3. assistant:  short synthetic thinking + available skills as YAML
- *   4. user:       "Available tools"   (simulated)
- *   5. assistant:  short synthetic thinking + available tools as YAML
- *   6. user:       "How can a skill be used?" (simulated)
- *   7. assistant:  short synthetic thinking + a one-shot example of a skill
- *                  invocation (a generic "example" skill whose SKILL.md
- *                  lists example script/command usages with arguments, plus
- *                  the assistant picking the matching usage and running it
- *                  through the bash tool)
- *   8. user:       the first real user request
+ *   1.  system message                (pi default, untouched)
+ *   2.  user:       "What are available skills?"   (simulated)
+ *   3.  assistant:  short synthetic thinking + available skills as YAML
+ *   4.  user:       "What are available tools?"    (simulated)
+ *   5.  assistant:  short synthetic thinking + available tools as YAML
+ *   6.  user:       "How does skill system work? When a skill block is in
+ *                   my latest message, what do I do?" (simulated)
+ *   7.  assistant:  the <skill> block contract
+ *   8.  user:       <skill> block, no argument          (simulated)
+ *   9.  assistant:  the exact fixed reply the skill requires
+ *   10. user:       <skill> block + "Hello"             (simulated)
+ *   11. assistant:  read toolCall (skill reference file)
+ *   12. tool result: the reference file content
+ *   13. assistant:  the exact reply the reference file requires
+ *   14. user:       <skill> block + "Hi"                (simulated)
+ *   15. assistant:  bash toolCall (skill script)
+ *   16. tool result: the script output
+ *   17. assistant:  the script output report
+ *   18. user:       the first real user request
+ *
+ * Steps 8-17 are a few-shot of three real skill invocations. The user
+ * messages are the exact <skill> blocks pi expands /skill:example into
+ * (pi's _expandSkillCommand shape: tag, "References are relative to" line,
+ * SKILL.md body without frontmatter, the argument after the block), rooted
+ * at the session's current working directory (<cwd>/.agents/skills/example/
+ * ...) — pi's standard project skill location. The paths inside the few-shot
+ * (the block's location attribute, the read path, the bash command) are the
+ * session's real absolute paths, so the SLM derives the absolute paths of a
+ * real incoming block by the same rule it just saw applied: the skill dir
+ * from the location attribute, scripts and references under it. The
+ * invocations cover the skill's three Usage branches: no argument (fixed
+ * reply), "Hello" (read the reference file, then reply exactly what it
+ * says), and any other text (run the skill's script with the text as CLI
+ * parameters and report the output). The few-shot teaches the full loop:
+ * <skill> block in, perform (fixed reply, read, or bash), result out.
  *
  * The skills YAML mirrors what the system prompt exposes (see
  * system-prompt.ts / formatSkillsForPrompt): the loaded skills minus those
@@ -45,9 +68,9 @@
  * `reasoning_content` field of the assistant message — the standard
  * OpenAI-compatible way to carry reasoning in chat history — while
  * `content` stays the answer (the YAML document for skills/tools, the
- * one-shot example text for skill-usage). For other APIs no signature is
- * set: the block stays in the session/TUI and is replayed or dropped by
- * the provider's serializer as usual.
+ * contract/fixed replies/script report for the skill few-shot). For other
+ * APIs no signature is set: the block stays in the session/TUI and is
+ * replayed or dropped by the provider's serializer as usual.
  *
  * Token economy: YAML strings are emitted as plain (unquoted) scalars
  * whenever YAML-safe; double quotes are used only as a correctness
@@ -60,9 +83,11 @@
  *    may exist, so entry count is not a reliable signal), hence the
  *    new-session check: the session branch contains no user message.
  *  - The simulated user messages are injected with `pi.sendMessage()`
- *    (custom messages, display: true; no triggerTurn). They are persisted
- *    as custom_message entries and also enter the agent state.
- *  - The synthetic assistant messages are persisted with
+ *    (custom messages; no triggerTurn). They are persisted as
+ *    custom_message entries and also enter the agent state. The three
+ *    bulky <skill> block invocations use display: false so they stay in
+ *    the session file and the LLM context without flooding the TUI.
+ *  - The synthetic assistant and tool-result messages are persisted with
  *    `SessionManager.appendMessage()` (the runtime object behind
  *    ctx.sessionManager is the full SessionManager, although the public
  *    context type only exposes its read-only pick).
@@ -71,16 +96,16 @@
  *    separately, and only pi.sendMessage() adds to it. So the extension
  *    also subscribes to the official `context` event (transformContext),
  *    which fires on every LLM call with the full message array: it
- *    re-inserts the three synthetic assistant messages right after each
- *    simulated user message when they are missing from the live state.
- *    On resumed/continued sessions the dialogue is restored from the
- *    session file into the agent state, the detection below no-ops, and
- *    nothing is duplicated.
+ *    re-inserts the missing synthetic replies (assistant messages and
+ *    tool results) right after each simulated user message when they are
+ *    not already there. On resumed/continued sessions the dialogue is
+ *    restored from the session file into the agent state, the detection
+ *    below no-ops, and nothing is duplicated.
  *
- * Display: the simulated user messages are shown in the TUI (custom
- * message styling); the synthetic assistant messages are part of the
- * session file, so they render when the session is loaded/reopened (they
- * have no live streaming events in the run they were injected in).
+ * Display: the simulated user asks are shown in the TUI (custom message
+ * styling); the synthetic assistant messages and tool results are part of
+ * the session file, so they render when the session is loaded/reopened
+ * (they have no live streaming events in the run they were injected in).
  */
 
 import type {
@@ -88,6 +113,8 @@ import type {
 	Model,
 	TextContent,
 	ThinkingContent,
+	ToolCall,
+	ToolResultMessage,
 	Usage,
 } from "@earendil-works/pi-ai";
 import type {
@@ -102,10 +129,136 @@ import { join, resolve } from "node:path";
 
 const SKILLS_CUSTOM_TYPE = "available-skills";
 const TOOLS_CUSTOM_TYPE = "available-tools";
-const USAGE_CUSTOM_TYPE = "skill-usage";
+const SKILLSYS_CUSTOM_TYPE = "skill-system";
+const SKILL_EXAMPLE_CUSTOM_TYPE = "skill-example-plain";
+const SKILL_HELLO_CUSTOM_TYPE = "skill-example-hello";
+const SKILL_SCRIPT_CUSTOM_TYPE = "skill-example-script";
 const SKILLS_ASK = "What are available skills?";
 const TOOLS_ASK = "What are available tools?";
-const USAGE_ASK = "How can a skill be used?";
+const SKILLSYS_ASK =
+	"How does skill system work? When a skill block is in my latest message, what do I do?";
+
+/** SKILL.md body of the "example" skill (frontmatter stripped, trimmed). */
+const EXAMPLE_SKILL_BODY = [
+	"# example",
+	"",
+	"A minimal skill that demonstrates the shape of an agent skill without doing anything special.",
+	"",
+	"## Overview",
+	"",
+	"`example` exists to show what a skill is made of — frontmatter metadata, a SKILL.md body, a helper script in `scripts/`, and on-demand docs in `references/` — with the least possible behavior. Its only jobs are replying with a fixed message or running `example.sh`.",
+	"",
+	"## Usage",
+	"",
+	"- **Invoked with no extra text** — reply exactly `This is an example skill.` Nothing else. No explanations, no script.",
+	"- **Invoked with \"Hello\"** — do not guess the response. Load [03-hello](references/03-hello.md) and follow it exactly; the instructions for this case live there and nowhere else.",
+	"- **Invoked with any other text, or asked to \"call script\"** — pass the user's text (if any) as CLI parameters to `example.sh` and report the output; running with no parameters is fine:",
+	"",
+	"  ```bash",
+	"  bash scripts/example.sh any given text",
+	"  ```",
+	"",
+	"Script paths are relative to this skill's directory. The script echoes a fixed line regardless of the parameters; the parameters only demonstrate how the agent forwards input to a script.",
+	"",
+	"## References",
+	"",
+	"- [01-structure](references/01-structure.md) — What each part of this skill is for",
+	"- [02-invocation](references/02-invocation.md) — How invocation and script calls behave",
+	"- [03-hello](references/03-hello.md) — Full instructions for the \"Invoked with 'Hello'\" scenario",
+].join("\n");
+
+/**
+ * The exact <skill> block pi expands /skill:example into
+ * (_expandSkillCommand: tag, "References are relative to" line, body,
+ * closing tag), rooted at skillDir (<cwd>/.agents/skills/example — pi's
+ * standard project skill location). The argument, when present, is
+ * appended after the block separated by a single newline.
+ */
+function buildExampleSkillBlock(skillDir: string): string {
+	return [
+		`<skill name="example" location="${skillDir}/SKILL.md">`,
+		`References are relative to ${skillDir}.`,
+		EXAMPLE_SKILL_BODY,
+		"</skill>",
+	].join("\n");
+}
+
+/** Synthetic reply to the skill-system question (the <skill> block contract). */
+const SKILLSYS_EXPLAIN =
+	"A skill invocation is a `<skill> SKILL BODY </skill>` block with the user message after it: the block carries the skill's instructions, and the text after the closing tag is the argument for this invocation. I will treat the skill block in my latest message as the active instruction and ignore earlier questions. I will use the argument after the block as the current argument, not an example from inside the skill. If there is no argument, I will use the skill's required default wording. I will follow the skill's Usage rules for the current argument and reply text only with the exact required confirmation: skill name, current argument or default wording, and required wording.";
+const SKILLSYS_THINKING =
+	"The user wants the rule for a skill block in my latest message. I will explain the `<skill> SKILL BODY </skill> [USER MESSAGE]` shape: the block is the active instruction, the text after the block is the current argument, and the reply is the exact confirmation the skill requires.";
+
+/** Few-shot 1 (no argument): the skill's required fixed reply. */
+const SKILL_EXAMPLE_ANSWER = "This is an example skill.";
+const SKILL_EXAMPLE_THINKING =
+	"The user is invoking the example skill with no extra text. The Usage rule says to reply exactly `This is an example skill.` with nothing else. I will reply with that exact line.";
+
+/** Few-shot 2 ("Hello"): read the reference file, then reply exactly what it says. */
+const READ_HELLO_TOOL_CALL_ID = "1juKPjqsGTBbNP0MR1I560XFx44dOcx7";
+const SKILL_HELLO_CALL_THINKING =
+	"The user invoked the example skill with \"Hello\". The Usage rule says not to guess the response: load references/03-hello.md and follow it exactly. Let me read that file.";
+const HELLO_REFERENCE_TEXT = [
+	"# Hello Invocation",
+	"",
+	"The instruction source for the \"Invoked with 'Hello'\" scenario in SKILL.md's `## Usage`. When the user invokes the skill with \"Hello\", load this file and follow it — SKILL.md deliberately holds no instructions for this case.",
+	"",
+	"## Response",
+	"",
+	"Reply exactly:",
+	"",
+	"> world",
+	"",
+	"No greeting, no punctuation, no commentary, no script. The reply is the single word above and nothing else.",
+	"",
+	"## Why it lives here",
+	"",
+	"This file demonstrates progressive disclosure. The logic for the \"Hello\" case sits in a reference file instead of in SKILL.md or `scripts/`, so the agent must open a reference to learn how to respond. The fixed \"Hello\" → \"world\" mapping is part of the demonstration.",
+	"",
+].join("\n");
+const SKILL_HELLO_ANSWER = "world";
+const SKILL_HELLO_ANSWER_THINKING =
+	"The reference file says to reply exactly `world` with no greeting, punctuation, or commentary. I will reply with that single word.";
+
+/** Few-shot 3 ("Hi"): run the skill's script with the text as CLI parameters. */
+const RUN_SCRIPT_TOOL_CALL_ID = "5wi4XVTF6doSiyHCRNEnB3UKqxxxSCbg";
+const SKILL_SCRIPT_CALL_THINKING =
+	"The user invoked the example skill with \"Hi\". That is any other text, so I will pass it as CLI parameters to scripts/example.sh and report the output. Let me run the script.";
+const SCRIPT_OUTPUT_TEXT = "This is example.sh output.\n";
+const SKILL_SCRIPT_REPORT = [
+	"example.sh output:",
+	"",
+	"```",
+	"This is example.sh output.",
+	"```",
+].join("\n");
+const SKILL_SCRIPT_REPORT_THINKING =
+	"The script printed one line. The skill says to report the output. I will report it in a code block.";
+
+/**
+ * One simulated user message of the dialogue: the custom type it is
+ * persisted as, its content, and whether it is shown in the TUI.
+ * Built per session: the three few-shot invocations embed the <skill>
+ * block rooted at the session's current working directory. The synthetic
+ * replies that must follow each user message in the LLM context are built
+ * alongside in before_agent_start (they carry the active model's metadata
+ * and the synthetic thinking blocks).
+ */
+function buildDialoguePlan(exampleSkillDir: string): Array<{
+	customType: string;
+	userContent: string;
+	display: boolean;
+}> {
+	const block = buildExampleSkillBlock(exampleSkillDir);
+	return [
+		{ customType: SKILLS_CUSTOM_TYPE, userContent: SKILLS_ASK, display: true },
+		{ customType: TOOLS_CUSTOM_TYPE, userContent: TOOLS_ASK, display: true },
+		{ customType: SKILLSYS_CUSTOM_TYPE, userContent: SKILLSYS_ASK, display: true },
+		{ customType: SKILL_EXAMPLE_CUSTOM_TYPE, userContent: block, display: false },
+		{ customType: SKILL_HELLO_CUSTOM_TYPE, userContent: `${block}\nHello`, display: false },
+		{ customType: SKILL_SCRIPT_CUSTOM_TYPE, userContent: `${block}\nHi`, display: false },
+	];
+}
 
 /** Collapse all whitespace runs to single spaces and trim. */
 function oneLine(text: string): string {
@@ -290,82 +443,6 @@ function toolsThinking(count: number): string {
 	return `I found ${count} tools. I will pick the narrowest tool that fits the task.`;
 }
 
-/** One short synthetic reasoning for the skill-usage assistant message. */
-function usageThinking(): string {
-	return `The user asks how a skill can be used. I will show one example: the user invokes a skill with /skill:<name>, pi puts the skill's SKILL.md body in a <skill name=... location=...> block of the user message, and the text after the block is the task. I do not explain the skill - I perform the task: if the block lists how to run a script (a script file name like example.py in a usage code block), I pick the usage line that matches the task (mapping task wording to the flags the skill shows), take the positional argument from the task, resolve the script's absolute path from the skill dir (dirname of the location attribute, scripts under <skill-dir>/scripts/), and run the PEP 723 script via \`uv run --script <absolute path> <args>\` with the bash tool. If the block shows no script file name - only instructions, for example a communication mode - I follow it and reply as it tells me: the mode name itself is my reply (activating a mode is not a script run; there is nothing to run).`;
-}
-
-/**
- * One-shot example answering "How can a skill be used?". A generic
- * "example" skill (deliberately a name that collides with no real or
- * popular skill) whose SKILL.md lists harmless example invocations
- * (python script with a positional arg, same script with a flag).
- * Teaches the full pattern: /skill:<name> [task] trigger, pi's <skill>
- * block expansion, the task after the block, and a 4-step recipe for the
- * single bash tool call (match the usage line, map task wording only to
- * flags the skill shows, take the positional argument from the task,
- * resolve the absolute script path from the location attribute, run PEP
- * 723 scripts via uv). Plus the no-script case: some skills carry
- * instructions to follow (e.g. a communication mode) instead of usages.
- *
- * GEPA-verified against LiquidAI/LFM2.5-2.6B (optim/skills-usage):
- * with the reasoning block on the wire, 10/10 perfect bash tool calls on
- * the bare-URL webfetch invocation; text only scored 0/3.
- */
-const SKILL_USAGE_EXAMPLE = [
-	"A skill is invoked by the user with /skill:<name> [task], and pi expands it into a user message with the skill's SKILL.md body in a <skill> block:",
-	"```",
-	'<skill name="example" location="/home/user/project/.agents/skills/example/SKILL.md">',
-	"",
-	"# example",
-	"",
-	"## Usage",
-	"",
-	"```bash",
-	"example.py DIR            # list the files in DIR",
-	"example.py DIR --json     # count the files in DIR, as JSON",
-	"```",
-	"</skill>",
-	"List the files in /data.",
-	"```",
-	"The text after the </skill> block is the task - a sentence, or bare arguments like a URL or a search query.",
-	"",
-	"A user message with a <skill> block is a task to perform, never a question about the skill. I perform the task; I do not explain the skill. My first check: does the <skill> block name a script file (like example.py or my.sh)?",
-	"",
-	"- No: it is a mode or instruction skill - I follow the block and reply as it tells me; my reply is the action (for example the mode name). No bash call.",
-	"- Yes: I run the script with exactly one bash tool call (recipe A below):",
-	"",
-	"A) If it lists how to run a script - a script file name like example.py or my.sh in a usage code block (like the example above) - I produce exactly one bash tool call:",
-	'1. I pick the usage line in the block that matches the task, mapping task wording only to flags the skill shows ("raw HTML" -> --html, "save to X" -> --file X, "JSON" -> --json, "no sanitization" -> --no-ai-targeted, "force fetcher" -> --tool TOOL). I do not invent flags.',
-	"2. I take the positional argument from the task - a URL for webfetch, a search query for websearch - and quote arguments that contain spaces.",
-	"3. I resolve the script's absolute path: the skill dir is the dirname of the <skill> location attribute, and scripts live in <skill-dir>/scripts/ (location /home/user/project/.agents/skills/example/SKILL.md -> /home/user/project/.agents/skills/example/scripts/example.py). I never use a bare script name or a relative path.",
-	"4. I run self-contained Python scripts (PEP 723 header) with uv - never directly, never with python/python3:",
-	"```bash",
-	"uv run --script /home/user/project/.agents/skills/example/scripts/example.py '/data'",
-	"```",
-	"",
-	"B) If it shows no script file name - only instructions to follow, for example a communication mode with commands like `tzip on` or `tzip lite` that I follow, not run - I reply as the block tells me:",
-	"",
-	"user message:",
-	"<skill name=\"tzip\" location=\"/home/user/project/.agents/skills/tzip/SKILL.md\">",
-	"## Usage",
-	"",
-	"- `tzip` / `tzip on` / `tzip lite` → Lite (default): drop filler, keep articles and full sentences",
-	"- `tzip full` → Drop articles, fragments OK",
-	"- `tzip ultra` → Abbreviate (DB, auth, config)",
-	"- `tzip off` → Deactivate token pruning",
-	"",
-	"Reply with mode name (e.g. \"tzip lite activated\", \"tzip deactivated\")",
-	"</skill>",
-	"lite",
-	"my reply: tzip lite activated",
-	"",
-	"same <skill> block, task after </skill> is `ultra`:",
-	"my reply: tzip ultra activated",
-	"",
-	"Activating a mode is not a script run: a mode skill names no script, so there is nothing to run - my reply is the action (the mode name), and from then on I apply the mode to my replies. The <skill> block is all I need: no bash call, no listing or searching the skill dir, and I never read, create, or run a script the block does not name.",
-].join("\n");
-
 /**
  * Build the available-skills YAML document (main content of the synthetic
  * assistant message answering "Available skills").
@@ -454,28 +531,36 @@ const ZERO_USAGE: Usage = {
 };
 
 /**
- * Build the synthetic assistant message answering an slm ask. Main content
- * is the YAML document; when the model supports reasoning a short synthetic
- * thinking block precedes it.
+ * Build a synthetic assistant message. The content is a short text answer
+ * (the YAML document or the few-shot reply) and/or a toolCall block; when
+ * the model supports reasoning a short synthetic thinking block precedes
+ * them (it rides on the wire as `reasoning_content` for the OpenAI
+ * Completions API). Messages with a toolCall carry stopReason "toolUse".
  */
 function makeSynthAssistant(
-	yaml: string,
+	text: string | undefined,
 	thinking: string | undefined,
 	model: Model<any>,
+	toolCall?: { id: string; name: string; arguments: Record<string, unknown> },
 ): AssistantMessage {
-	const content: (TextContent | ThinkingContent)[] = [];
+	const content: (TextContent | ThinkingContent | ToolCall)[] = [];
 	if (thinking !== undefined) {
 		const block: ThinkingContent = { type: "thinking", thinking };
 		// OpenAI Completions serializers (pi's openai-completions.js) emit
 		// `assistantMsg[signature] = <thinking text>` for thinking blocks
 		// that carry a signature — the documented replay path for
-		// llama.cpp server. Content stays the pure YAML document.
+		// llama.cpp server. Content stays the pure answer.
 		if (model.api === "openai-completions") {
 			block.thinkingSignature = "reasoning_content";
 		}
 		content.push(block);
 	}
-	content.push({ type: "text", text: yaml });
+	if (toolCall) {
+		content.push({ type: "toolCall", id: toolCall.id, name: toolCall.name, arguments: toolCall.arguments });
+	}
+	if (text !== undefined) {
+		content.push({ type: "text", text });
+	}
 	return {
 		role: "assistant",
 		content,
@@ -483,38 +568,79 @@ function makeSynthAssistant(
 		provider: model.provider,
 		model: model.id,
 		usage: ZERO_USAGE,
-		stopReason: "stop",
+		stopReason: toolCall ? "toolUse" : "stop",
 		timestamp: Date.now(),
 	};
 }
 
-/** True when the (restored) message is the synthetic assistant we injected. */
-function isOurAssistant(
+/** Build a synthetic tool-result message (pi's role "toolResult" shape). */
+function makeSynthToolResult(
+	toolCallId: string,
+	toolName: string,
+	text: string,
+): ToolResultMessage {
+	return {
+		role: "toolResult",
+		toolCallId,
+		toolName,
+		content: [{ type: "text", text }],
+		isError: false,
+		timestamp: Date.now(),
+	};
+}
+
+/**
+ * True when the (restored or live) message is one of the synthetic replies
+ * we injected: an assistant message sharing one of our content blocks
+ * (thinking text, answer text, or toolCall id+name), or a tool result with
+ * the same toolCallId and payload text.
+ */
+function isSyntheticReply(
 	m: unknown,
-	ours: AssistantMessage,
+	expected: AssistantMessage | ToolResultMessage,
 ): boolean {
 	if (typeof m !== "object" || m === null) {
 		return false;
 	}
-	const msg = m as { role?: string; content?: unknown };
+	const msg = m as { role?: string; content?: unknown; toolCallId?: string };
+	if (expected.role === "toolResult") {
+		const expText = (expected.content[0] as TextContent | undefined)?.text;
+		const msgBlocks = Array.isArray(msg.content)
+			? (msg.content as Array<Record<string, unknown>>)
+			: [];
+		const msgText = (msgBlocks[0] as TextContent | undefined)?.text;
+		return (
+			msg.role === "toolResult" &&
+			msg.toolCallId === expected.toolCallId &&
+			msgText === expText
+		);
+	}
 	if (msg.role !== "assistant" || !Array.isArray(msg.content)) {
 		return false;
 	}
-	const ourText = ours.content.find((b) => b.type === "text") as
-		| TextContent
-		| undefined;
-	const ourThinking = ours.content.find((b) => b.type === "thinking") as
-		| ThinkingContent
-		| undefined;
-	for (const block of msg.content as Array<Record<string, unknown>>) {
+	const blocks = msg.content as Array<Record<string, unknown>>;
+	for (const block of expected.content) {
 		if (
-			ourThinking &&
 			block.type === "thinking" &&
-			block.thinking === ourThinking.thinking
+			blocks.some((b) => b.type === "thinking" && b.thinking === (block as ThinkingContent).thinking)
 		) {
 			return true;
 		}
-		if (ourText && block.type === "text" && block.text === ourText.text) {
+		if (
+			block.type === "text" &&
+			blocks.some((b) => b.type === "text" && b.text === (block as TextContent).text)
+		) {
+			return true;
+		}
+		if (
+			block.type === "toolCall" &&
+			blocks.some(
+				(b) =>
+					b.type === "toolCall" &&
+					(b as ToolCall).id === (block as ToolCall).id &&
+					(b as ToolCall).name === (block as ToolCall).name,
+			)
+		) {
 			return true;
 		}
 	}
@@ -525,14 +651,18 @@ export default function slmExtension(pi: ExtensionAPI) {
 	// In-memory state for the session this extension injected into.
 	const state: {
 		sessionId: string | undefined;
-		skillsAssistant: AssistantMessage | undefined;
-		toolsAssistant: AssistantMessage | undefined;
-		usageAssistant: AssistantMessage | undefined;
+		// The simulated user messages' custom types, in dialogue order.
+		customTypes: string[];
+		// Parallel to customTypes: the synthetic replies (assistant
+		// messages and tool results) that must follow each simulated user
+		// message in the LLM context. Built per session (model metadata +
+		// synthetic thinking depend on the active model; the few-shot paths
+		// depend on the session's working directory).
+		replies: Array<Array<AssistantMessage | ToolResultMessage>>;
 	} = {
 		sessionId: undefined,
-		skillsAssistant: undefined,
-		toolsAssistant: undefined,
-		usageAssistant: undefined,
+		customTypes: [],
+		replies: [],
 	};
 
 	// ------------------------------------------------------------------
@@ -569,59 +699,115 @@ export default function slmExtension(pi: ExtensionAPI) {
 			pi.getAllTools(),
 		);
 
-		state.sessionId = ctx.sessionManager.getSessionId();
-		state.skillsAssistant = makeSynthAssistant(
-			skillsYaml,
-			reasoning ? skillsThinking(skills.length) : undefined,
-			ctx.model,
-		);
-		state.toolsAssistant = makeSynthAssistant(
-			toolsYaml,
-			reasoning ? toolsThinking(activeTools.length) : undefined,
-			ctx.model,
-		);
-		state.usageAssistant = makeSynthAssistant(
-			SKILL_USAGE_EXAMPLE,
-			reasoning ? usageThinking() : undefined,
-			ctx.model,
-		);
+		// The simulated user messages: asks plus the three few-shot
+		// invocations, whose <skill> block is rooted at the session's
+		// current working directory (<cwd>/.agents/skills/example) — pi's
+		// standard project skill location, so the few-shot's absolute paths
+		// are the session's real absolute paths.
+		const exampleSkillDir = join(opts.cwd, ".agents", "skills", "example");
+		const plan = buildDialoguePlan(exampleSkillDir);
 
-		// Persist the simulated dialogue in order:
-		//   user "Available skills"     -> assistant skills YAML
-		//   user "Available tools"      -> assistant tools YAML
-		//   user "How can a skill be used?" -> assistant one-shot example
+		// The synthetic replies for each simulated user message, in plan
+		// order: skills listing, tools listing, the skill contract, and the
+		// three few-shot invocations (fixed reply, read-reference,
+		// run-script) with their tool results.
+		state.sessionId = ctx.sessionManager.getSessionId();
+		state.customTypes = plan.map((seg) => seg.customType);
+		state.replies = [
+			[
+				makeSynthAssistant(
+					skillsYaml,
+					reasoning ? skillsThinking(skills.length) : undefined,
+					ctx.model,
+				),
+			],
+			[
+				makeSynthAssistant(
+					toolsYaml,
+					reasoning ? toolsThinking(activeTools.length) : undefined,
+					ctx.model,
+				),
+			],
+			[
+				makeSynthAssistant(
+					SKILLSYS_EXPLAIN,
+					reasoning ? SKILLSYS_THINKING : undefined,
+					ctx.model,
+				),
+			],
+			[
+				makeSynthAssistant(
+					SKILL_EXAMPLE_ANSWER,
+					reasoning ? SKILL_EXAMPLE_THINKING : undefined,
+					ctx.model,
+				),
+			],
+			[
+				makeSynthAssistant(
+					undefined,
+					reasoning ? SKILL_HELLO_CALL_THINKING : undefined,
+					ctx.model,
+					{
+						id: READ_HELLO_TOOL_CALL_ID,
+						name: "read",
+						arguments: { path: `${exampleSkillDir}/references/03-hello.md` },
+					},
+				),
+				makeSynthToolResult(READ_HELLO_TOOL_CALL_ID, "read", HELLO_REFERENCE_TEXT),
+				makeSynthAssistant(
+					SKILL_HELLO_ANSWER,
+					reasoning ? SKILL_HELLO_ANSWER_THINKING : undefined,
+					ctx.model,
+				),
+			],
+			[
+				makeSynthAssistant(
+					undefined,
+					reasoning ? SKILL_SCRIPT_CALL_THINKING : undefined,
+					ctx.model,
+					{
+						id: RUN_SCRIPT_TOOL_CALL_ID,
+						name: "bash",
+						arguments: { command: `bash ${exampleSkillDir}/scripts/example.sh Hi` },
+					},
+				),
+				makeSynthToolResult(RUN_SCRIPT_TOOL_CALL_ID, "bash", SCRIPT_OUTPUT_TEXT),
+				makeSynthAssistant(
+					SKILL_SCRIPT_REPORT,
+					reasoning ? SKILL_SCRIPT_REPORT_THINKING : undefined,
+					ctx.model,
+				),
+			],
+		];
+
+		// Persist the simulated dialogue in order (per segment: the
+		// simulated user message, then its synthetic replies).
 		// pi.sendMessage() (no triggerTurn) appends the custom message to
 		// the session and to the agent state synchronously (its
 		// non-streaming path contains no awaits), so the following
 		// appendMessage() calls continue the session tree right after it.
-		// The synthetic assistant messages are persisted through the
-		// SessionManager itself: ctx.sessionManager is typed as a read-only
-		// pick, but the runtime object is the full SessionManager instance,
-		// whose appendMessage() is the same method the core uses.
+		// The synthetic assistant/tool-result messages are persisted
+		// through the SessionManager itself: ctx.sessionManager is typed as
+		// a read-only pick, but the runtime object is the full
+		// SessionManager instance, whose appendMessage() is the same method
+		// the core uses.
 		const sm = ctx.sessionManager as unknown as SessionManager;
-		pi.sendMessage({
-			customType: SKILLS_CUSTOM_TYPE,
-			content: SKILLS_ASK,
-			display: true,
-		});
-		sm.appendMessage(state.skillsAssistant);
-		pi.sendMessage({
-			customType: TOOLS_CUSTOM_TYPE,
-			content: TOOLS_ASK,
-			display: true,
-		});
-		sm.appendMessage(state.toolsAssistant);
-		// pi.sendMessage({
-		// 	customType: USAGE_CUSTOM_TYPE,
-		// 	content: USAGE_ASK,
-		// 	display: true,
-		// });
-		// sm.appendMessage(state.usageAssistant);
+		for (let i = 0; i < plan.length; i++) {
+			const seg = plan[i];
+			pi.sendMessage({
+				customType: seg.customType,
+				content: seg.userContent,
+				display: seg.display,
+			});
+			for (const reply of state.replies[i]) {
+				sm.appendMessage(reply);
+			}
+		}
 	});
 
 	// ------------------------------------------------------------------
-	// LLM context: guarantee the synthetic assistant messages are present
-	// (on every provider call) right after their simulated user messages.
+	// LLM context: guarantee the synthetic replies are present (on every
+	// provider call) right after their simulated user messages.
 	//
 	// Why this is needed: the persisted entries above are not in the
 	// agent's in-memory state (only pi.sendMessage() adds to it), and the
@@ -638,40 +824,49 @@ export default function slmExtension(pi: ExtensionAPI) {
 			) {
 				return;
 			}
+			if (state.customTypes.length === 0 || state.replies.length !== state.customTypes.length) {
+				return;
+			}
 			const msgs = event.messages;
-			// The simulated asks and the synthetic assistant reply each maps
-			// to (skills, tools, skill-usage).
-			const byType = new Map<string, AssistantMessage | undefined>([
-				[SKILLS_CUSTOM_TYPE, state.skillsAssistant],
-				[TOOLS_CUSTOM_TYPE, state.toolsAssistant],
-				[USAGE_CUSTOM_TYPE, state.usageAssistant],
-			]);
+			// The simulated asks and the synthetic replies each map to
+			// (skills, tools, skill-system, few-shot invocations).
+			const expected = new Map<string, Array<AssistantMessage | ToolResultMessage>>(
+				state.customTypes.map((customType, i) => [customType, state.replies[i]]),
+			);
 			const hasAsk = msgs.some(
-				(m) => m.role === "custom" && byType.has(m.customType),
+				(m) => m.role === "custom" && expected.has(m.customType),
 			);
 			if (!hasAsk) {
 				return;
 			}
 			const out = [...msgs];
-			const inserts: Array<[number, AssistantMessage]> = [];
+			const inserts: Array<[number, AssistantMessage | ToolResultMessage]> = [];
 			for (let i = 0; i < msgs.length; i++) {
 				const m = msgs[i];
 				if (m.role !== "custom") {
 					continue;
 				}
-				const ours = byType.get(m.customType);
-				if (!ours) {
+				const seq = expected.get(m.customType);
+				if (!seq) {
 					continue;
 				}
-				if (isOurAssistant(msgs[i + 1], ours)) {
-					continue;
+				// How much of the expected reply sequence already sits
+				// right after the simulated user message (restored
+				// sessions have all of it; fresh runs have none).
+				let k = 0;
+				while (k < seq.length && isSyntheticReply(msgs[i + 1 + k], seq[k])) {
+					k++;
 				}
-				inserts.push([i, ours]);
+				if (k < seq.length) {
+					for (let j = k; j < seq.length; j++) {
+						inserts.push([i + 1 + k, seq[j]]);
+					}
+				}
 			}
 			if (inserts.length > 0) {
 				// splice backwards so earlier indices stay valid
 				for (let k = inserts.length - 1; k >= 0; k--) {
-					out.splice(inserts[k][0] + 1, 0, inserts[k][1]);
+					out.splice(inserts[k][0], 0, inserts[k][1]);
 				}
 				return { messages: out };
 			}
