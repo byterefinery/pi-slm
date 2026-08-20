@@ -21,14 +21,22 @@ The two defects being fixed (both reported by the user, both stochastic):
    the bare argument `full`), the student usually needs many attempts from
    scratch to get it right; mode-to-mode transitions also fail (the previous
    mode is repeated, the previous call is answered, or the reply is empty).
-   -> the metric scores each test on TWO independent student rollouts and takes
-   the MIN, so a stochastic failure on either sample fails the item.
+   -> the metric scores each test on N_GEPA (3) independent student rollouts
+   and takes the MIN, so a stochastic failure on any sample fails the item.
 2. CROSS-SKILL LEAK — context from previous skill invocations (the frozen
    `example` one-shots) leaks into a fresh, independent skill invocation: the
    student's reasoning drags in the example skill's name/argument/rules and the
    final reply can be wrong.
    -> every sample's reasoning is leak-checked; a correct reply whose reasoning
-   mixes in the previous skill is capped at 0.5.
+   mixes in the previous skill is capped at LEAK_CAP (0.25).
+
+Run-2 status — this run CONTINUES from the run-2 best pair (loaded from
+step1-pair-optimized.json at runtime): wrong-mode and empty replies were
+eliminated entirely (0 across 333 final-stage samples); the residual defect is
+the CROSS-SKILL LEAK (5% of samples), concentrated on deactivation ('off')
+invocations, where the reasoning narrates the previous invocation state. This
+run: harsher leak cap (0.5 -> 0.25), min-of-3 scoring, and the leaking 'off'
+items are duplicated in the GEPA minibatch dataset.
 
 Invocation form (user-specified): the skill block is followed by a BARE
 argument — `full`, `lite`, `ultra`, `off`, `on`, or nothing (default). NEVER
@@ -52,10 +60,10 @@ Test matrix (37 items, all bare arguments):
 Flow (all logged to stdout -> train.log):
 1.  connectivity probes (teacher + student)
 2.  teacher ground-truth tzip sequence (replies + LFM-voice reasoning)
-3.  write skill-example-tzip-*.json with the SEED (quoted) pair — inspectable
-4.  BASELINE: quoted seed / original seed / V2 (slm.ts) on the matrix (N=1)
-5.  GEPA: reflection LM = teacher, multi-sample min-of-2 metric, budget 500
-6.  FINAL: N=3 multi-sample validation — best vs quoted vs original + leak rates
+3.  write skill-example-tzip-*.json with the continuation seed — inspectable
+4.  BASELINE: continuation seed (previous best) / V2 (slm.ts) on the matrix (N=1)
+5.  GEPA from the continuation seed: reflection LM = teacher, min-of-3 metric, budget 500
+6.  FINAL: N=3 multi-sample validation — new best vs previous best vs V2 + leak rates
 7.  random walks (chained on the student's own replies) + robustness probes
 8.  write the final artifact (best pair) + step1-pair-optimized.json (meta)
 
@@ -103,8 +111,9 @@ GEPA_TIMEOUT_S = 9000
 MINI_BATCH = 10
 PARALLEL = 2
 N_BASELINE = 1  # orientation only
-N_GEPA = 2  # min-of-N metric: a stochastic failure on either sample fails the item
+N_GEPA = 3  # min-of-N metric: a stochastic failure on any sample fails the item
 N_FINAL = 3  # go/no-go evidence
+LEAK_CAP = 0.25  # a correct reply whose reasoning leaks the previous skill scores this
 STUDENT_MAX_TOKENS = 16384
 TEACHER_MAX_TOKENS = 2048
 
@@ -125,8 +134,9 @@ def say(*parts):
 # the step-1 pair: the ONLY editable region of the prompt
 # ---------------------------------------------------------------------------
 
-# SEED — the pair quoted by the user as "this part of the prompt" (the one that
-# currently ships in skill-example-tzip-*.json). GEPA optimizes from here.
+# SEED_PAIR — the pair quoted by the user as "this part of the prompt" (run-2's
+# seed). FALLBACK only: the continuation run loads the previous run's best pair
+# from PAIR_FILE (step1-pair-optimized.json) at runtime and optimizes from there.
 SEED_PAIR = {
     "step1_user": "How does skill system work? When a skill block is in my latest message, what do I do?",
     "step1_reasoning": (
@@ -194,11 +204,16 @@ OBJECTIVE = (
     "start (the bare argument 'full' fails most often) and mode-to-mode transitions, where the student repeats "
     "the PREVIOUS confirmation, answers the PREVIOUS call instead of the current one, or replies empty; (2) "
     "CROSS-SKILL LEAK \u2014 the student's reasoning drags in the earlier 'example' skill's invocation state "
-    "(its name, its short-word argument, its Usage rules or tool outputs), which corrupts the reply. Scoring: "
-    f"each test gets {N_GEPA} independent student rollouts; the item score is the MIN of the two teacher-judged "
-    "scores (1.0 exact confirmation for the mode the current argument selects, 0.5 right mode wrong wording OR a "
-    "correct reply whose reasoning leaks the previous skill, 0.0 wrong mode or empty reply), so a stochastic "
-    "failure on EITHER sample fails the item \u2014 the goal is reliability, not a lucky sample. The only text "
+    "(its name, its short-word argument, its Usage rules or tool outputs), which corrupts the reply. The previous "
+    "run eliminated wrong-mode and empty replies entirely; the RESIDUAL defect is the leak, concentrated on "
+    "deactivation ('off') invocations, where the reasoning narrates the previous invocation state. The reasoning "
+    "must stay confined to the current block: its rules and the current argument (for deactivation it may state "
+    "that the skill becomes inactive \u2014 without citing any earlier skill's state). Scoring: "
+    f"each test gets {N_GEPA} independent student rollouts; the item score is the MIN of the {N_GEPA} "
+    "teacher-judged scores (1.0 exact confirmation for the mode the current argument selects, 0.5 right mode "
+    f"wrong wording, {LEAK_CAP} a correct reply whose reasoning leaks the previous skill, 0.0 wrong mode or "
+    "empty reply), so a stochastic failure on ANY sample fails the item \u2014 the goal is reliability, not a "
+    "lucky sample. The only text "
     "you may improve is the step-1 teaching pair (step1_user, step1_assistant, step1_reasoning). The rule must "
     "stay GENERAL \u2014 it must work for ANY <skill> block: no tzip, no example, no mode names, no specific "
     "confirmation strings. Keep it SHORT and first person. Prefer short, positive, concrete binding statements "
@@ -215,12 +230,15 @@ BACKGROUND = (
     "then the student answers the switch with a bare argument \u2014 a transition failure repeats the start "
     "mode's confirmation, answers the start call, or goes empty), and 6 LIVE consecutive-invocation patterns "
     "(back-to-back bare-block invocations, including the exact live failure: bare block \u2192 'tzip lite "
-    "activated', then bare block + 'full'). 'on' maps to the 'lite' mode. Each item is scored on TWO "
-    "independent student rollouts (score = min of the two teacher-judged scores), so a reliable pair must "
-    "produce the exact confirmation on BOTH samples. The judge's REASON in each side-info dict names the defect "
-    "(stale-mode confirmation, previous-call answer, wrong mode, empty reply, cross-skill leak); the Samples "
-    "line shows, per rollout, the student reply, the verdict, and the leak flag. Scoring: 1.0 exact "
-    "confirmation, 0.5 right mode wrong wording or correct reply with a cross-skill leak, 0.0 otherwise."
+    "activated', then bare block + 'full'). 'on' maps to the 'lite' mode. Each item is scored on THREE "
+    "independent student rollouts (score = min of the three teacher-judged scores), so a reliable pair must "
+    "produce the exact confirmation on ALL three samples. The previous run eliminated wrong-mode and empty "
+    "replies; the residual defect is the cross-skill leak, concentrated on the 'off' items (A activate 'off', "
+    "B full -> off, C live (empty) -> off), which are therefore duplicated in the training dataset. The judge's "
+    "REASON in each side-info dict names the defect (stale-mode confirmation, previous-call answer, wrong mode, "
+    "empty reply, cross-skill leak); the Samples line shows, per rollout, the student reply, the verdict, and "
+    "the leak flag. Scoring: 1.0 exact confirmation, 0.5 right mode wrong wording, 0.25 a correct reply with a "
+    "cross-skill leak in the reasoning, 0.0 wrong mode or empty reply."
 )
 
 
@@ -694,7 +712,7 @@ def build_judge_items():
 def make_judge_evaluator(student, teacher, tools, base_msgs, n_samples):
     """Student rolls out n_samples times on (candidate pair + frozen prefix + item setup);
     the TEACHER judges each sample; item score = MIN of sample scores.
-    A correct reply whose reasoning leaks the previous skill is capped at 0.5 per sample."""
+    A correct reply whose reasoning leaks the previous skill is capped at LEAK_CAP per sample."""
     i = next(idx for idx, m in enumerate(base_msgs) if user_text_of(m).startswith("How does skill system work?"))
     before, after = base_msgs[:i], base_msgs[i + 2 :]
 
@@ -728,8 +746,8 @@ def make_judge_evaluator(student, teacher, tools, base_msgs, n_samples):
             reasoning = final.get("reasoning_content") or ""
             verdict, score, reason = judge_reply(teacher, example["setup"], example["current"], reply, reasoning)
             leak = reasoning_leaks_skill_mixup(reasoning)
-            if leak and score == 1.0:
-                score = 0.5
+            if leak and score > LEAK_CAP:
+                score = LEAK_CAP
                 reason = reason + " | NOTE: reply correct, but reasoning mixes in the previous skill's invocation state (isolation violation)"
             if leak:
                 n_leaks += 1
@@ -903,9 +921,19 @@ def main():
     assert user_text_of(base_msgs[i1]) == original_seed["step1_user"]
     assert base_msgs[i1 + 1]["content"] == original_seed["step1_assistant"]
     assert norm(SEED_PAIR["step1_assistant"]) != norm(original_seed["step1_assistant"]), "SEED_PAIR should be the quoted pair, not the original seed"
+    # ---- continuation seed: the previous run's best pair (if saved), else the quoted pair ----
+    seed, seed_name = dict(SEED_PAIR), "quoted pair (run-2 fallback)"
+    if PAIR_FILE.exists():
+        try:
+            prev = json.loads(PAIR_FILE.read_text())
+            if all(k in prev for k in ("step1_user", "step1_assistant", "step1_reasoning")):
+                seed = {k: prev[k] for k in ("step1_user", "step1_assistant", "step1_reasoning")}
+                seed_name = f"previous best ({PAIR_FILE.name})"
+        except (json.JSONDecodeError, OSError):
+            pass
+    say(f"Continuation seed: {seed_name}")
     candidates = {
-        "quoted (current artifact)": SEED_PAIR,
-        "original (real session)": original_seed,
+        "continuation seed (previous best)": seed,
         "V2 (slm.ts)": V2_PAIR,
     }
     say(f"Base conversation: REAL pi-session context, {len(base_msgs)} messages (incl. system), {len(TOOLS)} tools; "
@@ -916,8 +944,8 @@ def main():
     say(f"Generating {len(SEQ)} tzip invocations with the teacher model (thinking off) ...")
     tzip_msgs, _ = generate_tzip_sequence(teacher, base_msgs)
 
-    # ---- initial file with the SEED (quoted) pair (inspectable) ----
-    write_tzip_file(base_msgs, TOOLS, tzip_msgs, SEED_PAIR, STUDENT_CFG, tag="seed (quoted) pair")
+    # ---- initial file with the continuation seed (inspectable) ----
+    write_tzip_file(base_msgs, TOOLS, tzip_msgs, seed, STUDENT_CFG, tag=f"seed ({seed_name})")
 
     # ---- stage 1: baselines (N=1, orientation) ----
     items = build_judge_items()
@@ -927,23 +955,24 @@ def main():
         agg, leaks, _ = evaluate_all(baseline_eval, cand, items, f"BASELINE (N={N_BASELINE}) — {name}", N_BASELINE)
         baselines[name] = (agg, leaks)
 
-    # ---- stage 2: GEPA from the quoted seed, multi-sample min-of-2 metric ----
-    say(f"\nGEPA — {len(items)} validation items, dataset={len(items) + 4} (weighted), "
+    # ---- stage 2: GEPA from the continuation seed, multi-sample min-of-3 metric ----
+    say(f"\nGEPA — seed={seed_name}; {len(items)} validation items, dataset={len(items) + 4} (weighted), "
         f"minibatch={MINI_BATCH}, n_samples={N_GEPA} (min), max_metric_calls={MAX_METRIC_CALLS}, "
         f"reflection LM = {TEACHER_MODEL} (thinking off), timeout={GEPA_TIMEOUT_S}s.")
     dataset = [{**it, "id": f"d-{n + 1}"} for n, it in enumerate(items)]
-    # weighted duplicates so a random minibatch reliably contains the high-risk cases
+    # weighted duplicates so a random minibatch reliably contains the leaking cases —
+    # run-2 residual: the cross-skill leak concentrates on the deactivation ('off') items
     extra = [
-        {"name": "A activate 'full' (dup)", "setup": [], "current": "full"},
-        {"name": "A activate 'full' (dup)", "setup": [], "current": "full"},
-        {"name": "A activate (empty, default) (dup)", "setup": [], "current": ""},
-        {"name": "C live (empty) -> full (dup)", "setup": [("", "tzip lite activated")], "current": "full"},
+        {"name": "A activate 'off' (dup)", "setup": [], "current": "off"},
+        {"name": "A activate 'off' (dup)", "setup": [], "current": "off"},
+        {"name": "B full -> off (dup)", "setup": [("full", "tzip full activated")], "current": "off"},
+        {"name": "C live (empty) -> off (dup)", "setup": [("", "tzip lite activated")], "current": "off"},
     ]
     dataset += [{**it, "id": f"dx-{n + 1}"} for n, it in enumerate(extra)]
     valset = [{**it, "id": f"v-{n + 1}"} for n, it in enumerate(items)]
     gepa_eval = make_judge_evaluator(student, teacher, TOOLS, base_msgs, n_samples=N_GEPA)
     result = optimize_anything(
-        seed_candidate=dict(SEED_PAIR),
+        seed_candidate=dict(seed),
         evaluator=gepa_eval,
         dataset=dataset,
         valset=valset,
@@ -959,7 +988,7 @@ def main():
             ),
             reflection=ReflectionConfig(reflection_lm=lambda p: teacher.forward(messages=[{"role": "user", "content": p}]).choices[0].message.content or "", reflection_minibatch_size=MINI_BATCH),
             stop_callbacks=[
-                # With min-of-2 scoring, 0.99 on 37 items means EVERY item passed on BOTH samples.
+                # With min-of-3 scoring, 0.99 on 37 items means EVERY item passed on ALL THREE samples.
                 ScoreThresholdStopper(threshold=0.99),
                 NoImprovementStopper(max_iterations_without_improvement=8),
                 TimeoutStopCondition(timeout_seconds=GEPA_TIMEOUT_S),
@@ -983,13 +1012,13 @@ def main():
         for line in run_log.read_text().splitlines():
             if "Base program full valset" in line or "Found a better program" in line:
                 say(f"  {line}")
-    changed = any(best.get(k) != SEED_PAIR[k] for k in ("step1_user", "step1_assistant", "step1_reasoning"))
-    say(f"Pair changed by GEPA: {changed}")
+    changed = any(best.get(k) != seed[k] for k in ("step1_user", "step1_assistant", "step1_reasoning"))
+    say(f"Pair changed by GEPA vs continuation seed: {changed}")
 
-    # ---- stage 3: FINAL multi-sample validation (N=3): best vs quoted vs original ----
+    # ---- stage 3: FINAL multi-sample validation (N=3): new best vs previous best vs V2 ----
     final_eval = make_judge_evaluator(student, teacher, TOOLS, base_msgs, n_samples=N_FINAL)
     finals = {}
-    for name, cand in (("GEPA best", best), ("quoted (current artifact)", SEED_PAIR), ("original (real session)", original_seed)):
+    for name, cand in (("GEPA best (new)", best), ("previous best (continuation seed)", seed), ("V2 (slm.ts)", V2_PAIR)):
         agg, leaks, fails = evaluate_all(final_eval, cand, items, f"FINAL (N={N_FINAL}, min-of-3) — {name}", N_FINAL)
         finals[name] = (agg, leaks, fails)
 
@@ -1007,9 +1036,9 @@ def main():
                     "date": datetime.now().isoformat(timespec="seconds"),
                     "student": f"{STUDENT_MODEL} (thinking on)",
                     "teacher": f"{TEACHER_MODEL} (thinking off, default sampling params from models.json)",
-                    "seed": "quoted pair (current skill-example-tzip artifact)",
+                    "seed": seed_name,
                     "metric": f"teacher-judged, {N_GEPA} independent student samples per item, score = MIN; "
-                              "cross-skill leak in reasoning caps a correct reply at 0.5; bare arguments only",
+                              f"cross-skill leak in reasoning caps a correct reply at {LEAK_CAP}; bare arguments only",
                     "baseline_N1": {k: {"aggregate": round(v[0], 4), "leaks": round(v[1], 4)} for k, v in baselines.items()},
                     "gepa_best_valscore": round(best_score, 4) if best_score == best_score else None,
                     "final_N3": {k: {"aggregate": round(v[0], 4), "leaks": round(v[1], 4), "failing_items": v[2]} for k, v in finals.items()},

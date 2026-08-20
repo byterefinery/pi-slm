@@ -1,58 +1,47 @@
 {
   "step1_user": "How does skill system work? When a skill block is in my latest message, what do I do?",
-  "step1_reasoning": "I treat each skill block as a fresh, self-contained call: I read only this block's name, Usage rules, and the argument text after its closing tag, and ignore everything before it. If a different mode is already active, I still derive the reply only from this argument — I never repeat the old confirmation. If the previous message ended with a short word from another finished skill, that word is not this argument; the argument is exactly the text after this block's closing tag. I never import the previous skill's rules, outputs, or state into this reply. My reply is always the single short confirmation line this skill's Usage requires — never empty, never extra.",
   "step1_assistant": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+  "step1_reasoning": "I treat each skill block as a fresh, self-contained call: I read only this block's name, Usage rules, and the argument text after its closing tag, and ignore everything before it. If a different mode is already active, I still derive the reply only from this argument — I never repeat the old confirmation. If the previous message ended with a short word from another finished skill, that word is not this argument; the argument is exactly the text after this block's closing tag. I never import the previous skill's rules, outputs, or state into this reply. My reply is always the single short confirmation line this skill's Usage requires — never empty, never extra.",
   "meta": {
-    "date": "2026-08-20T22:30:16",
+    "date": "2026-08-21T01:29:31",
     "student": "LiquidAI/LFM2.5-2.6B (thinking on)",
     "teacher": "Qwen/Qwen3.8-27B (thinking off, default sampling params from models.json)",
-    "seed": "quoted pair (current skill-example-tzip artifact)",
-    "metric": "teacher-judged, 2 independent student samples per item, score = MIN; cross-skill leak in reasoning caps a correct reply at 0.5; bare arguments only",
+    "seed": "previous best (step1-pair-optimized.json)",
+    "metric": "teacher-judged, 3 independent student samples per item, score = MIN; cross-skill leak in reasoning caps a correct reply at 0.25; bare arguments only",
     "baseline_N1": {
-      "quoted (current artifact)": {
-        "aggregate": 0.973,
-        "leaks": 0.0541
-      },
-      "original (real session)": {
-        "aggregate": 0.973,
-        "leaks": 0.0541
+      "continuation seed (previous best)": {
+        "aggregate": 1.0,
+        "leaks": 0.0
       },
       "V2 (slm.ts)": {
-        "aggregate": 0.9189,
-        "leaks": 0.1622
+        "aggregate": 0.9392,
+        "leaks": 0.0811
       }
     },
-    "gepa_best_valscore": 0.9459,
+    "gepa_best_valscore": 0.8986,
     "final_N3": {
-      "GEPA best": {
-        "aggregate": 0.9459,
+      "GEPA best (new)": {
+        "aggregate": 1.0,
+        "leaks": 0.0,
+        "failing_items": []
+      },
+      "previous best (continuation seed)": {
+        "aggregate": 0.9392,
         "leaks": 0.045,
         "failing_items": [
           "A activate 'off'",
           "A activate 'off'",
-          "B full -> off",
           "C live (empty) -> off"
         ]
       },
-      "quoted (current artifact)": {
-        "aggregate": 0.9324,
-        "leaks": 0.0901,
+      "V2 (slm.ts)": {
+        "aggregate": 0.8986,
+        "leaks": 0.0811,
         "failing_items": [
+          "A activate 'off'",
           "A activate 'off'",
           "B lite -> off",
           "B full -> off",
-          "B ultra -> off",
-          "C live (empty) -> off"
-        ]
-      },
-      "original (real session)": {
-        "aggregate": 0.9324,
-        "leaks": 0.0991,
-        "failing_items": [
-          "A activate 'off'",
-          "B lite -> off",
-          "B full -> off",
-          "B ultra -> off",
           "C live (empty) -> off"
         ]
       }
