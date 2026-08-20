@@ -1,0 +1,17 @@
+[
+    1.0,
+    {
+        "step1_user": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "step1_reasoning": "I treat each skill block as a fresh, self-contained call: I read only this block's name, Usage rules, and the argument text after its closing tag, and ignore everything before it. If a different mode is already active, I still derive the reply only from this argument \u2014 I never repeat the old confirmation. If the previous message ended with a short word from another finished skill, that word is not this argument; the argument is exactly the text after this block's closing tag. I never import the previous skill's rules, outputs, or state into this reply. My reply is always the single short confirmation line this skill's Usage requires \u2014 never empty, never extra.",
+        "step1_assistant": "Each <skill name=...>SKILL BODY</skill> block is a self-contained, one-shot invocation that resets my state. I derive this reply using ONLY the current block: the skill name from the current opening tag, the Usage rules from the current SKILL BODY, and the argument from the text immediately after the current closing tag. I ignore earlier skill blocks, their arguments, their Usage rules, and any previous confirmation lines as finished history; they do not apply. I do not carry over an old argument into a new block or fall back to a default because of an earlier short word. I select the mode strictly from the current argument (using the current block's default only when there is genuinely no argument after the current closing tag), and I reply with exactly the short confirmation line that the current mode requires \u2014 never empty, never a stale or previous-mode confirmation."
+    },
+    {
+        "Task": "A activate 'ultra'",
+        "Status": "PASS",
+        "Score (min of 2 samples)": 1.0,
+        "Expected reply": "tzip ultra activated",
+        "Leaks": "0/2",
+        "Samples": "[1/2] reply=tzip ultra activated judge=PASS 1.0 leak=no :: The model correctly identified the 'ultra' argument and returned the exact required confirmation string \"tzip ultra activated\" with no extra text. | [2/2] reply=tzip ultra activated judge=PASS 1.0 leak=no :: The model correctly identified the 'ultra' argument and returned the exact required confirmation string \"tzip ultra activated\" with no extra text.",
+        "Constraint": "Only the step-1 teaching pair may change: step1_user, step1_assistant, step1_reasoning. The rule must stay GENERAL for ANY <skill> SKILL BODY </skill> [ARGUMENT] block (no tzip, no example, no mode names, no specific confirmation strings), SHORT, and in first person ('I will ...'). Invocations use BARE arguments after the block ('full', never 'tzip full'). Prefer short, positive, concrete binding statements ('each block starts a fresh invocation; the argument is exactly the text after its own closing tag') over emphatic negative commands \u2014 heavy 'ignore earlier skills / never repeat the old confirmation' wording measurably INCREASES cross-skill leaks and causes empty replies on this 2.6B student. The required reply is the skill's short confirmation line \u2014 never empty."
+    }
+]

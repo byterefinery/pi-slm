@@ -34,7 +34,7 @@
     },
     {
       "role": "assistant",
-      "content": "Each <skill name=...>SKILL BODY</skill> block is a self-contained, one-shot invocation that resets my state. I derive this reply using ONLY the current block: the skill name from the current opening tag, the Usage rules from the current SKILL BODY, and the argument from the text immediately after the current closing tag. I ignore earlier skill blocks, their arguments, their Usage rules, and any previous confirmation lines as finished history; they do not apply. I do not carry over an old argument into a new block or fall back to a default because of an earlier short word. I select the mode strictly from the current argument (using the current block's default only when there is genuinely no argument after the current closing tag), and I reply with exactly the short confirmation line that the current mode requires — never empty, never a stale or previous-mode confirmation.",
+      "content": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
       "reasoning_content": "I treat each skill block as a fresh, self-contained call: I read only this block's name, Usage rules, and the argument text after its closing tag, and ignore everything before it. If a different mode is already active, I still derive the reply only from this argument — I never repeat the old confirmation. If the previous message ended with a short word from another finished skill, that word is not this argument; the argument is exactly the text after this block's closing tag. I never import the previous skill's rules, outputs, or state into this reply. My reply is always the single short confirmation line this skill's Usage requires — never empty, never extra."
     },
     {
@@ -120,7 +120,7 @@
     {
       "role": "assistant",
       "content": "tzip full activated",
-      "reasoning_content": "The user is activating the tzip skill with the \"full\" argument while it is currently inactive. I will follow the usage rule and reply with the mode name and activated status."
+      "reasoning_content": "The user is activating the tzip skill with the bare argument full. I will reply with the mode name plus activated as required. Now final output."
     },
     {
       "role": "user",
@@ -134,7 +134,7 @@
     {
       "role": "assistant",
       "content": "tzip ultra activated",
-      "reasoning_content": "The user is invoking the tzip skill with the argument \"ultra\". The Usage rule maps this to the ultra mode, which requires replying with the mode name and activation status. I will output tzip ultra activated."
+      "reasoning_content": "The user is invoking the tzip skill with the bare argument \"ultra\". Since tzip is currently active in full mode, I will switch it to ultra mode and reply with the confirmation."
     },
     {
       "role": "user",
@@ -148,7 +148,7 @@
     {
       "role": "assistant",
       "content": "tzip deactivated",
-      "reasoning_content": "The user is invoking the tzip skill with the argument \"off\", which maps to deactivating the mode. Since it was previously active, I will reply with the required confirmation. I will respond with \"tzip deactivated\"."
+      "reasoning_content": "The user is invoking the tzip skill with the bare argument \"off\", which maps to the deactivate mode. I will reply with the mode name followed by \"deactivated\" to confirm the state change."
     },
     {
       "role": "user",
@@ -162,7 +162,7 @@
     {
       "role": "assistant",
       "content": "tzip lite activated",
-      "reasoning_content": "The user is invoking the tzip skill with the argument lite. Since tzip is currently inactive, I will activate the lite mode. I will reply with tzip lite activated."
+      "reasoning_content": "The user is invoking the tzip skill with the bare argument \"lite\". Since the skill was previously inactive, this action activates it. I will reply with the mode name and confirmation as required."
     },
     {
       "role": "user",
@@ -176,7 +176,7 @@
     {
       "role": "assistant",
       "content": "tzip full activated",
-      "reasoning_content": "The user is invoking the tzip skill with the argument \"full\" while it is currently active in lite mode. I will follow the Usage rule by replying with the mode name and activation status. My reply will be exactly \"tzip full activated\"."
+      "reasoning_content": "The user invoked tzip with the bare argument \"full\" while lite mode is currently active, so I will switch to full mode and reply with \"tzip full activated\"."
     },
     {
       "role": "user",
@@ -190,7 +190,7 @@
     {
       "role": "assistant",
       "content": "tzip deactivated",
-      "reasoning_content": "The user is invoking the tzip skill with the argument \"off\" while it is currently in full mode, so I need to switch it to deactivated status. I will map this argument to the \"deactivated\" mode and reply with the required confirmation phrase. Let me provide the short response: tzip deactivated."
+      "reasoning_content": "The user is invoking the tzip skill with the bare argument \"off\". Since tzip was previously active in full mode, this argument maps to deactivating the mode. I will reply with the mode name followed by \"deactivated\"."
     },
     {
       "role": "user",
@@ -204,7 +204,7 @@
     {
       "role": "assistant",
       "content": "tzip ultra activated",
-      "reasoning_content": "The user is activating the tzip skill with the argument \"ultra\". Since tzip was previously inactive, I will follow the Usage rule and reply with the mode name plus \"activated\"."
+      "reasoning_content": "The user is activating the tzip skill with the bare argument \"ultra\" while it was previously inactive. The usage rule maps this to the mode name \"ultra\" and requires confirming the activation state. I will reply with \"tzip ultra activated\"."
     },
     {
       "role": "user",
@@ -218,7 +218,7 @@
     {
       "role": "assistant",
       "content": "tzip lite activated",
-      "reasoning_content": "The user is invoking the tzip skill with the argument \"lite\". I need to map this argument to the corresponding mode and confirm the change. I will reply with the mode name plus \"activated\"."
+      "reasoning_content": "The user invoked the tzip skill with the argument \"lite\" while it was currently in ultra mode. I will set the mode to lite and reply with \"tzip lite activated\"."
     },
     {
       "role": "user",
@@ -232,7 +232,7 @@
     {
       "role": "assistant",
       "content": "tzip deactivated",
-      "reasoning_content": "The user is invoking the tzip skill with the argument \"off\". Since tzip is currently active in lite mode, this command will deactivate it. I will reply with \"tzip deactivated\"."
+      "reasoning_content": "The user sent \"off\" as the bare argument for the tzip skill, which is currently active. According to the usage rules, this maps to deactivating the skill. I will reply with \"tzip deactivated\"."
     },
     {
       "role": "user",
@@ -246,7 +246,7 @@
     {
       "role": "assistant",
       "content": "tzip lite activated",
-      "reasoning_content": "The user is activating the tzip skill with the argument \"on\". I will follow the skill's rule to map this argument to the lite mode and reply with the confirmation. I will output \"tzip lite activated\"."
+      "reasoning_content": "The user is invoking the tzip skill with the bare argument \"on\". I remember that tzip was inactive before this message, and the Usage rule maps the bare argument to a mode. I will reply with the mode name plus \"activated\"."
     },
     {
       "role": "user",
@@ -260,7 +260,7 @@
     {
       "role": "assistant",
       "content": "tzip deactivated",
-      "reasoning_content": "The user invoked the tzip skill with the argument \"off\" to change its current state. I will follow the usage rule for this mode and reply with the confirmation message that tzip is deactivated."
+      "reasoning_content": "The user sent the bare argument \"off\" to the tzip skill block. Since the skill is currently in on mode, I need to deactivate it. I will reply with \"tzip deactivated\"."
     }
   ],
   "stream": true,
