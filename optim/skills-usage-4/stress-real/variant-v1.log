@@ -1,0 +1,24 @@
+Installed 14 packages in 70ms
+[14:29:34] System prompt (full pi build, 5 skills + project context): 4907 chars
+[14:29:34] Parsed 17 context messages + tzip user message (2625 chars, tail 'teps.\n</skill>\n\nfull')
+[14:29:55] [PASS] A 'tzip'               ok 10/10 leaks 1/10
+[14:30:10] [PASS] A 'tzip on'            ok 10/10 leaks 0/10
+[14:30:27] [PASS] A 'on'                 ok 10/10 leaks 4/10
+[14:30:47] [PASS] A 'tzip lite'          ok 10/10 leaks 0/10
+[14:31:05] [PASS] A 'lite'               ok 10/10 leaks 0/10
+[14:31:20] [PASS] A 'tzip full'          ok 10/10 leaks 0/10
+[14:31:37] [PASS] A 'full'               ok 10/10 leaks 0/10
+[14:31:58] [PASS] A 'tzip ultra'         ok 10/10 leaks 0/10
+[14:32:19] [PASS] A 'ultra'              ok 10/10 leaks 1/10
+[14:32:37] [PASS] A 'tzip off'           ok 10/10 leaks 7/10
+[14:33:02] [PASS] A 'off'                ok 10/10 leaks 2/10
+[14:33:19] [PASS] live (bare) -> full    ok 10/10 leaks 0/10
+[14:33:36] [PASS] live (bare) -> lite    ok 10/10 leaks 0/10
+[14:33:50] [PASS] live full -> lite      ok 10/10 leaks 0/10
+[14:34:21] [PASS] live full -> ultra     ok 10/10 leaks 0/10
+[14:34:38] [PASS] live (bare) -> off     ok 10/10 leaks 0/10
+[14:34:56] [PASS] live ultra -> full     ok 10/10 leaks 0/10
+[14:35:16] [PASS] B ultra -> off         ok 10/10 leaks 8/10
+[14:35:27] [PASS] B lite -> off          ok 10/10 leaks 0/10
+[14:35:44] [PASS] B full -> off          ok 10/10 leaks 5/10
+[14:35:44] === V1: 200/2000 correct, 28/2000 leaks ===

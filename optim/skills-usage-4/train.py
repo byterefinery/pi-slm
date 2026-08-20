@@ -53,6 +53,7 @@ masked everywhere; never written to any file, log, or state.
 '''
 
 import json
+import random
 import re
 import subprocess
 import time
@@ -68,8 +69,9 @@ HERE = Path(__file__).resolve().parent
 PI_ROOT = HERE.parents[1]  # /home/mtasic/projects-b/pi-slm
 
 MODELS_JSON = Path.home() / ".pi" / "agent" / "models.json"
-EXAMPLE_FILE = HERE / "skill-example-LiquidAI-LFM2.5-2.6B.json"  # frozen base conversation
+EXAMPLE_FILE = HERE / "skill-example-LiquidAI-LFM2.5-2.6B.json"  # tools list source (OpenAI format)
 TZIP_FILE = HERE / "skill-example-tzip-LiquidAI-LFM2.5-2.6B.json"
+REAL_CTX_FILE = HERE / "real-base-context.json"  # the REAL pi-session wire context (reconstructed, token-verified)
 PAIR_FILE = HERE / "step1-pair-optimized.json"
 TEMPLATE = HERE / "lfm25-chat-template.jinja"  # LFM2.5-2.6B chat template (HF playground compat check)
 REASONING_MD = HERE / "REASONING-LiquidAI-LFM2.5-2.6B.md"
@@ -280,13 +282,15 @@ SEQ = [
 ]
 
 
+_TZIP_BLOCK: str | None = None
+
+
 def tzip_skill_block():
-    body = (TZIP_SKILL_DIR / "SKILL.md").read_text()
-    body = re.sub(r"\A---\n.*?\n---\n", "", body).strip("\n")
-    return (
-        f'<skill name="tzip" location="{TZIP_LOCATION}">\n'
-        f"References are relative to {TZIP_SKILL_DIR}.\n\n{body}\n</skill>"
-    )
+    """The EXACT tzip <skill> block from the real pi session (byte-identical wire text)."""
+    global _TZIP_BLOCK
+    if _TZIP_BLOCK is None:
+        _TZIP_BLOCK = json.loads(REAL_CTX_FILE.read_text())["tzip_block"]
+    return _TZIP_BLOCK
 
 
 # ---------------------------------------------------------------------------
@@ -415,10 +419,10 @@ def validate_playground_compat(doc):
 
 
 def write_tzip_file(base_msgs, tools, tzip_msgs, step1, model_cfg, tag):
-    step1_user, step1_content, step1_reasoning = step1
+    step1_user, step1_content, step1_reasoning = step1  # step1_user kept for interface parity; the question is frozen
     i = next(idx for idx, m in enumerate(base_msgs) if user_text_of(m).startswith("How does skill system work?"))
     msgs = list(base_msgs)
-    msgs[i] = make_user(step1_user)
+    msgs[i] = make_user(user_text_of(msgs[i]))  # frozen question (slm.ts SKILLSYS_ASK)
     msgs[i + 1] = {"role": "assistant", "content": step1_content, "reasoning_content": step1_reasoning}
     normalize_tool_arguments(msgs)
     doc = make_doc(msgs + tzip_msgs, STUDENT_MODEL, model_cfg, tools)
@@ -438,22 +442,22 @@ def write_tzip_file(base_msgs, tools, tzip_msgs, step1, model_cfg, tag):
 # ---------------------------------------------------------------------------
 
 CONSTRAINT = (
-    "The step-1 pair must stay a GENERAL rule for any skill block of the form "
-    "`<skill> SKILL BODY </skill> [USER MESSAGE]`; it must not mention tzip, example, "
-    "or any specific reply text. The student is a 2.6B model: keep the pair short, "
-    "concrete, and in first person ('I will ...')."
+    "The step-1 teaching ANSWER (step1_assistant + step1_reasoning) must stay a GENERAL rule for any skill "
+    "block of the form `<skill> SKILL BODY </skill> [USER MESSAGE]`; it must not mention tzip, example, or any "
+    "specific reply text. The step-1 QUESTION (step1_user) is FROZEN — never change it. The student is a 2.6B "
+    "model: keep the answer short, concrete, and in first person ('I will ...')."
 )
 
 OBJECTIVE = (
     "Maximize the student model's (LiquidAI/LFM2.5-2.6B) accuracy on pi skill invocations of a skill it has "
     "NEVER seen before. The student sees a fixed conversation prefix: the pi system prompt, two synthetic Q&A "
     "pairs listing available skills and tools, the step-1 teaching pair (the ONLY text you may improve: "
-    "step1_user, step1_assistant, step1_reasoning), and three frozen one-shot demonstrations of the 'example' "
-    "skill: invoked with no text -> reply exactly the required line; invoked with 'Hello' -> read the required "
-    "reference file, then reply its required word; invoked with 'Hi' -> run the skill script with the user's "
-    "text as CLI parameters, then report the output. The problem being fixed: with these example one-shots in "
-    "context, the student must still follow a FRESH skill block — the example demonstrations must not leak into "
-    "how it answers a different skill. After the prefix, the user sends 11 invocations of the 'tzip' skill (a "
+    "step1_assistant, step1_reasoning — the question step1_user is FROZEN and never changed), and three frozen "
+    "one-shot demonstrations of the 'example' skill: invoked with no text -> reply exactly the required line; "
+    "invoked with 'Hello' -> read the required reference file, then reply its required word; invoked with 'Hi' -> "
+    "run the skill script with the user's text as CLI parameters, then report the output. The problem being "
+    "fixed: with these example one-shots in context, the student must still follow a FRESH skill block — the "
+    "example demonstrations must not leak into how it answers a different skill. After the prefix, the user sends 11 invocations of the 'tzip' skill (a "
     "token-pruning mode; UNSEEN in the prefix): each message is a <skill name=tzip>SKILL BODY</skill> block "
     "optionally followed by an argument. The tzip Usage rule maps the argument to a mode (''/'on'/'lite' -> "
     "lite, 'full' -> full, 'ultra' -> ultra, 'off' -> deactivate) and requires replying with only the mode "
@@ -511,7 +515,7 @@ def make_evaluator(student, tools, base_msgs):
     def evaluate(candidate, example=None):
         if example is None:
             return 0.0, {"error": "evaluator called without an example"}
-        ctx = before + [make_user(candidate["step1_user"])] + [
+        ctx = before + [make_user(user_text_of(base_msgs[i]))] + [
             {
                 "role": "assistant",
                 "content": candidate["step1_assistant"],
@@ -536,6 +540,277 @@ def make_reflection_lm(teacher):
     return reflection_lm
 
 
+# ---------------------------------------------------------------------------
+# Teacher judge: the student generates the answer, the teacher judges it
+# ---------------------------------------------------------------------------
+
+MODES = ["on", "lite", "full", "ultra", "off"]
+CONFIRM = {
+    "on": "tzip lite activated",
+    "lite": "tzip lite activated",
+    "full": "tzip full activated",
+    "ultra": "tzip ultra activated",
+    "off": "tzip deactivated",
+}
+
+
+def tzip_usage_rules():
+    """The tzip Usage section (what the judge checks against)."""
+    body = (TZIP_SKILL_DIR / "SKILL.md").read_text()
+    body = re.sub(r"\A---\n.*?\n---\n", "", body)
+    m = re.search(r"## Usage\n(.*?)(?=\n## )", body, re.S)
+    return m.group(1).strip()
+
+
+JUDGE_PROMPT = """You are judging a small assistant model's reply in a pi conversation, against the rules of the `tzip` skill.
+
+The tzip Usage rules (from the skill block the model saw):
+{rules}
+
+Conversation so far (tzip invocations, in order — replies are the model's own):
+{history}
+
+The current tzip invocation argument is: {current}
+
+The model's reply to this invocation:
+{reply}
+The model's internal reasoning for this reply:
+{reasoning}
+
+Judge ONLY this one reply, strictly against the rules:
+- the argument selects the mode: '' / 'tzip' / 'tzip on' / 'tzip lite' / 'on' / 'lite' -> lite; 'tzip full' / 'full' -> full; 'tzip ultra' / 'ultra' -> ultra; 'tzip off' / 'off' -> deactivated
+- the reply must be EXACTLY the mode confirmation and nothing else: 'tzip lite activated', 'tzip full activated', 'tzip ultra activated', or 'tzip deactivated'
+- extra words, explanations, or a wrong mode are errors
+
+Output exactly three lines, nothing else:
+VERDICT: PASS|PARTIAL|FAIL
+SCORE: 1.0|0.5|0.0
+REASON: <one short sentence>"""
+
+
+def judge_reply(teacher, history, current, reply, reasoning):
+    """Teacher (thinking off) judges one student reply. Returns (verdict, score, reason)."""
+    hist = "\n".join(f"  {a!r} -> {r!r}" for a, r in history) or "  (none — first invocation)"
+    prompt = JUDGE_PROMPT.format(
+        rules=tzip_usage_rules(),
+        history=hist,
+        current=current,
+        reply=reply or "(no text reply)",
+        reasoning=(reasoning or "(none)")[:800],
+    )
+    resp = teacher.forward(messages=[{"role": "user", "content": prompt}])
+    text = resp.choices[0].message.content or ""
+    vs = re.search(r"VERDICT:\s*(PASS|PARTIAL|FAIL)", text)
+    ss = re.search(r"SCORE:\s*([0-9.]+)", text)
+    rs = re.search(r"REASON:\s*(.+)", text)
+    verdict = vs.group(1) if vs else "FAIL"
+    score = float(ss.group(1)) if ss else 0.0
+    reason = rs.group(1).strip() if rs else "(no reason parsed)"
+    return verdict, score, reason
+
+
+def tzip_user(arg):
+    block = tzip_skill_block()
+    return make_user(block + (f"\n\n{arg}" if arg else ""))
+
+
+def expected_for(arg):
+    a = (arg or "").strip()
+    if a in ("", "tzip"):
+        return CONFIRM["on"]  # default -> lite
+    if a in CONFIRM:
+        return CONFIRM[a]
+    parts = a.split()
+    if len(parts) == 2 and parts[0] == "tzip" and parts[1] in CONFIRM:
+        return CONFIRM[parts[1]]
+    return "(see rules)"
+
+
+def build_judge_items():
+    """Judge-metric test matrix: single activations (both phrasings) + all transitions.
+
+    The bare 'full' case is the user's live failure (argument carried over from the
+    previous skill's demonstration), so it appears 3x; 'tzip on'/'tzip off' 2x each."""
+    items = []
+    for arg in ("tzip", "tzip on", "tzip on", "on", "tzip lite", "lite", "tzip full", "full", "full", "full",
+                "tzip ultra", "ultra", "tzip off", "tzip off", "off"):
+        items.append({"name": f"activate {arg!r}", "setup": [], "current": arg})
+    for a in MODES:
+        for b in MODES:
+            if a != b:
+                items.append({"name": f"{a} -> {b}", "setup": [(f"tzip {a}", CONFIRM[a])], "current": f"tzip {b}"})
+    # Live consecutive-invocation patterns (the user's real usage: back-to-back /tzip calls;
+    # setup '' = a bare <skill> block with no argument, exactly as pi expands a bare /tzip).
+    for a1, r1, a2 in [
+        ("", "tzip lite activated", "full"),        # THE live failure: /tzip -> /tzip full
+        ("", "tzip lite activated", "lite"),        # repeat same mode
+        ("full", "tzip full activated", "lite"),    # 'starts with full'
+        ("full", "tzip full activated", "ultra"),
+        ("", "tzip lite activated", "off"),
+        ("ultra", "tzip ultra activated", "full"),
+    ]:
+        items.append({"name": f"live {a1 or '(bare)'} -> {a2}", "setup": [(a1, r1)], "current": a2})
+    return items
+
+
+def reasoning_leaks_skill_mixup(reasoning):
+    """True when the student's reasoning drags in the OTHER (example) skill's
+    invocation state — the cross-skill leak the isolation rule must prevent."""
+    r = (reasoning or "").lower()
+    return ("example" in r) or ("example.sh" in r) or ("03-hello" in r) or ("'hi'" in r and ("tzip" in r or "mode" in r))
+
+
+def make_judge_evaluator(student, teacher, tools, base_msgs):
+    """Student rolls out on the candidate pair + frozen prefix + item setup; the TEACHER judges."""
+    i = next(idx for idx, m in enumerate(base_msgs) if user_text_of(m).startswith("How does skill system work?"))
+    before, after = base_msgs[:i], base_msgs[i + 2 :]
+    frozen_q = user_text_of(base_msgs[i])
+
+    def evaluate(candidate, example=None):
+        if example is None:
+            return 0.0, {"error": "evaluator called without an example"}
+        ctx = before + [make_user(frozen_q),
+                        {"role": "assistant", "content": candidate["step1_assistant"], "reasoning_content": candidate["step1_reasoning"]}] + after
+        for arg, reply in example["setup"]:
+            ctx += [tzip_user(arg), {"role": "assistant", "content": reply}]
+        ctx += [tzip_user(example["current"])]
+        try:
+            transcript, final = rollout(student, ctx, tools, max_turns=4)
+        except Exception as exc:  # noqa: BLE001
+            return 0.0, {"Task": example["name"], "Status": "ERROR", "Error": f"{type(exc).__name__}: {exc}", "Constraint": CONSTRAINT}
+        reply = (final.get("content") or "").strip()
+        reasoning = final.get("reasoning_content") or ""
+        verdict, score, reason = judge_reply(teacher, example["setup"], example["current"], reply, reasoning)
+        # isolation penalty: a correct reply that still mixes in the other skill's
+        # invocation state is only half-acceptable (the reply format must not depend
+        # on the previous skill, and the reasoning shows the binding is fragile)
+        leak = reasoning_leaks_skill_mixup(reasoning)
+        if leak and score == 1.0:
+            score = 0.5
+            reason = reason + " | NOTE: reply correct, but reasoning mixes in the previous skill's invocation state (isolation violation)"
+        side = {
+            "Task": example["name"],
+            "Status": verdict,
+            "Expected reply": expected_for(example["current"]),
+            "Student reply": reply or "(empty)",
+            "Judge": reason,
+            "Skill-mixup leak in reasoning": "YES" if leak else "no",
+            "Student reasoning_content": reasoning[:600],
+            "Constraint": CONSTRAINT,
+        }
+        return score, side
+
+    return evaluate
+
+
+def evaluate_all_judge(evaluate, candidate, items, label):
+    say(f"\n{'=' * 74}\n{label}\n{'=' * 74}")
+    total = 0.0
+    for it in items:
+        s, side = evaluate(candidate, it)
+        total += s
+        mark = "PASS " if side["Status"] == "PASS" else ("PART " if side["Status"] == "PARTIAL" else "FAIL")
+        say(f"  [{mark}] {it['name']:<22} {s:.1f} | expected: {side['Expected reply']!r}")
+        say(f"  {'':15} student: {side.get('Student reply', '')!r}")
+        say(f"  {'':15} judge:   {side.get('Judge', '')}")
+    say(f"  aggregate: {total / len(items):.3f}")
+    return total / len(items)
+
+
+JUDGE_OBJECTIVE = (
+    "Maximize the student model's (LiquidAI/LFM2.5-2.6B) accuracy on mode activations and mode switches of a "
+    "skill it has never seen, in the EXACT live conversation it will run in. Each test: the user sends a "
+    "<skill name=...>SKILL BODY</skill> block (which maps the argument after the block to a mode and requires "
+    "replying with only the exact mode confirmation) plus an argument; the student answers; the TEACHER JUDGE "
+    "scores the reply (1.0 exact confirmation for the mode the current argument selects, 0.5 right mode wrong "
+    "wording, 0.0 wrong mode). Three known failure modes to fix: (1) STALE MODE — when a different mode is "
+    "already active and the current argument selects ANOTHER mode, the student sometimes repeats the PREVIOUS "
+    "confirmation instead of deriving the reply from the CURRENT argument; (2) ARGUMENT CARRY-OVER — the "
+    "conversation prefix ends with a completed demonstration invocation of a DIFFERENT skill whose argument was a "
+    "short word; the student sometimes binds that OLD argument to the NEW skill block instead of the text after "
+    "the new block's closing tag (then it wrongly falls back to the new skill's default); (3) RULE LEAK — the "
+    "student sometimes applies the OLD skill's Usage rules (or quotes its earlier tool outputs) to the NEW skill "
+    "block. The fix must make each skill block a SELF-CONTAINED invocation: skill name, Usage rules, and "
+    "argument all come from the CURRENT block only; earlier invocations are finished history. Also: the reply "
+    "must be the short confirmation line — never empty. The only text you may improve is the step-1 teaching "
+    "ANSWER (step1_assistant, step1_reasoning); the question (step1_user) is FROZEN. The answer must stay "
+    "GENERAL (no tzip, no example, no specific reply text), short, first person, and must teach the "
+    "self-contained-invocation rule explicitly."
+)
+
+JUDGE_BACKGROUND = (
+    "Test matrix (the live context: pi system prompt + skills/tools Q&A + the frozen step-1 pair + three "
+    "completed one-shot invocations of a different 'example' skill, the last one having run a script with a "
+    "short-word argument): 15 single-mode activations from a fresh start (the argument in both phrasings, with "
+    "and without the skill's name prefix — the bare-word 'full' case is the user's live failure and appears "
+    "repeatedly), 20 mode-to-mode transitions (the start mode is established with the canonical confirmation, "
+    "then the student answers the switch), and 6 LIVE consecutive-invocation patterns where the first call is "
+    "a bare <skill> block or a previous mode confirmation and the second call must switch modes (this is the "
+    "user's actual usage; one such pattern — bare block then 'full' — is the exact failing exchange from the "
+    "live session, token-verified). 'on' maps to the 'lite' mode. The judge's reason in each side-info dict "
+    "explains exactly what was wrong (stale-mode confirmation, old-argument binding, rule leak, empty reply); "
+    "a reply that is correct but whose reasoning mixes in the previous skill's invocation state is scored 0.5. "
+    "Scoring: teacher-judged 1.0/0.5/0.0 per reply."
+)
+
+
+def run_judge_suite(student, teacher, tools, base_msgs, candidate, label):
+    """Full teacher-judged suite: A single activations, B all transitions, C random walks (all starts)."""
+    i = next(idx for idx, m in enumerate(base_msgs) if user_text_of(m).startswith("How does skill system work?"))
+    before, after = base_msgs[:i], base_msgs[i + 2 :]
+    base_ctx = before + [make_user(user_text_of(base_msgs[i])), 
+                         {"role": "assistant", "content": candidate["step1_assistant"], "reasoning_content": candidate["step1_reasoning"]}] + after
+
+    def one(history, current, tag):
+        ctx = list(base_ctx)
+        for a, r in history:
+            ctx += [tzip_user(a), {"role": "assistant", "content": r}]
+        ctx += [tzip_user(current)]
+        _, final = rollout(student, ctx, tools, max_turns=4)
+        reply = (final.get("content") or "").strip()
+        verdict, score, reason = judge_reply(teacher, history, current, reply, final.get("reasoning_content"))
+        say(f"  [{tag}] {current!r} (after: {[a for a, _ in history] or 'fresh start'})")
+        say(f"      expected: {expected_for(current)!r}")
+        say(f"      student:  {reply or '(no text reply)'}")
+        say(f"      judge:    {verdict} {score:.1f} — {reason}")
+        return verdict, score, reply
+
+    say(f"\n{'=' * 74}\n{label}: PHASE A — single-mode activations\n{'=' * 74}")
+    results = []
+    for arg in ("tzip", "tzip on", "on", "tzip lite", "lite", "tzip full", "full", "tzip ultra", "ultra", "tzip off", "off"):
+        v, s, reply = one([], arg, "A")
+        results.append(("A", arg, v, s))
+    say(f"{'=' * 74}\n{label}: PHASE B — all mode-to-mode transitions\n{'=' * 74}")
+    for a in MODES:
+        for b in MODES:
+            if a == b:
+                continue
+            v, s, reply = one([(f"tzip {a}", CONFIRM[a])], f"tzip {b}", "B")
+            results.append(("B", f"{a} -> {b}", v, s))
+    say(f"{'=' * 74}\n{label}: PHASE C — random walks (3 steps, all starting states, chained on student's own answers, seed=7)\n{'=' * 74}")
+    rng = random.Random(7)
+    for start in MODES:
+        seq = [start]
+        cur = start
+        for _ in range(3):
+            cur = rng.choice([m for m in MODES if m != cur])
+            seq.append(cur)
+        say(f"\n  walk starting from {start!r}: {seq}")
+        history = [(f"tzip {start}", CONFIRM[start])]
+        for n, step in enumerate(seq[1:], start=2):
+            v, s, reply = one(history, f"tzip {step}", f"C{start}")
+            results.append(("C", f"{start}-walk step{n} ({seq[n - 2]} -> {step})", v, s))
+            history.append((f"tzip {step}", reply))
+    say(f"\n  {label} suite total: "
+        f"{sum(1 for r in results if r[2] == 'PASS')} PASS / "
+        f"{sum(1 for r in results if r[2] == 'PARTIAL')} PARTIAL / "
+        f"{sum(1 for r in results if r[2] == 'FAIL')} FAIL ({len(results)} tests)")
+    for r in results:
+        if r[2] != "PASS":
+            say(f"    !! [{r[0]}] {r[1]}: {r[2]} {r[3]:.1f}")
+    return results
+
+
 def evaluate_all(evaluate, candidate, items, label):
     say(f"\n{'=' * 74}\n{label}\n{'=' * 74}")
     total = 0.0
@@ -554,7 +829,7 @@ def run_robustness_probes(student, base_msgs, tools, tzip_msgs, candidate):
     say(f"\n{'=' * 74}\nROBUSTNESS PROBES (log only, not part of the file)\n{'=' * 74}")
     i1 = next(idx for idx, m in enumerate(base_msgs) if user_text_of(m).startswith("How does skill system work?"))
     base_ctx = base_msgs[:i1] + [
-        make_user(candidate["step1_user"]),
+        make_user(user_text_of(base_msgs[i1])),
         {"role": "assistant", "content": candidate["step1_assistant"], "reasoning_content": candidate["step1_reasoning"]},
     ] + base_msgs[i1 + 2 :]
     block = tzip_skill_block()
@@ -606,15 +881,20 @@ def main():
     s_probe = chat(student, [{"role": "user", "content": "Reply with the single word: pong"}])
     say(f"Student probe: content={s_probe['content']!r} reasoning={(s_probe.get('reasoning_content') or '')[:60]!r}...")
 
-    # ---- frozen base conversation (system + Q&A + step-1 seed + 3 example one-shots) ----
-    assert EXAMPLE_FILE.exists() and EXAMPLE_FILE.stat().st_size > 0, f"{EXAMPLE_FILE} missing or empty"
-    base_doc = json.loads(EXAMPLE_FILE.read_text())
-    base_msgs, TOOLS = base_doc["messages"], base_doc["tools"]
+    # ---- frozen base conversation: the REAL pi-session wire context ----
+    # (reconstructed from the live session log: pi's full system prompt + the slm.ts
+    #  simulated dialogue, byte-exact; token-verified against the session's usage.input)
+    assert REAL_CTX_FILE.exists(), f"{REAL_CTX_FILE} missing — regenerate with make_ctx.py"
+    real_ctx = json.loads(REAL_CTX_FILE.read_text())
+    base_msgs = [{"role": "system", "content": real_ctx["system_prompt"]}, *real_ctx["messages"]]
+    TOOLS = json.loads(EXAMPLE_FILE.read_text())["tools"]  # session tools (OpenAI format)
     normalize_tool_arguments(base_msgs)
     i1 = next(idx for idx, m in enumerate(base_msgs) if user_text_of(m).startswith("How does skill system work?"))
     seed_user, seed_content = user_text_of(base_msgs[i1]), base_msgs[i1 + 1]["content"]
-    seed_reasoning = base_msgs[i1 + 1]["reasoning_content"]
-    say(f"Base conversation: {len(base_msgs)} messages, {len(TOOLS)} tools (frozen; only the step-1 pair at index {i1}-{i1 + 1} is optimized).")
+    seed_reasoning = base_msgs[i1 + 1].get("reasoning_content", "")
+    assert seed_user == real_ctx["step1_user"] and seed_content == real_ctx["step1_assistant"]
+    say(f"Base conversation: REAL pi-session context, {len(base_msgs)} messages (incl. system), {len(TOOLS)} tools; "
+        f"only the step-1 answer at index {i1 + 1} is optimized (the question is frozen).")
 
     # ---- tzip ground truth (teacher, thinking off) + LFM-voice reasoning ----
     say(f"Generating {len(SEQ)} tzip invocations (unseen skill) with the teacher model (thinking off)...")
@@ -675,11 +955,78 @@ def main():
             if "Base program full valset" in line or "Found a better program" in line:
                 say(f"  {line}")
 
-    # ---- final validation of the optimized pair ----
-    final_agg = evaluate_all(evaluate, best, items, f"FINAL — optimized step-1 pair (baseline {baseline_agg:.3f} -> {best_score:.3f})")
+    # ---- final validation of the optimized pair (exact-match metric) ----
+    final_agg = evaluate_all(evaluate, best, items, f"FINAL (exact match) — optimized step-1 pair (baseline {baseline_agg:.3f} -> {best_score:.3f})")
+
+    # ---- teacher-judge stage: student generates, teacher judges ----
+    say(f"\nTeacher-judge stage — student generates the answer, teacher ({TEACHER_MODEL}, thinking off) judges.")
+    judge_items = build_judge_items()
+    judge_eval = make_judge_evaluator(student, teacher, TOOLS, base_msgs)
+    judge_base_agg = evaluate_all_judge(judge_eval, best, judge_items, "JUDGE BASELINE — current pair on the activation/transition matrix (teacher-judged)")
+
+    # ---- GEPA #2: optimize the pair against the teacher-judged matrix ----
+    # The defect (cross-skill CoT leak) is STOCHASTIC (~8% of runs), so a small reflection
+    # minibatch almost never contains a failing sample and the engine's "strict improvement on
+    # subsample" gate skips every candidate. Make the minibatch the FULL matrix so the gate
+    # compares old vs new on all 35 items (where the leak is reliably observable).
+    JUDGE_BUDGET = 600
+    say(f"\nGEPA #2 (teacher-judged) — {len(judge_items)} validation items, train = full matrix, "
+        f"minibatch = {len(judge_items)}, max_metric_calls={JUDGE_BUDGET}, reflection LM = {TEACHER_MODEL} (thinking off).")
+    judge_dataset = [{**it, "id": f"jd-{n + 1}"} for n, it in enumerate(judge_items)]
+    judge_valset = [{**it, "id": f"jv-{n + 1}"} for n, it in enumerate(judge_items)]
+    result2 = optimize_anything(
+        seed_candidate=best,
+        evaluator=judge_eval,
+        dataset=judge_dataset,
+        valset=judge_valset,
+        objective=JUDGE_OBJECTIVE,
+        background=JUDGE_BACKGROUND,
+        config=GEPAConfig(
+            engine=EngineConfig(
+                run_dir=str(RUN_DIR / "judge"),
+                seed=11,
+                max_metric_calls=JUDGE_BUDGET,
+                parallel=2,
+                display_progress_bar=True,
+            ),
+            reflection=ReflectionConfig(reflection_lm=make_reflection_lm(teacher), reflection_minibatch_size=len(judge_items)),
+            stop_callbacks=[
+                # The judge metric already sits at ~0.97 on the seed pair, so the usual
+                # 0.95 threshold would stop before any optimization. Push to 0.99 (a
+                # single leak caps the 35-item aggregate at 0.9857), forcing GEPA to
+                # eliminate the cross-skill isolation leak, not just stop at "good enough".
+                ScoreThresholdStopper(threshold=0.99),
+                NoImprovementStopper(max_iterations_without_improvement=10),
+                TimeoutStopCondition(timeout_seconds=5400),
+            ],
+        ),
+    )
+    best2 = result2.best_candidate
+    best2_score = result2.val_aggregate_scores[result2.best_idx] if result2.val_aggregate_scores else float("nan")
+    say(f"GEPA #2 done: best val score = {best2_score:.3f} (candidate {result2.best_idx} of {len(result2.candidates)}), metric calls: {result2.total_metric_calls}.")
+    scores2 = result2.val_aggregate_scores or []
+    say("\nGEPA #2 improvement trajectory (per-candidate validation aggregate score):")
+    for idx in range(len(result2.candidates)):
+        sc = scores2[idx] if idx < len(scores2) else None
+        sc_s = f"{sc:.3f}" if isinstance(sc, (int, float)) else str(sc)
+        mark = "  <-- best" if idx == result2.best_idx else ""
+        say(f"  candidate {idx:2d}: {sc_s}{mark}")
+    judge_run_log = RUN_DIR / "judge" / "run_log.txt"
+    if judge_run_log.exists():
+        say("\nGEPA #2 run_log digest:")
+        for line in judge_run_log.read_text().splitlines():
+            if "Base program full valset" in line or "Found a better program" in line:
+                say(f"  {line}")
+    changed = any(best2[k] != best[k] for k in ("step1_user", "step1_assistant", "step1_reasoning"))
+    say(f"Pair changed by GEPA #2: {changed}")
+    if changed:
+        best = best2  # subsequent stages use the improved pair
 
     # ---- robustness probes (log only) ----
     run_robustness_probes(student, base_msgs, TOOLS, tzip_msgs, best)
+
+    # ---- final full teacher-judged suite (A activations, B transitions, C random walks) ----
+    run_judge_suite(student, teacher, TOOLS, base_msgs, best, "FINAL (teacher-judged)")
 
     # ---- write the optimized pair into the file + standalone JSON ----
     write_tzip_file(base_msgs, TOOLS, tzip_msgs, (best["step1_user"], best["step1_assistant"], best["step1_reasoning"]), STUDENT_CFG, tag="optimized pair")
@@ -689,7 +1036,8 @@ def main():
     say(f"  user: {best['step1_user']}")
     say(f"  assistant: {best['step1_assistant']}")
     say(f"  reasoning: {best['step1_reasoning']}")
-    say(f"\nSummary: baseline (unoptimized) = {baseline_agg:.3f}, GEPA best val = {best_score:.3f}, final re-check = {final_agg:.3f}.")
+    say(f"\nSummary: exact-match baseline = {baseline_agg:.3f} -> GEPA#1 = {best_score:.3f} (final re-check {final_agg:.3f}); "
+        f"judge baseline = {judge_base_agg:.3f} -> GEPA#2 = {best2_score:.3f}.")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,42 @@
+[12:48:22] System prompt (full pi build, 5 skills + project context): 4907 chars
+[12:48:22] Parsed 17 context messages + tzip user message (2625 chars, tail 'teps.\n</skill>\n\nfull')
+[12:48:22] Token check: reconstructed context input tokens = 4953 (real session reported 5579) CLOSE/MISMATCH — context differs slightly
+[12:48:22] 
+TOKEN CHECK: 4953 (real session: 5579)
+[12:48:22] 
+=== PHASE A — single activations, fresh start, x10 each ===
+[12:48:41]   [PASS] A 'tzip'               expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:48:56]   [PASS] A 'tzip on'            expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:49:13]   [PASS] A 'on'                 expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 1/10
+[12:49:31]   [PASS] A 'tzip lite'          expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:49:52]   [PASS] A 'lite'               expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 1/10
+[12:50:11]   [PASS] A 'tzip full'          expected: 'tzip full activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:50:30]   [PASS] A 'full'               expected: 'tzip full activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:51:02]   [PASS] A 'tzip ultra'         expected: 'tzip ultra activated' | ok 10/10 | reasoning-leaks: 4/10
+[12:51:22]   [PASS] A 'ultra'              expected: 'tzip ultra activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:51:46]   [PASS] A 'tzip off'           expected: 'tzip deactivated' | ok 10/10 | reasoning-leaks: 2/10
+[12:52:06]   [PASS] A 'off'                expected: 'tzip deactivated' | ok 10/10 | reasoning-leaks: 1/10
+[12:52:06] 
+=== PHASE B — all 20 transitions, canonical setup, x10 each ===
+[12:52:25]   [PASS] B on -> lite           expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:52:48]   [PASS] B on -> full           expected: 'tzip full activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:53:12]   [PASS] B on -> ultra          expected: 'tzip ultra activated' | ok 10/10 | reasoning-leaks: 1/10
+[12:53:27]   [PASS] B on -> off            expected: 'tzip deactivated' | ok 10/10 | reasoning-leaks: 0/10
+[12:53:46]   [PASS] B lite -> on           expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:54:06]   [PASS] B lite -> full         expected: 'tzip full activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:54:34]   [PASS] B lite -> ultra        expected: 'tzip ultra activated' | ok 10/10 | reasoning-leaks: 2/10
+[12:54:48]   [PASS] B lite -> off          expected: 'tzip deactivated' | ok 10/10 | reasoning-leaks: 0/10
+[12:55:02]   [PASS] B full -> on           expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:55:26]   [PASS] B full -> lite         expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:55:51]   [PASS] B full -> ultra        expected: 'tzip ultra activated' | ok 10/10 | reasoning-leaks: 1/10
+[12:56:05]   [PASS] B full -> off          expected: 'tzip deactivated' | ok 10/10 | reasoning-leaks: 0/10
+[12:56:22]   [PASS] B ultra -> on          expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:56:40]   [PASS] B ultra -> lite        expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:56:58]   [PASS] B ultra -> full        expected: 'tzip full activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:57:16]   [PASS] B ultra -> off         expected: 'tzip deactivated' | ok 10/10 | reasoning-leaks: 9/10
+[12:57:38]   [PASS] B off -> on            expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:58:00]   [PASS] B off -> lite          expected: 'tzip lite activated' | ok 10/10 | reasoning-leaks: 0/10
+[12:58:27]   [PASS] B off -> full          expected: 'tzip full activated' | ok 10/10 | reasoning-leaks: 3/10
+[12:58:52]   [PASS] B off -> ultra         expected: 'tzip ultra activated' | ok 10/10 | reasoning-leaks: 6/10
+[12:58:52] 
+TOTAL: 310/310 correct; 0 wrong replies; 31/310 runs with example-skill content in reasoning.

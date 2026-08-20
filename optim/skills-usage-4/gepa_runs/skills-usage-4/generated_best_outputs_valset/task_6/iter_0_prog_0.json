@@ -11,7 +11,7 @@
         "Expected reply": "tzip ultra activated",
         "Student reply": "tzip ultra activated",
         "Student tool calls": "none",
-        "Student reasoning_content": "The user is invoking the tzip skill with the argument \"ultra\", and it's currently inactive. I will follow the Usage rule: map this to ultra mode and reply with the mode name plus activation status. The required confirmation is exactly \"tzip ultra activated\".\n",
-        "Constraint": "The step-1 pair must stay a GENERAL rule for any skill block of the form `<skill> SKILL BODY </skill> [USER MESSAGE]`; it must not mention tzip, example, or any specific reply text. The student is a 2.6B model: keep the pair short, concrete, and in first person ('I will ...')."
+        "Student reasoning_content": "The user is invoking the tzip skill with the argument \"ultra\", and it's currently inactive. I will follow the Usage rule by replying with the mode name and activation status. My reply will be exactly \"tzip ultra activated\".\n",
+        "Constraint": "The step-1 teaching ANSWER (step1_assistant + step1_reasoning) must stay a GENERAL rule for any skill block of the form `<skill> SKILL BODY </skill> [USER MESSAGE]`; it must not mention tzip, example, or any specific reply text. The step-1 QUESTION (step1_user) is FROZEN \u2014 never change it. The student is a 2.6B model: keep the answer short, concrete, and in first person ('I will ...')."
     }
 ]

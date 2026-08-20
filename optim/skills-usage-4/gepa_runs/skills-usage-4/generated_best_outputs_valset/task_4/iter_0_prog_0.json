@@ -11,7 +11,7 @@
         "Expected reply": "tzip full activated",
         "Student reply": "tzip full activated",
         "Student tool calls": "none",
-        "Student reasoning_content": "The user is invoking the tzip skill with the argument full. Since it's currently active in lite mode, I'll switch to full mode and reply with the required confirmation message.\n",
-        "Constraint": "The step-1 pair must stay a GENERAL rule for any skill block of the form `<skill> SKILL BODY </skill> [USER MESSAGE]`; it must not mention tzip, example, or any specific reply text. The student is a 2.6B model: keep the pair short, concrete, and in first person ('I will ...')."
+        "Student reasoning_content": "The user is invoking the tzip skill with the argument full. Since it's currently active in lite mode, I'll switch to full mode and reply with \"tzip full activated\".\n",
+        "Constraint": "The step-1 teaching ANSWER (step1_assistant + step1_reasoning) must stay a GENERAL rule for any skill block of the form `<skill> SKILL BODY </skill> [USER MESSAGE]`; it must not mention tzip, example, or any specific reply text. The step-1 QUESTION (step1_user) is FROZEN \u2014 never change it. The student is a 2.6B model: keep the answer short, concrete, and in first person ('I will ...')."
     }
 ]
