@@ -2,75 +2,61 @@
 #
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["dspy", "gepa[full]", "openai"]
+# dependencies = ["dspy", "gepa[full]", "openai", "jinja2"]
 # ///
 
 '''
-Teach the student LM (LiquidAI/LFM2.5-2.6B) to handle pi skill invocations like the teacher LM (Qwen/Qwen3.8-27B, use it without thinking/reasoning, so it works fast) using dspy with gepa optimizer.
+Re-optimize the step-1 skill-teaching pair for the student LM (LiquidAI/LFM2.5-2.6B,
+thinking ON) with dspy + GEPA, against an UNSEEN skill: `tzip`.
 
-Steps:
-1. Add synthetic user/assistant pair (content + reasoning_content) inserted into the student conversation just AFTER the existing synthetic skills/tools Q&A pairs how skill system works: invoke skill `<skill> SKILL BODY </skill> [USER MESSAGE]` block with user message. Currently, I have placeholder user message, so you can find this part where user asks "How does skill system work? When a skill block is in my latest message, what do I do?".
-2. Add synthetic user/assistant pair (content + reasoning_content), one-shot usage of `example` skill (dummy fake skill just as reference), and answer to it: Invoked with no extra text
-3. Add synthetic user/assistant pair (content + reasoning_content), one-shot usage of `example` skill (dummy fake skill just as reference), and answer to it: Invoked with "Hello"
-4. Add synthetic user/assistant pair (content + reasoning_content), one-shot usage of `example` skill (dummy fake skill just as reference), and answer to it: Invoked with any other text, or asked to "call script"
-5. The real skill-invocation user message happens here (it can be one message, but also more than one when testing modes transitions). We will use `tzip` skill here, it could be any skill really used in the future. Test invoking skill `tzip` using modes:
-  - default / empty
-  - on
-  - lite
-  - full
-  - ultra
-  - add more messages to conversation to cover transitions between all previous `tzip` modes. minimum one transitions (all combinations of mode-to-mode transition), but test up to two transitions (random three modes transitions).
+The problem: the step-1 pair (user: "How does skill system work? ..." + the assistant rule)
+was originally tuned in a context where only `tzip` invocations appeared and the `example`
+skill few-shot was NOT part of the prefix. After the `example` few-shot (3 one-shots) was
+added to the conversation prefix, the pair had to make the student generalize the rule to a
+skill it has never seen while the example one-shots sit in context. This run re-optimizes
+ONLY that pair:
 
-Goal 1:
-If file `skill-example-LiquidAI-LFM2.5-2.6B.json` is empty file, create it following these rules. If file is not empty, consider this goal fulfilled.
-Since reasoning in `skill-example-Qwen-Qwen3.8-27B.json` is based on `Qwen/Qwen3.8-27B` model, in messages where `example` skill is used, convert reasoning to `LiquidAI/LFM2.5-2.6B` style based on `REASONING-LiquidAI-LFM2.5-2.6B.md` in new file `skill-example-LiquidAI-LFM2.5-2.6B.json`.
-Set model and sampling params to one from LiquidAI/LFM2.5-2.6B (you can find them in `~/.pi/agent/models.json`).
+- Frozen prefix (never modified): system message, the two skills/tools Q&A pairs, and the
+  three `example` one-shots (no text -> exact line; "Hello" -> read reference file;
+  "Hi" -> run script with the text as CLI parameters).
+- Optimized: the step-1 pair only (user text + assistant content + assistant reasoning).
+- Test invocations appended after the prefix: 11 `tzip` messages covering DIRECT mode
+  activations from the inactive state (full, lite, ultra, on — no prior mode to
+  transition from, each after a `tzip off` or at conversation start) and mode
+  TRANSITIONS (full->ultra up, lite->full up, ultra->lite down-jump) plus
+  deactivations. `tzip` never appears in the prefix: this is the unseen-skill test.
+- Robustness probes (log only, not in the file): verbose arguments ("tzip on",
+  "ultra please", "off now", "TZIP FULL"), example-skill leak checks around the tzip
+  sequence (full rollout with tool execution), and tzip persistence checks (plain
+  questions while tzip is active vs. after "tzip off").
+- Ground-truth replies: teacher Qwen/Qwen3.8-27B (thinking OFF, no tools).
+- reasoning_content of the tzip assistant messages: simulated by the teacher in
+  LFM2.5-2.6B voice, following REASONING-LiquidAI-LFM2.5-2.6B.md.
 
-Goal 2:
-You can find minimal conversations in `skill-example-LiquidAI-LFM2.5-2.6B.json` based on `Qwen/Qwen3.8-27B` but written in style of `LiquidAI/LFM2.5-2.6B`.
-We need to optimize for any skill usage, so work on synthetic user/assistant pair in step 1. You are allowed to optimize only user and assistant from step 1. Other messages should stay the same, but at the end of conversation, you can invoke other skills to test if it is working explaine in step 5.
-Do not touch system message and next two synthetic pairs of messages how to use skills and tools because that is already optimized for this model.
+Flow (all logged to train.log via stdout):
+1. probes (teacher/student connectivity)
+2. teacher ground truth for the 11 tzip invocations
+3. write skill-example-tzip-LiquidAI-LFM2.5-2.6B.json with the SEED pair (inspectable)
+4. BASELINE: evaluate the unoptimized pair on all 11 items  <- performance without optimization
+5. GEPA (reflection LM = teacher, thinking off)            <- improvement progress
+6. FINAL: re-evaluate the best pair on all 11 items, rewrite the file with the optimized pair
+7. ROBUSTNESS PROBES: verbose-argument and example-leak checks (log only)
 
----
-Implementation notes (this file):
+HuggingFace chat-template playground compatibility: LFM2.5-2.6B's chat_template.jinja
+RAISES "Tool call arguments must be a mapping" when tool_call arguments are JSON-encoded
+strings, so after every write we render the whole document with the real template
+(lfm25-chat-template.jinja) — a successful render proves the file loads in the playground
+(tool arguments are objects, content shapes are accepted).
 
-- Models + API credentials are read at runtime from ~/.pi/agent/models.json
-  (provider `llamacpp`). They are never written to any file, log, or state.
-- Goal 1 builds `skill-example-LiquidAI-LFM2.5-2.6B.json` (steps 1-4) from the
-  Qwen file: same messages, but step-1 teaching pair written explicitly for the
-  `<skill> SKILL BODY </skill> [USER MESSAGE]` shape and all `reasoning_content`
-  in the example one-shots rewritten in LFM2.5-2.6B voice per
-  REASONING-LiquidAI-LFM2.5-2.6B.md. Header uses LFM model + its sampling params.
-- Step 5 builds `skill-tzip-LiquidAI-LFM2.5-2.6B.json` = the skill-example
-  conversation + 15 interleaved real invocations that switch skills in between:
-  the `tzip` skill with nine mode transitions jumping randomly up and down the
-  lite/full/ultra ladder (default, full, ultra, on, lite, full, ultra, lite,
-  ultra, off) and the `example` skill invoked five times (Hello, call script
-  with no parameters, no extra text, a fresh argument, Hello again after
-  `tzip off`). Assistant `content` for every message is generated by the
-  teacher model (thinking off) on the growing conversation; `reasoning_content`
-  is written in LFM voice.
-- Goal 2 runs GEPA (`gepa.optimize_anything`): the only optimized text is the
-  step-1 pair (user + assistant content + assistant reasoning). The student is
-  rolled out (with real read/bash tools) on the frozen prefix
-  (system + skills/tools Q&A + optimized step-1 pair + the three frozen example
-  one-shots) followed by each of the 15 interleaved test invocations. The
-  metric compares the student reply to the teacher reply (exact=1.0,
-  containment=0.5). The reflection LM is the teacher (thinking off).
-- The optimized step-1 pair is written back into
-  `skill-tzip-LiquidAI-LFM2.5-2.6B.json` (and saved to
-  `step1-pair-optimized.json`).
-
-You can find models configurations in `~/.pi/agent/models.json`.
-Never keep API_BASE and API_KEY in any other file, source code nor logs.
-Never leak API_BASE and API_KEY.
-Always read them from `models.json`.
+API credentials: read at runtime from ~/.pi/agent/models.json (provider `llamacpp`),
+masked everywhere; never written to any file, log, or state.
 '''
 
-import copy
 import json
 import re
 import subprocess
+import time
+from datetime import datetime
 from pathlib import Path
 
 import dspy
@@ -82,11 +68,12 @@ HERE = Path(__file__).resolve().parent
 PI_ROOT = HERE.parents[1]  # /home/mtasic/projects-b/pi-slm
 
 MODELS_JSON = Path.home() / ".pi" / "agent" / "models.json"
-QWEN_FILE = HERE / "skill-example-Qwen-Qwen3.8-27B.json"
-EXAMPLE_FILE = HERE / "skill-example-LiquidAI-LFM2.5-2.6B.json"
-TZIP_FILE = HERE / "skill-tzip-LiquidAI-LFM2.5-2.6B.json"
+EXAMPLE_FILE = HERE / "skill-example-LiquidAI-LFM2.5-2.6B.json"  # frozen base conversation
+TZIP_FILE = HERE / "skill-example-tzip-LiquidAI-LFM2.5-2.6B.json"
 PAIR_FILE = HERE / "step1-pair-optimized.json"
-RUN_DIR = HERE / "gepa_runs" / "skills-usage-3-v2"
+TEMPLATE = HERE / "lfm25-chat-template.jinja"  # LFM2.5-2.6B chat template (HF playground compat check)
+REASONING_MD = HERE / "REASONING-LiquidAI-LFM2.5-2.6B.md"
+RUN_DIR = HERE / "gepa_runs" / "skills-usage-4"
 
 STUDENT_MODEL = "LiquidAI/LFM2.5-2.6B"  # thinking: on
 TEACHER_MODEL = "Qwen/Qwen3.8-27B"  # thinking: off
@@ -104,12 +91,12 @@ API_KEY = None
 
 
 def say(*parts):
-    """Print with API_BASE/API_KEY masked (never leak them)."""
+    """Print with a timestamp, API_BASE/API_KEY masked (never leak them)."""
     s = " ".join(str(p) for p in parts)
     for secret in (API_BASE, API_KEY):
         if secret:
             s = s.replace(secret, "***")
-    print(s, flush=True)
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] {s}", flush=True)
 
 
 # ---------------------------------------------------------------------------
@@ -181,11 +168,25 @@ def chat(lm, messages, tools=None):
             {
                 "id": tc.id,
                 "type": "function",
-                "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+                "function": {"name": tc.function.name, "arguments": arguments_obj(tc.function.arguments)},
             }
             for tc in m.tool_calls
         ]
     return out
+
+
+def arguments_obj(args):
+    """Tool arguments must be OBJECTS in the recorded file (LFM2.5's chat template raises
+    on JSON-encoded strings), so parse string arguments into dicts."""
+    if isinstance(args, str):
+        try:
+            parsed = json.loads(args)
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+        return {}
+    return args if isinstance(args, dict) else {}
 
 
 def last_skill_dir(messages):
@@ -229,10 +230,7 @@ def rollout(lm, messages, tools, max_turns=4):
             return transcript, m
         for tc in m["tool_calls"]:
             name = tc["function"]["name"]
-            try:
-                args = json.loads(tc["function"]["arguments"] or "{}")
-            except json.JSONDecodeError:
-                args = {}
+            args = tc["function"]["arguments"] or {}
             if name == "read":
                 result = exec_read(args.get("path", ""), PI_ROOT, skill_dir)
             elif name == "bash":
@@ -256,132 +254,107 @@ def make_user(text):
     return {"role": "user", "content": [{"type": "text", "text": text}]}
 
 
+def norm(s):
+    s = re.sub(r"\s+", " ", (s or "").strip().lower()).rstrip(".")
+    return s
+
+
 # ---------------------------------------------------------------------------
-# LFM-voice reasoning (per REASONING-LiquidAI-LFM2.5-2.6B.md) + step-1 seed
+# tzip test sequence (tzip is UNSEEN in the prefix): DIRECT mode activations from
+# the inactive state (no prior mode to transition from) + mode transitions +
+# deactivations. (argument, previous mode, canonical reply)
 # ---------------------------------------------------------------------------
 
-STEP1_PLACEHOLDER_Q = "How does skill system work? When a skill block is in my latest message, what do I do?"
-
-STEP1_SEED_CONTENT = (
-    "A skill invocation is a `<skill> SKILL BODY </skill>` block with the user message after it: "
-    "the block carries the skill's instructions, and the text after the closing tag is the argument for this invocation. "
-    "I will treat the skill block in my latest message as the active instruction and ignore earlier questions. "
-    "I will use the argument after the block as the current argument, not an example from inside the skill. "
-    "If there is no argument, I will use the skill's required default wording. "
-    "I will follow the skill's Usage rules for the current argument and reply text only with the exact required confirmation: "
-    "skill name, current argument or default wording, and required wording."
-)
-
-STEP1_SEED_REASONING = (
-    "The user wants the rule for a skill block in my latest message. "
-    "I will explain the `<skill> SKILL BODY </skill> [USER MESSAGE]` shape: the block is the active instruction, "
-    "the text after the block is the current argument, and the reply is the exact confirmation the skill requires."
-)
-
-REASON_EXAMPLE_NO_TEXT = (
-    "The user is invoking the example skill with no extra text. "
-    "The Usage rule says to reply exactly `This is an example skill.` with nothing else. I will reply with that exact line."
-)
-REASON_EXAMPLE_HELLO_TOOL = (
-    'The user invoked the example skill with "Hello". '
-    "The Usage rule says not to guess the response: load references/03-hello.md and follow it exactly. Let me read that file."
-)
-REASON_EXAMPLE_WORLD = (
-    "The reference file says to reply exactly `world` with no greeting, punctuation, or commentary. I will reply with that single word."
-)
-REASON_EXAMPLE_SCRIPT_TOOL = (
-    'The user invoked the example skill with "Hi". That is any other text, '
-    "so I will pass it as CLI parameters to scripts/example.sh and report the output. Let me run the script."
-)
-REASON_EXAMPLE_REPORT = (
-    "The script printed one line. The skill says to report the output. I will report it in a code block."
-)
-
-REASON_EX_HELLO_TOOL = (
-    'The user invoked the example skill with "Hello". '
-    "The Usage rule says not to guess the response: load references/03-hello.md and follow it exactly. Let me read that file."
-)
-REASON_EX_HELLO_TOOL_POST_OFF = (
-    'The user invoked the example skill with "Hello" after tzip was deactivated. '
-    "The Usage rule says to load references/03-hello.md and follow it exactly. Let me read that file."
-)
-REASON_EX_HELLO_WORLD = (
-    "The reference file says to reply exactly `world` with no greeting, punctuation, or commentary. I will reply with that single word."
-)
-REASON_EX_NOTEXT = (
-    "The user is invoking the example skill with no extra text. "
-    "The Usage rule says to reply exactly `This is an example skill.` with nothing else. I will reply with that exact line."
-)
-REASON_EX_CALLSCRIPT_TOOL = (
-    "The user asked to call the script without extra text. "
-    "The Usage rule says to run scripts/example.sh and report the output. Let me run it without parameters."
-)
-REASON_EX_TEST_TOOL = (
-    'The user invoked the example skill with "Test123". That is any other text, '
-    "so I will pass it as CLI parameters to scripts/example.sh and report the output. Let me run the script."
-)
-REASON_EX_REPORT = (
-    "The script printed one line. The skill says to report the output. I will report it in a code block."
-)
-
-# Interleaved test sequence: (kind, argument, tool-call reasoning, final reasoning).
-# tzip mode transitions jump randomly up and down the lite/full/ultra ladder and end in off;
-# the example skill is invoked in between, including a fresh argument and one call after `tzip off`.
 SEQ = [
-    ("tzip", "", None, "The user is activating tzip with no argument. The default mode is lite. I will reply with the exact confirmation the skill requires."),
-    ("tzip", "full", None, "The user is switching tzip from lite to full. I will reply with the exact confirmation the skill requires."),
-    ("example", "Hello", REASON_EX_HELLO_TOOL, REASON_EX_HELLO_WORLD),
-    ("tzip", "ultra", None, "The user is switching tzip from full to ultra. I will reply with the exact confirmation the skill requires."),
-    ("example", "call script", REASON_EX_CALLSCRIPT_TOOL, REASON_EX_REPORT),
-    ("tzip", "on", None, "The user is dropping tzip from ultra to on. That is lite mode. I will reply with the exact confirmation the skill requires."),
-    ("tzip", "lite", None, "The user is re-confirming tzip lite. I will reply with the exact confirmation the skill requires."),
-    ("example", "", None, REASON_EX_NOTEXT),
-    ("tzip", "full", None, "The user is switching tzip from lite to full. I will reply with the exact confirmation the skill requires."),
-    ("example", "Test123", REASON_EX_TEST_TOOL, REASON_EX_REPORT),
-    ("tzip", "ultra", None, "The user is switching tzip from full to ultra. I will reply with the exact confirmation the skill requires."),
-    ("tzip", "lite", None, "The user is dropping tzip from ultra to lite. I will reply with the exact confirmation the skill requires."),
-    ("tzip", "ultra", None, "The user is jumping tzip from lite to ultra. I will reply with the exact confirmation the skill requires."),
-    ("tzip", "off", None, "The user is deactivating tzip. I will reply with the deactivation confirmation it requires."),
-    ("example", "Hello", REASON_EX_HELLO_TOOL_POST_OFF, REASON_EX_HELLO_WORLD),
+    ("full", "inactive", "tzip full activated"),    # 1  DIRECT activation: full
+    ("ultra", "full", "tzip ultra activated"),      # 2  transition up: full -> ultra
+    ("off", "ultra", "tzip deactivated"),            # 3  deactivation
+    ("lite", "inactive", "tzip lite activated"),    # 4  DIRECT activation: lite
+    ("full", "lite", "tzip full activated"),         # 5  transition up: lite -> full
+    ("off", "full", "tzip deactivated"),             # 6  deactivation
+    ("ultra", "inactive", "tzip ultra activated"),  # 7  DIRECT activation: ultra
+    ("lite", "ultra", "tzip lite activated"),        # 8  transition down (jump): ultra -> lite
+    ("off", "lite", "tzip deactivated"),             # 9  deactivation
+    ("on", "inactive", "tzip lite activated"),       # 10 DIRECT activation: on (= lite)
+    ("off", "on", "tzip deactivated"),               # 11 deactivation
 ]
 
-# reflection minibatches: default, a mode jump, a drop, each example behavior, the deactivation
-TRAIN_ITEM_IDX = [0, 1, 2, 4, 5, 9, 13]
+
+def tzip_skill_block():
+    body = (TZIP_SKILL_DIR / "SKILL.md").read_text()
+    body = re.sub(r"\A---\n.*?\n---\n", "", body).strip("\n")
+    return (
+        f'<skill name="tzip" location="{TZIP_LOCATION}">\n'
+        f"References are relative to {TZIP_SKILL_DIR}.\n\n{body}\n</skill>"
+    )
 
 
 # ---------------------------------------------------------------------------
-# Goal 1 — skill-example-LiquidAI-LFM2.5-2.6B.json
+# teacher ground truth: replies + LFM-voice reasoning (per REASONING-...md)
 # ---------------------------------------------------------------------------
 
-def build_base_conversation():
-    """Qwen conversation with LFM-voice reasoning for the example one-shots + step-1 seed."""
-    qwen = json.loads(QWEN_FILE.read_text())
-    msgs = copy.deepcopy(qwen["messages"])
-    tools = copy.deepcopy(qwen["tools"])
+def teacher_reply(teacher, ctx):
+    """One teacher turn (thinking off, no tools). Retries once on empty content."""
+    for _ in range(2):
+        resp = teacher.forward(messages=ctx)
+        m = resp.choices[0].message
+        c = (m.content or "").strip()
+        if c:
+            return c
+        time.sleep(1)
+    raise RuntimeError("teacher returned empty content twice")
 
-    i = next(idx for idx, m in enumerate(msgs) if user_text_of(m).startswith("How does skill system work?"))
-    assert msgs[i]["role"] == "user" and msgs[i + 1]["role"] == "assistant"
-    msgs[i]["content"] = [{"type": "text", "text": STEP1_PLACEHOLDER_Q}]
-    msgs[i + 1]["content"] = STEP1_SEED_CONTENT
-    msgs[i + 1]["reasoning_content"] = STEP1_SEED_REASONING
 
-    for m in msgs[i + 2:]:
-        if m.get("role") != "assistant":
-            continue
-        c = m.get("content")
-        names = [tc["function"]["name"] for tc in m.get("tool_calls") or []]
-        if c == "This is an example skill.":
-            m["reasoning_content"] = REASON_EXAMPLE_NO_TEXT
-        elif c == "world":
-            m["reasoning_content"] = REASON_EXAMPLE_WORLD
-        elif c is None and names == ["read"]:
-            m["reasoning_content"] = REASON_EXAMPLE_HELLO_TOOL
-        elif c is None and names == ["bash"]:
-            m["reasoning_content"] = REASON_EXAMPLE_SCRIPT_TOOL
-        elif isinstance(c, str) and c.startswith("example.sh output:"):
-            m["reasoning_content"] = REASON_EXAMPLE_REPORT
-    return msgs, tools
+def lfm_reasoning(teacher, arg, prev_mode, reply):
+    """Teacher simulates the student's reasoning_content in LFM2.5-2.6B voice."""
+    arg_part = f' with the argument "{arg}"' if arg else " with no extra text (default mode)"
+    prev_part = "inactive (not activated yet)" if prev_mode == "inactive" else f"active in {prev_mode} mode"
+    prompt = f"""You are writing the `reasoning_content` (the hidden chain-of-thought) of a small 2.6B assistant model for one turn of a conversation.
 
+How this 2.6B model actually reasons — style guide, follow it strictly:
+{REASONING_MD.read_text()}
+
+Situation: in the user's latest message the `tzip` skill block (a token-pruning mode skill, whose Usage rule maps the argument to a mode and requires replying with the mode name plus "activated"/"deactivated") is invoked{arg_part}. Before this message, tzip was {prev_part}. The model's reply for this turn is exactly:
+{reply}
+
+Write the reasoning_content this 2.6B model would generate right before that reply.
+- 1 to 3 short first-person sentences, plain prose (no lists, no headers, no markdown)
+- the first sentence names the situation ("The user ..."), then commit to the exact reply
+- no meta talk about "reasoning", "synthetic", or "the model"
+Output ONLY the reasoning text, nothing else."""
+    resp = teacher.forward(messages=[{"role": "user", "content": prompt}])
+    return (resp.choices[0].message.content or "").strip().strip('"')
+
+
+def generate_tzip_sequence(teacher, base_msgs):
+    """Teacher (thinking off) generates the tzip sequence: replies + LFM-voice reasoning."""
+    block = tzip_skill_block()
+    seq_msgs, items = [], []
+    for i, (arg, prev_mode, canonical) in enumerate(SEQ):
+        text = block + (f"\n\n{arg}" if arg else "")
+        user_msg = make_user(text)
+        prefix = seq_msgs[:]
+        reply = teacher_reply(teacher, base_msgs + prefix + [user_msg])
+        if norm(reply) != norm(canonical):
+            say(f"  WARN seq[{i + 1}]: teacher reply {reply!r} != canonical {canonical!r} (keeping teacher's)")
+        reason = lfm_reasoning(teacher, arg, prev_mode, reply)
+        asst = {"role": "assistant", "content": reply, "reasoning_content": reason}
+        seq_msgs += [user_msg, asst]
+        items.append(
+            {
+                "name": f"tzip {arg or '(default)'} #{i + 1}",
+                "user_text": text,
+                "expected": reply,
+                "prefix": prefix,
+            }
+        )
+        say(f"  seq[{i + 1:2d}/{len(SEQ)}] tzip {arg or '(none)':<6} (was: {prev_mode:>8}) -> {reply!r}")
+    return seq_msgs, items
+
+
+# ---------------------------------------------------------------------------
+# document assembly + HF chat-template-playground compatibility check
+# ---------------------------------------------------------------------------
 
 def make_doc(messages, model_id, model_cfg, tools):
     sp = model_cfg.get("samplingParams", {})
@@ -400,89 +373,68 @@ def make_doc(messages, model_id, model_cfg, tools):
     return doc
 
 
-def load_goal1(student_cfg):
-    """Return (base_msgs, tools, seed_step1_user, seed_step1_content, seed_step1_reasoning)."""
-    if EXAMPLE_FILE.exists() and EXAMPLE_FILE.stat().st_size > 0:
-        say(f"Goal 1: {EXAMPLE_FILE.name} is not empty — considered fulfilled, loading it.")
-        doc = json.loads(EXAMPLE_FILE.read_text())
-        msgs, tools = doc["messages"], doc["tools"]
-    else:
-        say("Goal 1: creating skill-example-LiquidAI-LFM2.5-2.6B.json from the Qwen file (LFM voice).")
-        msgs, tools = build_base_conversation()
-        EXAMPLE_FILE.write_text(json.dumps(make_doc(msgs, STUDENT_MODEL, student_cfg, tools), ensure_ascii=False, indent=2) + "\n")
-        say(f"  wrote {EXAMPLE_FILE.name} ({len(msgs)} messages)")
-    i = next(idx for idx, m in enumerate(msgs) if user_text_of(m).startswith("How does skill system work?"))
-    return msgs, tools, user_text_of(msgs[i]), msgs[i + 1]["content"], msgs[i + 1]["reasoning_content"]
+def normalize_tool_arguments(messages):
+    """Ensure every tool_call's arguments is an OBJECT (LFM2.5 template raises on strings)."""
+    for m in messages:
+        for tc in m.get("tool_calls") or []:
+            tc["function"]["arguments"] = arguments_obj(tc["function"]["arguments"])
 
 
-# ---------------------------------------------------------------------------
-# Step 5 — tzip invocations (teacher ground truth) + skill-tzip file
-# ---------------------------------------------------------------------------
+def validate_playground_compat(doc):
+    """Render the document with LFM2.5-2.6B's real chat template — the same template the
+    HuggingFace chat-template playground applies (transformers engine). The template raises
+    'Tool call arguments must be a mapping' on JSON-string arguments, so a successful
+    render proves the file is playground-compatible. The {% generation %}/{% endgeneration %}
+    tags are transformers engine markers that are no-ops for rendering (they only track
+    assistant-token indices), so they are stripped before plain-jinja2 compilation."""
+    import jinja2
+    from jinja2.sandbox import ImmutableSandboxedEnvironment
 
-def tzip_skill_block():
-    body = (TZIP_SKILL_DIR / "SKILL.md").read_text()
-    body = re.sub(r"\A---\n.*?\n---\n", "", body).strip("\n")
-    return (
-        f'<skill name="tzip" location="{TZIP_LOCATION}">\n'
-        f"References are relative to {TZIP_SKILL_DIR}.\n\n{body}\n</skill>"
+    def raise_exception(message):
+        raise jinja2.exceptions.TemplateError(message)
+
+    # transformers' engine: sandboxed env, trim/lstrip blocks, non-HTML-escaping tojson,
+    # raise_exception global; generation/endgeneration tags are no-ops for rendering
+    src = re.sub(r"\{%-?\s*generation\s*-?%\}|\{%-?\s*endgeneration\s*-?%\}", "", TEMPLATE.read_text())
+    env = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True)
+    env.filters["tojson"] = lambda x, **kw: json.dumps(
+        x, **{k: v for k, v in kw.items() if k in ("ensure_ascii", "indent", "separators", "sort_keys")}
     )
+    env.globals["raise_exception"] = raise_exception
+    tpl = env.from_string(src)
+    rendered = tpl.render(
+        messages=doc["messages"],
+        tools=doc["tools"],
+        preserve_thinking=True,
+        add_generation_prompt=True,
+    )
+    n_tc = sum(len(m.get("tool_calls") or []) for m in doc["messages"])
+    n_rendered = rendered.count("<|tool_call_start|>")
+    assert n_rendered == n_tc, f"tool calls rendered {n_rendered} != expected {n_tc}"
+    return rendered
 
 
-def example_skill_block(base_msgs):
-    """The frozen example skill block, taken from the no-argument one-shot in the base conversation."""
-    for m in base_msgs:
-        if m.get("role") == "user" and user_text_of(m).startswith('<skill name="example"'):
-            return user_text_of(m)
-    raise RuntimeError("example skill block not found in base conversation")
-
-
-def generate_sequence_teacher(teacher, base_msgs, tools, example_block):
-    """Teacher (thinking off) generates the full interleaved sequence + per-item expectations."""
-    seq_msgs = []
-    items = []
-    for i, (kind, arg, tool_reason, final_reason) in enumerate(SEQ):
-        block = tzip_skill_block() if kind == "tzip" else example_block
-        text = block + (f"\n\n{arg}" if arg else "")
-        user_msg = make_user(text)
-        transcript, final = rollout(teacher, base_msgs + seq_msgs + [user_msg], tools, max_turns=4)
-        asst_msgs = [dict(m) for m in transcript]
-        for m in asst_msgs:  # tool-call turns get the tool reasoning
-            if m.get("tool_calls") and tool_reason:
-                m["reasoning_content"] = tool_reason
-        for m in reversed(asst_msgs):  # last plain reply gets the final reasoning
-            if m.get("role") == "assistant" and not m.get("tool_calls"):
-                m["reasoning_content"] = final_reason
-                break
-        seq_msgs += [user_msg] + asst_msgs
-        items.append(
-            {
-                "name": f"{kind} {arg or '(default)'} #{i + 1}",
-                "user_text": text,
-                "upto": len(seq_msgs),
-                "expected": final["content"],
-                "needs_tool": kind == "example" and arg != "",
-            }
-        )
-        say(f"  seq[{i + 1:2d}/{len(SEQ)}] {kind} {arg or '(none)':<12} -> {final['content']!r}")
-    for it in items:
-        it["prefix"] = seq_msgs[: it["upto"]]
-        del it["upto"]
-    return seq_msgs, items
-
-
-def write_tzip_file(base_msgs, tools, tzip_msgs, step1, model_cfg):
+def write_tzip_file(base_msgs, tools, tzip_msgs, step1, model_cfg, tag):
     step1_user, step1_content, step1_reasoning = step1
     i = next(idx for idx, m in enumerate(base_msgs) if user_text_of(m).startswith("How does skill system work?"))
     msgs = list(base_msgs)
     msgs[i] = make_user(step1_user)
     msgs[i + 1] = {"role": "assistant", "content": step1_content, "reasoning_content": step1_reasoning}
+    normalize_tool_arguments(msgs)
     doc = make_doc(msgs + tzip_msgs, STUDENT_MODEL, model_cfg, tools)
+    rendered = validate_playground_compat(doc)  # raises on JSON-string tool arguments
     TZIP_FILE.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n")
-    say(f"Wrote {TZIP_FILE.name} ({len(doc['messages'])} messages).")
+    say(
+        f"Wrote {TZIP_FILE.name} ({len(doc['messages'])} messages, {tag}). "
+        f"Playground check: rendered {len(rendered)} chars with the real LFM2.5 template, "
+        f"{rendered.count('<|tool_call_start|>')} tool calls OK, "
+        f"{rendered.count(chr(60) + chr(124) + 'im_start' + chr(124) + chr(62))} im_start tags, "
+        f"{rendered.count(chr(60) + 'think' + chr(62))}/{rendered.count(chr(60) + '/think' + chr(62))} think open/close."
+    )
 
 
 # ---------------------------------------------------------------------------
-# Goal 2 — GEPA optimization of the step-1 pair
+# Goal — GEPA optimization of the step-1 pair
 # ---------------------------------------------------------------------------
 
 CONSTRAINT = (
@@ -493,43 +445,37 @@ CONSTRAINT = (
 )
 
 OBJECTIVE = (
-    "Maximize the student model's (LiquidAI/LFM2.5-2.6B) accuracy on pi skill invocations. "
-    "The student sees a fixed conversation prefix: the pi system prompt, two synthetic Q&A pairs listing "
-    "available skills and tools, the step-1 teaching pair (the ONLY text you may improve: step1_user, "
-    "step1_assistant, step1_reasoning), and three frozen one-shot demonstrations of the 'example' skill: "
-    "invoked with no text -> reply exactly the required line; invoked with 'Hello' -> read the required "
-    "reference file, then reply its required word; invoked with 'Hi' -> run the skill script with the "
-    "user's text as CLI parameters, then report the output. After the prefix, the user sends skill "
-    "invocations: a <skill name=... location=...>SKILL BODY</skill> block, optionally followed by the "
-    "user's argument text. The student must treat the block as the active instruction, use the text after "
-    "the closing tag as the current argument (never an example embedded in the skill body), follow the "
-    "skill's Usage rules for that argument (exact confirmation reply, load reference files, run scripts), "
-    "and reply with only the exact confirmation the skill requires. The test invocations are 15 "
-    "interleaved messages that switch skills in between: the 'tzip' skill (a token-pruning mode; replies "
-    "like 'tzip lite activated' or 'tzip deactivated') with nine mode transitions jumping randomly up and "
-    "down the lite/full/ultra ladder and ending in 'tzip off', and the 'example' skill invoked five times: "
-    "'Hello' (read the reference file, reply its word), 'call script' (run the script with no parameters), "
-    "no extra text (reply the exact line), a fresh argument (run the script with it as parameters), and "
-    "'Hello' again after 'tzip off'."
+    "Maximize the student model's (LiquidAI/LFM2.5-2.6B) accuracy on pi skill invocations of a skill it has "
+    "NEVER seen before. The student sees a fixed conversation prefix: the pi system prompt, two synthetic Q&A "
+    "pairs listing available skills and tools, the step-1 teaching pair (the ONLY text you may improve: "
+    "step1_user, step1_assistant, step1_reasoning), and three frozen one-shot demonstrations of the 'example' "
+    "skill: invoked with no text -> reply exactly the required line; invoked with 'Hello' -> read the required "
+    "reference file, then reply its required word; invoked with 'Hi' -> run the skill script with the user's "
+    "text as CLI parameters, then report the output. The problem being fixed: with these example one-shots in "
+    "context, the student must still follow a FRESH skill block — the example demonstrations must not leak into "
+    "how it answers a different skill. After the prefix, the user sends 11 invocations of the 'tzip' skill (a "
+    "token-pruning mode; UNSEEN in the prefix): each message is a <skill name=tzip>SKILL BODY</skill> block "
+    "optionally followed by an argument. The tzip Usage rule maps the argument to a mode (''/'on'/'lite' -> "
+    "lite, 'full' -> full, 'ultra' -> ultra, 'off' -> deactivate) and requires replying with only the mode "
+    "confirmation, e.g. 'tzip lite activated', 'tzip full activated', 'tzip ultra activated', 'tzip "
+    "deactivated'. The 11 messages alternate DIRECT activations (from the inactive state, each after a "
+    "deactivation or at conversation start: full, lite, ultra, on) and mode TRANSITIONS (full->ultra up, "
+    "lite->full up, ultra->lite down-jump), ending with deactivations. The student must treat the tzip block as the "
+    "active instruction, read the argument after the closing tag as the current argument, and reply with only "
+    "the exact confirmation the tzip block requires — never replying like the example skill."
 )
 
 BACKGROUND = (
-    "The step-1 teaching pair explains the <skill> SKILL BODY </skill> [USER MESSAGE] shape: the block "
-    "carries the skill's instructions, the text after the block is the current argument, and the reply is "
-    "the exact confirmation the skill requires. Rules for improving it: it must stay GENERAL (no tzip, no "
-    "example, no specific reply text), keep teaching the block shape and the argument rule, be written in "
-    "the student model's first-person voice, and stay short. The frozen parts (system message, the two "
-    "skills/tools Q&A pairs, the three example one-shots) are never optimized. The test interleaves tzip "
-    "and example invocations; tzip mode transitions jump both up and down; some example invocations happen "
-    "while tzip is still active and one happens after 'tzip off'. Scoring: exact normalized reply match = "
-    "1.0, containment = 0.5, otherwise 0.0; example items with an argument also require an actual tool "
-    "call, otherwise the score is capped at 0.5."
+    "The step-1 teaching pair explains the <skill> SKILL BODY </skill> [USER MESSAGE] shape: the block carries "
+    "the skill's instructions, the text after the block is the current argument, and the reply is the exact "
+    "confirmation the skill requires. Rules for improving it: it must stay GENERAL (no tzip, no example, no "
+    "specific reply text), keep teaching the block shape and the argument rule, be written in the student "
+    "model's first-person voice, and stay short. The frozen parts (system message, the two skills/tools Q&A "
+    "pairs, the three example one-shots) are never optimized. The 11 test messages are tzip DIRECT mode "
+    "activations (from the inactive state: full, lite, ultra, on) and tzip mode transitions; each item's "
+    "'Expected reply' is the exact confirmation string. Scoring: exact normalized "
+    "reply match = 1.0, containment = 0.5, otherwise 0.0."
 )
-
-
-def norm(s):
-    s = re.sub(r"\s+", " ", (s or "").strip().lower()).rstrip(".")
-    return s
 
 
 def score_item(example, final_msg, transcript):
@@ -542,8 +488,6 @@ def score_item(example, final_msg, transcript):
     else:
         score = 0.0
     tool_calls = [tc for m in transcript if m.get("tool_calls") for tc in m["tool_calls"]]
-    if example.get("needs_tool") and not tool_calls:
-        score = min(score, 0.5)
     status = "PASS" if score >= 0.999 else ("PARTIAL" if score > 0 else "FAIL")
     side = {
         "Task": example["name"],
@@ -551,7 +495,7 @@ def score_item(example, final_msg, transcript):
         "Expected reply": example["expected"],
         "Student reply": actual or "(empty)",
         "Student tool calls": "; ".join(
-            f'{tc["function"]["name"]}({tc["function"]["arguments"]})' for tc in tool_calls
+            f'{tc["function"]["name"]}({json.dumps(tc["function"]["arguments"])})' for tc in tool_calls
         )
         or "none",
         "Student reasoning_content": (final_msg.get("reasoning_content") or "none")[:600],
@@ -592,6 +536,58 @@ def make_reflection_lm(teacher):
     return reflection_lm
 
 
+def evaluate_all(evaluate, candidate, items, label):
+    say(f"\n{'=' * 74}\n{label}\n{'=' * 74}")
+    total = 0.0
+    for it in items:
+        s, side = evaluate(candidate, it)
+        total += s
+        say(f"  [{side['Status']:7s}] {it['name']:<22} {s:.1f} | expected: {it['expected']!r}")
+        say(f"  {'':15} student: {side.get('Student reply', '')!r}")
+    say(f"  aggregate: {total / len(items):.3f}")
+    return total / len(items)
+
+
+def run_robustness_probes(student, base_msgs, tools, tzip_msgs, candidate):
+    """Diagnostic probes beyond the file/valset: verbose arguments and example-skill
+    leak checks around the tzip sequence. Logged only."""
+    say(f"\n{'=' * 74}\nROBUSTNESS PROBES (log only, not part of the file)\n{'=' * 74}")
+    i1 = next(idx for idx, m in enumerate(base_msgs) if user_text_of(m).startswith("How does skill system work?"))
+    base_ctx = base_msgs[:i1] + [
+        make_user(candidate["step1_user"]),
+        {"role": "assistant", "content": candidate["step1_assistant"], "reasoning_content": candidate["step1_reasoning"]},
+    ] + base_msgs[i1 + 2 :]
+    block = tzip_skill_block()
+    ex_block = next(
+        user_text_of(m) for m in base_msgs if m.get("role") == "user" and user_text_of(m).startswith('<skill name="example"')
+    )
+    probes = [
+        ("tzip verbose 'tzip on' (first message)", [], block + "\n\ntzip on", "tzip lite activated"),
+        ("tzip verbose 'ultra please' (was full)", tzip_msgs[:2], block + "\n\nultra please", "tzip ultra activated"),
+        ("tzip verbose 'off now' (was ultra)", tzip_msgs[:4], block + "\n\noff now", "tzip deactivated"),
+        ("tzip case variant 'TZIP FULL' (first message)", [], block + "\n\nTZIP FULL", "tzip full activated"),
+        # full rollout: the skill requires reading references/03-hello.md before replying 'world'
+        ("example 'Hello' after full tzip sequence (full rollout)", tzip_msgs, ex_block + "\n\nHello", "world"),
+        ("example (no text) while tzip active (was full)", tzip_msgs[:2], ex_block, "This is an example skill."),
+    ]
+    for name, prefix, user_text, expect in probes:
+        ctx = base_ctx + prefix + [make_user(user_text)]
+        transcript, final = rollout(student, ctx, tools, max_turns=3)
+        content = (final.get("content") or "").strip()
+        status = "OK  " if norm(content) == norm(expect) else "DIFF"
+        n_tc = sum(len(m.get("tool_calls") or []) for m in transcript)
+        say(f"  [{status}] {name}\n  {'':4} expected: {expect!r}\n  {'':4} student:  {content!r} (tool calls: {n_tc})")
+    # tzip persistence: ACTIVE EVERY RESPONSE until 'tzip off' — inspection only (style, no exact answer)
+    plain_q = "What are the capital cities of France and Germany?"
+    for name, prefix in [
+        ("tzip ACTIVE (full mode): plain question", tzip_msgs[:2]),
+        ("tzip OFF (after full tzip sequence): plain question", tzip_msgs[:6]),
+    ]:
+        ctx = base_ctx + prefix + [make_user(plain_q)]
+        _, final = rollout(student, ctx, tools, max_turns=3)
+        say(f"  [INFO] {name}\n  {'':4} question: {plain_q!r}\n  {'':4} student:  {(final.get('content') or '')!r}\n  {'':4} reasoning:  {(final.get('reasoning_content') or '')[:200]!r}")
+
+
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
@@ -608,30 +604,36 @@ def main():
     t_probe = chat(teacher, [{"role": "user", "content": "Reply with the single word: pong"}])
     say(f"Teacher probe: {t_probe['content']!r}")
     s_probe = chat(student, [{"role": "user", "content": "Reply with the single word: pong"}])
-    say(f"Student probe: {s_probe['content']!r}")
+    say(f"Student probe: content={s_probe['content']!r} reasoning={(s_probe.get('reasoning_content') or '')[:60]!r}...")
 
-    # ---- Goal 1 ----
-    base_msgs, TOOLS, seed_user, seed_content, seed_reasoning = load_goal1(STUDENT_CFG)
+    # ---- frozen base conversation (system + Q&A + step-1 seed + 3 example one-shots) ----
+    assert EXAMPLE_FILE.exists() and EXAMPLE_FILE.stat().st_size > 0, f"{EXAMPLE_FILE} missing or empty"
+    base_doc = json.loads(EXAMPLE_FILE.read_text())
+    base_msgs, TOOLS = base_doc["messages"], base_doc["tools"]
+    normalize_tool_arguments(base_msgs)
+    i1 = next(idx for idx, m in enumerate(base_msgs) if user_text_of(m).startswith("How does skill system work?"))
+    seed_user, seed_content = user_text_of(base_msgs[i1]), base_msgs[i1 + 1]["content"]
+    seed_reasoning = base_msgs[i1 + 1]["reasoning_content"]
+    say(f"Base conversation: {len(base_msgs)} messages, {len(TOOLS)} tools (frozen; only the step-1 pair at index {i1}-{i1 + 1} is optimized).")
 
-    # ---- Step 5: interleaved tzip/example ground truth (teacher, thinking off) + skill-tzip file ----
-    say(f"Step 5: generating {len(SEQ)} interleaved invocations with the teacher model (thinking off)...")
-    seq_msgs, items = generate_sequence_teacher(teacher, base_msgs, TOOLS, example_skill_block(base_msgs))
-    step1_seed = (seed_user, seed_content, seed_reasoning)
-    write_tzip_file(base_msgs, TOOLS, seq_msgs, step1_seed, STUDENT_CFG)
+    # ---- tzip ground truth (teacher, thinking off) + LFM-voice reasoning ----
+    say(f"Generating {len(SEQ)} tzip invocations (unseen skill) with the teacher model (thinking off)...")
+    tzip_msgs, items = generate_tzip_sequence(teacher, base_msgs)
 
-    # ---- Goal 2: GEPA on the step-1 pair ----
-    train_items = [items[i] for i in TRAIN_ITEM_IDX]
-    dataset = [{**it, "id": f"d-{n + 1}"} for n, it in enumerate(train_items)]
-    valset = [{**it, "id": f"v-{n + 1}"} for n, it in enumerate(items)]
+    # ---- initial file with the SEED pair (inspectable before optimization) ----
+    write_tzip_file(base_msgs, TOOLS, tzip_msgs, (seed_user, seed_content, seed_reasoning), STUDENT_CFG, tag="seed pair")
 
+    # ---- evaluate: baseline (unoptimized) -> GEPA -> final (optimized) ----
     evaluate = make_evaluator(student, TOOLS, base_msgs)
-    say(f"Goal 2: GEPA optimization — {len(valset)} validation items, max_metric_calls={MAX_METRIC_CALLS}.")
+    seed_candidate = {"step1_user": seed_user, "step1_assistant": seed_content, "step1_reasoning": seed_reasoning}
+
+    baseline_agg = evaluate_all(evaluate, seed_candidate, items, "BASELINE — unoptimized (seed) step-1 pair, no GEPA yet")
+
+    say(f"\nGEPA optimization — {len(items)} validation items, max_metric_calls={MAX_METRIC_CALLS}, reflection LM = {TEACHER_MODEL} (thinking off).")
+    dataset = [{**it, "id": f"d-{n + 1}"} for n, it in enumerate(items)]
+    valset = [{**it, "id": f"v-{n + 1}"} for n, it in enumerate(items)]
     result = optimize_anything(
-        seed_candidate={
-            "step1_user": seed_user,
-            "step1_assistant": seed_content,
-            "step1_reasoning": seed_reasoning,
-        },
+        seed_candidate=seed_candidate,
         evaluator=evaluate,
         dataset=dataset,
         valset=valset,
@@ -655,27 +657,39 @@ def main():
     )
     best = result.best_candidate
     best_score = result.val_aggregate_scores[result.best_idx] if result.val_aggregate_scores else float("nan")
-    say(f"GEPA done: best val score = {best_score:.3f} over {len(valset)} items.")
+    say(f"GEPA done: best val score = {best_score:.3f} (candidate index {result.best_idx} of {len(result.candidates)}), "
+        f"metric calls used: {result.total_metric_calls}.")
 
-    # final per-item validation of the best candidate
-    say("\nFinal validation of the optimized step-1 pair:")
-    total = 0.0
-    for it in items:
-        s, side = evaluate(best, it)
-        total += s
-        say(f"  [{side['Status']:7s}] {it['name']}: {s:.1f} | student: {side.get('Student reply', '')[:80]!r}")
-    say(f"  aggregate: {total / len(items):.3f}")
+    say("\nImprovement trajectory (per-candidate validation aggregate score):")
+    scores = result.val_aggregate_scores or []
+    for idx, cand in enumerate(result.candidates):
+        sc = scores[idx] if idx < len(scores) else None
+        sc_s = f"{sc:.3f}" if isinstance(sc, (int, float)) else str(sc)
+        mark = "  <-- best" if idx == result.best_idx else ""
+        say(f"  candidate {idx:2d}: {sc_s}{mark}")
 
-    # write the optimized step-1 pair into the final tzip file + standalone JSON
-    write_tzip_file(
-        base_msgs, TOOLS, seq_msgs, (best["step1_user"], best["step1_assistant"], best["step1_reasoning"]), STUDENT_CFG
-    )
+    run_log = RUN_DIR / "run_log.txt"
+    if run_log.exists():
+        say("\nGEPA run_log digest:")
+        for line in run_log.read_text().splitlines():
+            if "Base program full valset" in line or "Found a better program" in line:
+                say(f"  {line}")
+
+    # ---- final validation of the optimized pair ----
+    final_agg = evaluate_all(evaluate, best, items, f"FINAL — optimized step-1 pair (baseline {baseline_agg:.3f} -> {best_score:.3f})")
+
+    # ---- robustness probes (log only) ----
+    run_robustness_probes(student, base_msgs, TOOLS, tzip_msgs, best)
+
+    # ---- write the optimized pair into the file + standalone JSON ----
+    write_tzip_file(base_msgs, TOOLS, tzip_msgs, (best["step1_user"], best["step1_assistant"], best["step1_reasoning"]), STUDENT_CFG, tag="optimized pair")
     PAIR_FILE.write_text(json.dumps(best, ensure_ascii=False, indent=2) + "\n")
     say(f"Saved optimized step-1 pair to {PAIR_FILE.name} and into {TZIP_FILE.name}.")
     say("\nOptimized step-1 pair:")
     say(f"  user: {best['step1_user']}")
     say(f"  assistant: {best['step1_assistant']}")
     say(f"  reasoning: {best['step1_reasoning']}")
+    say(f"\nSummary: baseline (unoptimized) = {baseline_agg:.3f}, GEPA best val = {best_score:.3f}, final re-check = {final_agg:.3f}.")
 
 
 if __name__ == "__main__":
