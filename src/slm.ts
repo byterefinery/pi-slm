@@ -183,11 +183,17 @@ function buildExampleSkillBlock(skillDir: string): string {
 	].join("\n");
 }
 
-/** Synthetic reply to the skill-system question (the <skill> block contract). */
+/**
+ * Synthetic reply to the skill-system question (the <skill> block contract).
+ * GEPA-optimized pair, trained and validated in optim/skills-usage-4 (train.py,
+ * step1-pair-optimized.json): final min-of-3 accuracy 1.000 with 0% cross-skill
+ * CoT leak on the 37-item bare-argument matrix, vs the previous V2 pair
+ * (0.899 / 8%). The question (SKILLSYS_ASK) is unchanged.
+ */
 const SKILLSYS_EXPLAIN =
-	"A skill invocation is a `<skill> SKILL BODY </skill>` block with the user message after it: the block carries the skill's instructions, and the text after the closing tag is the argument for this invocation. The skill block in my latest message starts a fresh invocation: its name, its Usage rules, and its argument — the text right after its own closing tag — come only from that block. I will use the argument after the block as the current argument, not an example from inside the skill. If there is no argument, I will use the skill's required default wording. I will follow the skill's Usage rules for the current argument and reply text only with the exact required confirmation: skill name, current argument or default wording, and required wording.";
+	"I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.";
 const SKILLSYS_THINKING =
-	"The user wants the rule for a skill block in my latest message. I will explain the `<skill> SKILL BODY </skill> [USER MESSAGE]` shape: the block is the active instruction, the text after the block is the current argument, and the reply is the exact confirmation the skill requires.";
+	"I treat each skill block as a fresh, self-contained call: I read only this block's name, Usage rules, and the argument text after its closing tag, and ignore everything before it. If a different mode is already active, I still derive the reply only from this argument — I never repeat the old confirmation. If the previous message ended with a short word from another finished skill, that word is not this argument; the argument is exactly the text after this block's closing tag. I never import the previous skill's rules, outputs, or state into this reply. My reply is always the single short confirmation line this skill's Usage requires — never empty, never extra.";
 
 /** Few-shot 1 (no argument): the skill's required fixed reply. */
 const SKILL_EXAMPLE_ANSWER = "This is an example skill.";
