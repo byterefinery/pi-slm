@@ -1,0 +1,24 @@
+2026-08-21 16:10:09,375 INFO ### teacher rollout start: Qwen/Qwen3.8-27B (thinking=off) skill=/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/tzip
+2026-08-21 16:10:09,375 INFO === case 'empty': expecting 'tzip lite activated' ===
+2026-08-21 16:10:09,375 DEBUG pi run: arg='' cwd=/tmp/tzip-teacher-7de_i7rx
+2026-08-21 16:10:14,219 INFO case 'empty' attempt 1: verified=True tool_calls=0 reply='tzip lite activated'
+2026-08-21 16:21:29,031 INFO ### teacher rollout start: Qwen/Qwen3.8-27B (thinking=off) skill=/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/tzip
+2026-08-21 16:21:29,031 INFO === case 'empty': expecting 'tzip lite activated' ===
+2026-08-21 16:21:29,031 DEBUG pi run: arg='' cwd=/tmp/tzip-teacher-uagp89pz
+2026-08-21 16:21:31,871 INFO case 'empty' attempt 1: verified=True tool_calls=0 reply='tzip lite activated'
+2026-08-21 16:21:31,871 INFO === case 'on': expecting 'tzip lite activated' ===
+2026-08-21 16:21:31,871 DEBUG pi run: arg='on' cwd=/tmp/tzip-teacher-e2xsumfv
+2026-08-21 16:21:34,890 INFO case 'on' attempt 1: verified=True tool_calls=0 reply='tzip lite activated'
+2026-08-21 16:21:34,891 INFO === case 'lite': expecting 'tzip lite activated' ===
+2026-08-21 16:21:34,891 DEBUG pi run: arg='lite' cwd=/tmp/tzip-teacher-ccqh7cfr
+2026-08-21 16:21:40,191 INFO case 'lite' attempt 1: verified=True tool_calls=0 reply='tzip lite activated'
+2026-08-21 16:21:40,191 INFO === case 'full': expecting 'tzip full activated' ===
+2026-08-21 16:21:40,191 DEBUG pi run: arg='full' cwd=/tmp/tzip-teacher-i62xzvl2
+2026-08-21 16:21:44,326 INFO case 'full' attempt 1: verified=True tool_calls=1 reply='tzip full activated'
+2026-08-21 16:21:44,326 INFO === case 'ultra': expecting 'tzip ultra activated' ===
+2026-08-21 16:21:44,327 DEBUG pi run: arg='ultra' cwd=/tmp/tzip-teacher-kh0faadp
+2026-08-21 16:21:47,118 INFO case 'ultra' attempt 1: verified=True tool_calls=0 reply='tzip ultra activated'
+2026-08-21 16:21:47,119 INFO === case 'off': expecting 'tzip deactivated' ===
+2026-08-21 16:21:47,119 DEBUG pi run: arg='off' cwd=/tmp/tzip-teacher-p5llki82
+2026-08-21 16:21:50,281 INFO case 'off' attempt 1: verified=True tool_calls=0 reply='tzip deactivated'
+2026-08-21 16:21:50,282 INFO ### teacher rollout done: 6/6 verified -> /home/mtasic/projects-b/pi-slm/optim/skills-usage-6/runs/teacher-tzip-responses.json
