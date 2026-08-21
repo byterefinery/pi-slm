@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/home/mtasic/projects-b/pi-slm/optim/skills-usage-5/runs/pi_cleanhome.py", line 64, in <module>
+    "-p", __import__("common").tzip_block(case.get("arg", "")),
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mtasic/projects-b/pi-slm/optim/skills-usage-5/runs/common.py", line 84, in tzip_block
+    f"{tzip_body()}\n"
+       ~~~~~~~~~^^
+  File "/home/mtasic/projects-b/pi-slm/optim/skills-usage-5/runs/common.py", line 76, in tzip_body
+    _TZIP_BODY = raw[m.end():].rstrip("\n")
+                     ^^^^^
+AttributeError: 'NoneType' object has no attribute 'end'

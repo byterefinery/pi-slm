@@ -1,0 +1,86 @@
+[
+  {
+    "id": "empty",
+    "ok": true,
+    "leak": false,
+    "content": "tzip lite activated",
+    "reasoning": "The user invoked tzip with no mode argument — just the skill block. The default is lite. I should reply with the mode name: \"tzip lite activated\".\n\nWait, let me check the usage rules. `tzip` / `tzip o"
+  },
+  {
+    "id": "on",
+    "ok": true,
+    "leak": false,
+    "content": "tzip lite activated",
+    "reasoning": "The user invoked tzip with \"on\", which maps to Lite mode (default). The communication pattern says reply with the mode name: \"tzip lite activated\". I should keep it minimal and follow the exact format"
+  },
+  {
+    "id": "lite",
+    "ok": true,
+    "leak": false,
+    "content": "tzip lite activated",
+    "reasoning": "The user invoked tzip with \"lite\". That's the default mode. I need to reply with the mode name: \"tzip lite activated\". The communication pattern is `<thing> [action] [reason]` = `tzip lite activated`."
+  },
+  {
+    "id": "full",
+    "ok": true,
+    "leak": false,
+    "content": "tzip full activated",
+    "reasoning": "The user invoked tzip with \"full\". Per the skill, I should activate full mode and reply with the mode name: \"tzip full activated\". The communication pattern is `<thing> [action] [reason]` → `tzip full"
+  },
+  {
+    "id": "ultra",
+    "ok": true,
+    "leak": false,
+    "content": "tzip ultra activated",
+    "reasoning": "The user invoked tzip with \"ultra\". Per the skill, I should activate ultra mode and reply with the mode name: \"tzip ultra activated\". The communication pattern is `<thing> [action] [reason]` → `tzip u"
+  },
+  {
+    "id": "off",
+    "ok": true,
+    "leak": false,
+    "content": "tzip deactivated",
+    "reasoning": "The user invoked the tzip skill with \"off\". Per Usage, `tzip off` deactivates token pruning. The communication pattern is `<thing> [action] [reason]`, where action is mode and reason is activated or d"
+  },
+  {
+    "id": "full_to_lite",
+    "ok": true,
+    "leak": false,
+    "content": "tzip lite activated",
+    "reasoning": "The user invoked tzip with \"lite\". Per the skill, reply with mode name: \"tzip lite activated\". This is an activation response — keep it exact and minimal.\n"
+  },
+  {
+    "id": "lite_to_full",
+    "ok": true,
+    "leak": false,
+    "content": "tzip full activated",
+    "reasoning": "The user invoked tzip with \"full\". I need to reply with the mode name per the communication pattern: `<thing> [action] [reason]` → \"tzip full activated\". The skill says reply with mode name (e.g., \"tz"
+  },
+  {
+    "id": "lite_to_ultra",
+    "ok": true,
+    "leak": false,
+    "content": "tzip ultra activated",
+    "reasoning": "The user invoked tzip with \"ultra\". Per the skill, reply with mode name: \"tzip ultra activated\". The communication pattern is `<thing> [action] [reason]` → `tzip ultra activated`. This is a short conf"
+  },
+  {
+    "id": "ultra_to_off",
+    "ok": true,
+    "leak": false,
+    "content": "tzip deactivated",
+    "reasoning": "The user invoked tzip with \"off\". Per the skill, reply with mode name and reason: \"tzip deactivated\". This is the deactivation response — after this, token pruning stops. The reply itself should be th"
+  },
+  {
+    "id": "full_to_off",
+    "ok": true,
+    "leak": false,
+    "content": "tzip deactivated",
+    "reasoning": "The user invoked tzip with \"off\". Per the skill, reply with mode name and reason: \"tzip deactivated\". This is the deactivation response — after this, token pruning stops. The reply itself should be ex"
+  },
+  {
+    "id": "off_to_lite",
+    "ok": true,
+    "leak": false,
+    "content": "tzip lite activated",
+    "reasoning": "The user invoked tzip with \"lite\", which activates the default lite mode. I need to reply with the mode name following the communication pattern: `<thing> [action] [reason]` → \"tzip lite activated\".\n\n"
+  }
+]

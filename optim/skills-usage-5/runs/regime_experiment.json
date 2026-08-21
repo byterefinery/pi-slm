@@ -1,0 +1,182 @@
+{
+  "F": {
+    "acc": 1.0,
+    "leak": 0.0,
+    "cases": [
+      {
+        "id": "empty",
+        "ok": true,
+        "leak": false,
+        "content": "tzip lite activated",
+        "reasoning": "The user invoked tzip with no mode argument — just the skill block. Per Usage, `tzip` / `tzip on` / `tzip lite` → Lite ("
+      },
+      {
+        "id": "on",
+        "ok": true,
+        "leak": false,
+        "content": "tzip lite activated",
+        "reasoning": "The user invoked tzip with \"on\", which maps to Lite (default) mode. The communication pattern says reply with the mode n"
+      },
+      {
+        "id": "lite",
+        "ok": true,
+        "leak": false,
+        "content": "tzip lite activated",
+        "reasoning": "The user invoked tzip with \"lite\". That's the default mode. I need to reply with the mode name: \"tzip lite activated\". T"
+      },
+      {
+        "id": "full",
+        "ok": true,
+        "leak": false,
+        "content": "tzip full activated",
+        "reasoning": "The user invoked tzip with \"full\". Per the skill, I should activate full mode and reply with the mode name: \"tzip full a"
+      },
+      {
+        "id": "ultra",
+        "ok": true,
+        "leak": false,
+        "content": "tzip ultra activated",
+        "reasoning": "The user invoked tzip with \"ultra\". Per the skill, I should activate ultra mode and reply with the mode name: \"tzip ultr"
+      },
+      {
+        "id": "off",
+        "ok": true,
+        "leak": false,
+        "content": "tzip deactivated",
+        "reasoning": "The user invoked tzip with \"off\". Per the skill, `tzip off` deactivates token pruning. The communication pattern is `<th"
+      },
+      {
+        "id": "full_to_lite",
+        "ok": true,
+        "leak": false,
+        "content": "tzip lite activated",
+        "reasoning": "The user invoked tzip with \"lite\". That is the default mode. I will reply with the mode name and reason: \"tzip lite acti"
+      },
+      {
+        "id": "lite_to_full",
+        "ok": true,
+        "leak": false,
+        "content": "tzip full activated",
+        "reasoning": "The user invoked tzip with \"full\". Per the skill, reply with mode name: \"tzip full activated\". The communication pattern"
+      },
+      {
+        "id": "lite_to_ultra",
+        "ok": true,
+        "leak": false,
+        "content": "tzip ultra activated",
+        "reasoning": "The user invoked tzip with \"ultra\". Per the skill's communication pattern, I reply with mode name: \"tzip ultra activated"
+      },
+      {
+        "id": "ultra_to_off",
+        "ok": true,
+        "leak": false,
+        "content": "tzip deactivated",
+        "reasoning": "The user invoked tzip with \"off\". Per the skill, reply with mode name and reason: \"tzip deactivated\". This is a deactiva"
+      },
+      {
+        "id": "full_to_off",
+        "ok": true,
+        "leak": false,
+        "content": "tzip deactivated",
+        "reasoning": "The user invoked tzip off. I need to reply with the mode name pattern: `<thing> [action] [reason]` where reason is deact"
+      },
+      {
+        "id": "off_to_lite",
+        "ok": true,
+        "leak": false,
+        "content": "tzip lite activated",
+        "reasoning": "The user invoked tzip with \"lite\", which activates Lite mode (the default). I need to reply with the mode name following"
+      }
+    ]
+  },
+  "P": {
+    "acc": 1.0,
+    "leak": 0.0,
+    "cases": [
+      {
+        "id": "empty",
+        "ok": true,
+        "leak": false,
+        "content": "tzip lite activated",
+        "reasoning": "The user invoked the tzip skill with no extra text (just the skill block). According to the usage:\n\n- `tzip` / `tzip on`"
+      },
+      {
+        "id": "on",
+        "ok": true,
+        "leak": false,
+        "content": "tzip lite activated",
+        "reasoning": "The user invoked the tzip skill with \"on\". According to SKILL.md:\n\n- `tzip` / `tzip on` / `tzip lite` → Lite (default) m"
+      },
+      {
+        "id": "lite",
+        "ok": true,
+        "leak": false,
+        "content": "tzip lite activated",
+        "reasoning": "The user invoked the tzip skill with \"lite\". According to SKILL.md:\n\n- `tzip` / `tzip on` / `tzip lite` → Lite (default)"
+      },
+      {
+        "id": "full",
+        "ok": true,
+        "leak": false,
+        "content": "tzip full activated",
+        "reasoning": "The user invoked the tzip skill with \"full\". According to the skill's instructions:\n\n- `tzip full` → Drop articles, frag"
+      },
+      {
+        "id": "ultra",
+        "ok": true,
+        "leak": false,
+        "content": "tzip ultra activated",
+        "reasoning": "The user invoked the tzip skill with \"ultra\". According to the skill's instructions:\n\n- `tzip ultra` → Abbreviate (DB, a"
+      },
+      {
+        "id": "off",
+        "ok": true,
+        "leak": false,
+        "content": "tzip deactivated",
+        "reasoning": "The user invoked the tzip skill with \"off\". According to SKILL.md:\n\n- `tzip off` → Deactivate token pruning\n- Communicat"
+      },
+      {
+        "id": "full_to_lite",
+        "ok": true,
+        "leak": false,
+        "content": "tzip lite activated",
+        "reasoning": "The user invoked the tzip skill with \"lite\". According to the skill's instructions, I should reply with the mode name in"
+      },
+      {
+        "id": "lite_to_full",
+        "ok": true,
+        "leak": false,
+        "content": "tzip full activated",
+        "reasoning": "The user is invoking the tzip skill with \"full\". According to the skill's instructions, I should reply with the mode nam"
+      },
+      {
+        "id": "lite_to_ultra",
+        "ok": true,
+        "leak": false,
+        "content": "tzip ultra activated",
+        "reasoning": "The user is invoking the tzip skill with \"ultra\". According to the skill instructions:\n\n- `tzip ultra` → Abbreviate (DB,"
+      },
+      {
+        "id": "ultra_to_off",
+        "ok": true,
+        "leak": false,
+        "content": "tzip deactivated",
+        "reasoning": "The user is invoking the tzip skill with \"off\". According to the skill instructions:\n\n- `tzip off` → Deactivate token pr"
+      },
+      {
+        "id": "full_to_off",
+        "ok": true,
+        "leak": false,
+        "content": "tzip deactivated",
+        "reasoning": "The user is invoking the tzip skill with \"off\". According to the skill instructions:\n\n- `tzip off` → Deactivate token pr"
+      },
+      {
+        "id": "off_to_lite",
+        "ok": true,
+        "leak": false,
+        "content": "tzip lite activated",
+        "reasoning": "The user invoked the tzip skill with \"lite\". According to the skill's instructions, I should reply with the mode name: \""
+      }
+    ]
+  }
+}

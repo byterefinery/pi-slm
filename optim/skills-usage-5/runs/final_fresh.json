@@ -1,0 +1,185 @@
+[
+  {
+    "acc": 1.0,
+    "leak_rate": 0.0,
+    "style": {
+      "style_ok": false,
+      "issues": "reasoning_content mentions 'Usage section' which is a skill-specific detail, violating the skill-agnostic constraint."
+    },
+    "score": 0.6,
+    "seconds": 83.5,
+    "tag": "final-fresh-1",
+    "per_case": {
+      "empty": [
+        true,
+        false
+      ],
+      "on": [
+        true,
+        false
+      ],
+      "lite": [
+        true,
+        false
+      ],
+      "full": [
+        true,
+        false
+      ],
+      "ultra": [
+        true,
+        false
+      ],
+      "off": [
+        true,
+        false
+      ],
+      "full_to_lite": [
+        true,
+        false
+      ],
+      "lite_to_full": [
+        true,
+        false
+      ],
+      "lite_to_ultra": [
+        true,
+        false
+      ],
+      "ultra_to_off": [
+        true,
+        false
+      ],
+      "full_to_off": [
+        true,
+        false
+      ],
+      "off_to_lite": [
+        true,
+        false
+      ]
+    }
+  },
+  {
+    "acc": 1.0,
+    "leak_rate": 0.0,
+    "style": {
+      "style_ok": false,
+      "issues": "reasoning_content mentions 'Usage section' which is a skill-specific detail, violating the skill-agnostic constraint."
+    },
+    "score": 0.6,
+    "seconds": 86.9,
+    "tag": "final-fresh-2",
+    "per_case": {
+      "empty": [
+        true,
+        false
+      ],
+      "on": [
+        true,
+        false
+      ],
+      "lite": [
+        true,
+        false
+      ],
+      "full": [
+        true,
+        false
+      ],
+      "ultra": [
+        true,
+        false
+      ],
+      "off": [
+        true,
+        false
+      ],
+      "full_to_lite": [
+        true,
+        false
+      ],
+      "lite_to_full": [
+        true,
+        false
+      ],
+      "lite_to_ultra": [
+        true,
+        false
+      ],
+      "ultra_to_off": [
+        true,
+        false
+      ],
+      "full_to_off": [
+        true,
+        false
+      ],
+      "off_to_lite": [
+        true,
+        false
+      ]
+    }
+  },
+  {
+    "acc": 1.0,
+    "leak_rate": 0.0,
+    "style": {
+      "style_ok": false,
+      "issues": "reasoning_content mentions 'Usage section', which is a skill-specific detail violating the skill-agnostic constraint; reasoning_content is 2 sentences but the first is a statement of fact rather than a plan/commitment, and the second commits to an action that relies on the forbidden 'Usage section' reference."
+    },
+    "score": 0.6,
+    "seconds": 86.1,
+    "tag": "final-fresh-3",
+    "per_case": {
+      "empty": [
+        true,
+        false
+      ],
+      "on": [
+        true,
+        false
+      ],
+      "lite": [
+        true,
+        false
+      ],
+      "full": [
+        true,
+        false
+      ],
+      "ultra": [
+        true,
+        false
+      ],
+      "off": [
+        true,
+        false
+      ],
+      "full_to_lite": [
+        true,
+        false
+      ],
+      "lite_to_full": [
+        true,
+        false
+      ],
+      "lite_to_ultra": [
+        true,
+        false
+      ],
+      "ultra_to_off": [
+        true,
+        false
+      ],
+      "full_to_off": [
+        true,
+        false
+      ],
+      "off_to_lite": [
+        true,
+        false
+      ]
+    }
+  }
+]

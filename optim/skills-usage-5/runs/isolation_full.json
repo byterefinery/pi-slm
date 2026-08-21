@@ -1,0 +1,17 @@
+{
+  "A_json_sys_with_rc": {
+    "ok": true,
+    "content": "tzip full activated",
+    "reasoning": "The user invoked tzip with the argument \"full\". According to the skill's usage rules, `tzip full` activates Full mode: remove articles, fragments are OK, use short synonyms. The communication pattern "
+  },
+  "B_pi_sys_with_rc": {
+    "ok": true,
+    "content": "tzip full activated",
+    "reasoning": "The user invoked tzip with \"full\". According to the skill's usage rules, `tzip full` → Full mode: remove articles, fragments are OK, use short synonyms. The communication pattern is `<thing> [action] "
+  },
+  "C_json_sys_no_rc": {
+    "ok": true,
+    "content": "tzip full activated",
+    "reasoning": "The user invoked the tzip skill with the argument \"full\". According to SKILL.md: `tzip full` → Full mode. Reply with the mode name (e.g., \"tzip lite activated\", \"tzip deactivated\"). So I should reply "
+  }
+}

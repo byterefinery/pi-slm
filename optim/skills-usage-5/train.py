@@ -26,11 +26,58 @@ lm = dspy.LM(
     },
 )
 ```
+
+skills-usage-5 orchestrator. This run uses raw OpenAI-client calls (runs/common.py)
+instead of dspy.LM so the request body replicates the captured
+skill-example-*.json exactly (content arrays, reasoning_content history,
+chat_template_kwargs, tools). Same endpoint, headers, and sampling params.
+
+Stages (all model calls SERIAL - shared server):
+  baseline  - teacher (thinking OFF) as responder on the 12 tzip cases (seed pair)
+  seed      - student (thinking ON) on the 12 tzip cases (seed pair) = BEFORE numbers
+  optimize  - GEPA (gepa.optimize_anything) optimizes ONLY the skill-system Q/A pair
+  final     - deterministic + 3 fresh evals of the best pair, then write-back into
+              skill-example-LiquidAI-LFM2.5-2.6B.json (only the pair changes)
+  pi        - real `pi` CLI test in random temp dirs (student thinking ON, teacher
+              thinking OFF), 12 cases each, preloaded session files
+
+Usage: uv run train.py [baseline|seed|optimize|final|pi]   (default: all)
+Progress is appended to train.log.
 '''
 
-STUDENT_MODEL = "LiquidAI/LFM2.5-2.6B"  # thinking: ON
-TEACHER_MODEL = "Qwen/Qwen3.8-27B"  # thinking: OFF
-SESSION_HEADER = {"x-session-affinity": "dspy-optim"}
+import sys
+from pathlib import Path
 
-API_BASE = None
-API_KEY = None
+sys.path.insert(0, str(Path(__file__).resolve().parent / "runs"))
+from common import get_creds, log  # noqa: E402
+
+API_BASE, API_KEY = get_creds()  # never logged
+
+
+def main() -> None:
+    stage = sys.argv[1] if len(sys.argv) > 1 else "all"
+    order = ["baseline", "seed", "optimize", "final", "pi"]
+    stages = order if stage == "all" else [stage]
+    for s in stages:
+        if s == "baseline":
+            import baseline
+            baseline.main()
+        elif s == "seed":
+            import student_seed
+            student_seed.main()
+        elif s == "optimize":
+            import optimize
+            optimize.main()
+        elif s == "final":
+            import final_eval
+            final_eval.main()
+        elif s == "pi":
+            import pi_test
+            pi_test.main()
+        else:
+            raise SystemExit(f"unknown stage: {s}")
+    log("orchestrator done")
+
+
+if __name__ == "__main__":
+    main()

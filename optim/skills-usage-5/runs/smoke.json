@@ -1,0 +1,22 @@
+{
+  "case": {
+    "id": "lite",
+    "arg": "lite",
+    "expected": "tzip lite activated",
+    "actual": "tzip lite activated",
+    "reasoning": "The user invoked tzip with the argument \"lite\". According to the skill's usage rules, `tzip lite` activates Lite mode (the default). The communication pattern is `<thing> [action] [reason]`, where thing = tzip, action = mode, reason = activated. Reply with the mode name: \"tzip lite activated\".\n",
+    "finish_reason": "stop",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument 'lite' and applies the tzip skill's usage rules without importing context from previous turns.",
+    "judge_arg": "lite",
+    "judge_reply": "tzip lite activated",
+    "score": 1.0,
+    "trailing_period": false,
+    "seconds": 12.7
+  },
+  "style": {
+    "style_ok": false,
+    "issues": "reasoning_content exceeds 3 sentences; reasoning_content does not end by committing to the exact next action (e.g., 'I will reply with...'); reasoning_content uses complex conditional logic rather than the simple short form."
+  }
+}

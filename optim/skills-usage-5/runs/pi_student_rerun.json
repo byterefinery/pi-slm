@@ -1,0 +1,98 @@
+[
+  {
+    "id": "empty",
+    "ok": false,
+    "leak": false,
+    "content": "The tzip skill is about token pruning - dropping filler/hedging while keeping full technical accuracy. Since this was a fresh invocation (default mode is `lite`), I will reply with the active mode nam",
+    "reasoning": "The tzip skill is about token pruning - it's a communication mode that drops filler and hedging while keeping full sentences and professional tone. The user invoked the skill without extra text (just \"tzip\" in the location), so I need to reply with the mode name. Looking at the Usage section:\n\n- `tz",
+    "exit_code": 0
+  },
+  {
+    "id": "on",
+    "ok": false,
+    "leak": false,
+    "content": "The tzip skill activates in its default **lite** mode by default (which drops filler words while keeping full technical accuracy). Replying with the mode name as instructed:\n\n**tzip lite activated**",
+    "reasoning": "The tzip skill is about token pruning - it prunes filler and hedging while keeping full accuracy. The usage says to reply with the mode name (e.g., \"tzip lite activated\", \"tzip deactivated\").\n\nThe user just invoked the tzip skill without any extra text, so I should respond with a mode activation mes",
+    "exit_code": 0
+  },
+  {
+    "id": "lite",
+    "ok": true,
+    "leak": false,
+    "content": "tzip lite activated",
+    "reasoning": "The tzip skill was invoked with no extra text, so it should be in its default mode (lite) and active. I replied with `tzip lite activated` which matches the pattern described in the tzip skill's Usage section: \"Reply with mode name (e.g., 'tzip lite activated', 'tzip deactivated').\"\n\nThe response wa",
+    "exit_code": 0
+  },
+  {
+    "id": "full",
+    "ok": false,
+    "leak": true,
+    "content": "tzip lite activated",
+    "reasoning": "The command executed successfully and returned \"tzip lite activated\". This is the expected output for activating tzip in lite mode. The task is complete - I've followed the skill's instructions correctly by replying with the mode name as required.",
+    "exit_code": 0
+  },
+  {
+    "id": "ultra",
+    "ok": false,
+    "leak": true,
+    "content": "The tzip skill was called with \"Hi\" and returned `ultra`. Per the usage instructions, I should reply with the mode name that was activated.\n\nultra",
+    "reasoning": "The user invoked the tzip skill with \"Hi\". The usage says to reply with mode name (e.g., \"tzip lite activated\", \"tzip deactivated\"). The script was called with `bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/tzip/scripts/tzip.py Hi` and it returned \"ultra\". \n\nWait, looking at the ou",
+    "exit_code": 0
+  },
+  {
+    "id": "off",
+    "ok": false,
+    "leak": false,
+    "content": "The skill system is designed around **SKILL.md** files that define what each skill does. When a skill block appears in your message, you should follow the specific instructions for that skill.\n\nHere's",
+    "reasoning": "The tzip skill is activated and it responded with \"off\". This means the token pruning was deactivated. The user asked about how the skill system works - I should explain this.\n\nBut wait - looking at the task again, the user just said \"How does the skill system work? If a skill block appears in my la",
+    "exit_code": 0
+  },
+  {
+    "id": "full_to_lite",
+    "ok": false,
+    "leak": true,
+    "content": "The tzip skill was invoked with no extra text (just running `tzip.py` which defaults to lite mode). According to the usage, I should reply with the mode name. Since it's been activated in the default ",
+    "reasoning": "The user invoked the tzip skill with no extra text (just the command to run it). According to the usage rules:\n- Invoked with no extra text → reply exactly `This is an example skill.` Nothing else.\n\nWait, but this is a different skill (tzip) - not the \"example\" skill. The previous examples were for ",
+    "exit_code": 0
+  },
+  {
+    "id": "lite_to_full",
+    "ok": false,
+    "leak": true,
+    "content": "",
+    "reasoning": "The user invoked the tzip skill with no extra text (just the command to run it). The usage says to reply with mode name. I already replied \"tzip lite activated\" which was correct based on the previous context where the script output \"This is example.sh output.\" and the default mode is \"lite\".\n\nWait,",
+    "exit_code": 0
+  },
+  {
+    "id": "lite_to_ultra",
+    "ok": true,
+    "leak": true,
+    "content": "tzip ultra activated",
+    "reasoning": "The user invoked the tzip skill with \"Hi\". The usage says to reply with mode name (e.g., \"tzip lite activated\", \"tzip deactivated\"). The current mode is \"lite\" and they want me to activate \"ultra\" mode. I should respond with \"tzip ultra activated\".",
+    "exit_code": 0
+  },
+  {
+    "id": "ultra_to_off",
+    "ok": false,
+    "leak": true,
+    "content": "The tzip skill has been deactivated (off) after your \"Hi\" invocation. The system will now operate in the default mode (lite token pruning). \n\nIs there anything else you'd like to do?",
+    "reasoning": "The user invoked the tzip skill with \"Hi\". The usage says to reply with mode name (e.g., \"tzip lite activated\", \"tzip deactivated\"). I responded with \"off\" which is correct for `tzip off`.\n\nNow the system has been told to drop token pruning. The next message from the user will be processed by tzip i",
+    "exit_code": 0
+  },
+  {
+    "id": "full_to_off",
+    "ok": false,
+    "leak": true,
+    "content": "tzip off",
+    "reasoning": "The user invoked the tzip skill with \"Hi\". The usage says to reply with mode name (e.g., \"tzip lite activated\", \"tzip deactivated\"). I need to respond with `tzip off` since that's what was requested. Let me do that.",
+    "exit_code": 0
+  },
+  {
+    "id": "off_to_lite",
+    "ok": false,
+    "leak": true,
+    "content": "tzip off",
+    "reasoning": "The user invoked the tzip skill and I need to respond with the mode name. The usage says to reply with the mode name (e.g., \"tzip lite activated\", \"tzip deactivated\"). The current state is `off` from the previous call, so I should reply with \"tzip off\".",
+    "exit_code": 0
+  }
+]

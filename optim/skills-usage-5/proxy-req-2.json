@@ -1,0 +1,1 @@
+{"model":"LiquidAI/LFM2.5-2.6B","messages":[{"role":"user","content":"Reply with exactly: ok"}],"stream":true,"max_tokens":60,"chat_template_kwargs":{"enable_thinking":true,"preserve_thinking":true}}

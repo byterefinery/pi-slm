@@ -1,0 +1,122 @@
+[
+  {
+    "id": "empty",
+    "expected": "tzip lite activated",
+    "actual": "tzip lite activated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current skill as tzip with no argument, triggering the default 'lite' mode, without importing context from previous example skill invocations.",
+    "finish_reason": "stop"
+  },
+  {
+    "id": "on",
+    "expected": "tzip lite activated",
+    "actual": "tzip lite activated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument 'on' as triggering the default 'lite' mode and commits to the required reply format without importing context from previous turns.",
+    "finish_reason": "stop"
+  },
+  {
+    "id": "lite",
+    "expected": "tzip lite activated",
+    "actual": "tzip lite activated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument 'lite' and applies the tzip skill's rules without importing context from previous turns.",
+    "finish_reason": "stop"
+  },
+  {
+    "id": "full",
+    "expected": "tzip full activated",
+    "actual": "tzip full activated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument as 'full' and applies the tzip skill's rules without importing context from previous turns.",
+    "finish_reason": "stop"
+  },
+  {
+    "id": "ultra",
+    "expected": "tzip ultra activated",
+    "actual": "tzip ultra activated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument 'ultra' and applies the tzip skill's usage rules without importing context from previous turns.",
+    "finish_reason": "stop"
+  },
+  {
+    "id": "off",
+    "expected": "tzip deactivated",
+    "actual": "tzip deactivated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument 'off' and applies the tzip skill's deactivation rule without importing context from previous turns.",
+    "finish_reason": "stop"
+  },
+  {
+    "id": "full_to_lite",
+    "expected": "tzip lite activated",
+    "actual": "tzip lite activated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument as 'lite' and commits to the corresponding reply without importing context from previous turns.",
+    "finish_reason": "stop"
+  },
+  {
+    "id": "lite_to_full",
+    "expected": "tzip full activated",
+    "actual": "tzip full activated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument as 'full' and commits to the corresponding reply without importing context from previous turns.",
+    "finish_reason": "stop"
+  },
+  {
+    "id": "lite_to_ultra",
+    "expected": "tzip ultra activated",
+    "actual": "tzip ultra activated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument 'ultra' and maps it to the 'ultra' mode without importing context from previous turns.",
+    "finish_reason": "stop"
+  },
+  {
+    "id": "ultra_to_off",
+    "expected": "tzip deactivated",
+    "actual": "tzip deactivated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument as 'off' and commits to the reply 'tzip deactivated' without importing context from previous turns.",
+    "finish_reason": "stop"
+  },
+  {
+    "id": "full_to_off",
+    "expected": "tzip deactivated",
+    "actual": "tzip deactivated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument 'off' and determines the reply 'tzip deactivated' based on the tzip skill's usage rules, without importing context from previous turns.",
+    "finish_reason": "stop"
+  },
+  {
+    "id": "off_to_lite",
+    "expected": "tzip lite activated",
+    "actual": "tzip lite activated",
+    "reasoning": "",
+    "content_ok": true,
+    "leak": false,
+    "leak_reason": "The reasoning correctly identifies the current argument as 'lite' and applies the corresponding tzip mode without importing context from previous turns.",
+    "finish_reason": "stop"
+  }
+]

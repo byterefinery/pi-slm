@@ -1,0 +1,11 @@
+Installed 14 packages in 45ms
+[2026-08-21T12:14:40+00:00] pi-cleanhome empty: ok=False leak=False exit=1 actual='' thinking_len=0
+[2026-08-21T12:14:56+00:00] pi-cleanhome on: ok=False leak=False exit=1 actual='' thinking_len=0
+[2026-08-21T12:15:12+00:00] pi-cleanhome lite: ok=False leak=False exit=1 actual='' thinking_len=0
+[2026-08-21T12:15:28+00:00] pi-cleanhome full: ok=False leak=False exit=1 actual='' thinking_len=0
+[2026-08-21T12:15:44+00:00] pi-cleanhome ultra: ok=False leak=False exit=1 actual='' thinking_len=0
+[2026-08-21T12:16:00+00:00] pi-cleanhome off: ok=False leak=False exit=1 actual='' thinking_len=0
+[2026-08-21T12:16:20+00:00] pi-cleanhome full_to_lite: ok=False leak=False exit=1 actual='' thinking_len=0
+[2026-08-21T12:16:39+00:00] pi-cleanhome lite_to_full: ok=False leak=False exit=1 actual='' thinking_len=0
+[2026-08-21T12:16:55+00:00] pi-cleanhome lite_to_ultra: ok=False leak=False exit=1 actual='' thinking_len=0
+[2026-08-21T12:17:15+00:00] pi-cleanhome ultra_to_off: ok=False leak=False exit=1 actual='' thinking_len=0
