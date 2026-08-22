@@ -1,0 +1,17 @@
+[
+    1.0,
+    {
+        "user_content": "How does the skill system work? If a skill block appears in my latest message, what exactly should I do?",
+        "assistant_content": "I treat every skill block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag.",
+        "reasoning_content": "I read only the argument text after the current block's closing tag, ignoring any previous context. I will reply with the exact short confirmation line required by the Usage section."
+    },
+    {
+        "Case": "tzip-lite (skill=tzip, argument=lite)",
+        "Expected reply (exact)": "tzip lite activated",
+        "Score (mean of 10 draws)": "1.00",
+        "Draws": "d1: score 1.00 reply 'tzip lite activated' | d2: score 1.00 reply 'tzip lite activated' | d3: score 1.00 reply 'tzip lite activated' | d4: score 1.00 reply 'tzip lite activated' | d5: score 1.00 reply 'tzip lite activated' | d6: score 1.00 reply 'tzip lite activated' | d7: score 1.00 reply 'tzip lite activated' | d8: score 1.00 reply 'tzip lite activated' | d9: score 1.00 reply 'tzip lite activated' | d10: score 1.00 reply 'tzip lite activated'",
+        "Worst draw reasoning trace": "The user invoked the tzip skill with \"lite\". According to the usage section: `tzip / tzip lite` \u2192 Lite (default): drop filler (just, really, basically, actually), hedging (\"it might be worth\", \"you could consider\"), pleasantries (\"sure\", \"certainly\"); keep articles (a/an/the), full sentence structure, professional tone, short synonyms (\"big\" not \"extensive\", \"fix\" not \"implement a solution for\"); technical terms exact, code blocks unchanged, errors quoted exactly.\n\nThe user passed \"lite\" as the argument. I need to reply with the mode name in the format described: `<thing> [action] [reason]`, where `<thing>` is `tzip`, `[action]` is the mode (e.g., \"lite\"), and `[reason]` is either \"activated\" or \"deactivated\". Since they passed \"lite\", this means tzip lite activated.\n\nThe response should be exactly: `tzip lite activated`\n\nLet me confirm - the usage says:\n- `tzip / tzip lite` \u2192 Lite (default): drop filler...\n- Reply with mode name (e.g., \"tzip lite activated\", \"tzip deactivated\").\n\nSo I should reply with `tzip lite activated`.",
+        "Worst draw tool steps": "(none)",
+        "Constraint": "The optimized pair must stay a GENERAL skill-system lesson: it must not mention tzip, example, or any specific skill, and must not teach skill-specific steps. It must work for ANY skill block. reasoning_content must be 1-3 short first-person sentences in the student model's voice (style: 'The user ...', 'I will ...'), ending with the exact action the visible reply performs. The lesson must cover: a skill block is a fresh, independent invocation; the argument is the bare text immediately after the block's closing tag; when there is no argument, use the default the skill itself specifies; follow the skill's instructions exactly (including any tool steps the skill defines); reply with exactly what the skill asks for, verbatim, nothing added."
+    }
+]

@@ -1,0 +1,260 @@
+Iteration 0: Base program full valset score: 0.6116666666666667 over 12 / 12 examples
+Iteration 1: Selected program 0 score: 0.6116666666666667
+Iteration 1: Proposed new text for user_content: When a skill block shows up in a message, how should I read the argument that follows it and decide my exact reply?
+Iteration 1: New subsample score 2.21 is better than old score 1.96. Continue to full eval and add to candidate pool.
+Iteration 1: Valset score for new program: 0.6116666666666667 (coverage 12 / 12)
+Iteration 1: Val aggregate for new program: 0.6116666666666667
+Iteration 1: Individual valset scores for new program: {0: 0.96, 2: 1.0, 9: 0.25, 1: 1.0, 3: 0.09, 4: 0.9, 5: 0.21000000000000002, 6: 0.1, 7: 0.73, 8: 0.1, 10: 1.0, 11: 1.0}
+Iteration 1: New valset pareto front scores: {0: 0.96, 1: 1.0, 2: 1.0, 3: 0.09, 4: 0.96, 5: 0.21000000000000002, 6: 0.7, 7: 0.73, 8: 0.1, 9: 0.25, 10: 1.0, 11: 1.0}
+Iteration 1: Valset pareto front aggregate score: 0.6666666666666666
+Iteration 1: Updated valset pareto front programs: {0: {1}, 1: {0, 1}, 2: {1}, 3: {1}, 4: {0}, 5: {1}, 6: {0}, 7: {1}, 8: {1}, 9: {1}, 10: {1}, 11: {0, 1}}
+Iteration 1: Best valset aggregate score so far: 0.6116666666666667
+Iteration 1: Best program as per aggregate score on valset: 0
+Iteration 1: Best score on valset: 0.6116666666666667
+Iteration 1: Linear pareto front program index: 0
+Iteration 1: New program candidate index: 1
+Iteration 2: Selected program 0 score: 0.6116666666666667
+Iteration 2: Proposed new text for assistant_content: A skill block is always a fresh, independent invocation: extract the bare argument right after its closing tag (or use the skill's own default when there is none), look up exactly that argument in the current skill's Usage, follow every step the skill defines—including any tool calls—verbatim, and reply with only the exact reply the skill specifies, never carrying over a response from a previous skill.
+Iteration 2: New subsample score 2.1 is not better than old score 2.4, skipping
+Iteration 3: Selected program 0 score: 0.6116666666666667
+Iteration 3: Proposed new text for reasoning_content: This skill block is a fresh, independent invocation, so I ignore all earlier skill replies and treat only the bare text after the closing tag as the argument. I will match that exact argument against this skill's own Usage, use the skill's stated default when the argument is empty, perform any tool step this skill defines, and reply with exactly the short line this skill specifies, adding nothing.
+Iteration 3: New subsample score 1.7800000000000002 is not better than old score 1.99, skipping
+Iteration 4: Selected program 1 score: 0.6116666666666667
+Iteration 4: Proposed new text for assistant_content: Each skill block is a fresh, self-contained instruction set—ignore all prior context and previous replies, then extract the bare text immediately after the closing tag as the argument. If there is no argument, use the default the skill itself specifies; if there is, match it exactly to that skill's own accepted values without guessing or normalizing. Follow the skill's steps precisely and reply with only what it asks, verbatim.
+Iteration 4: New subsample score 1.66 is better than old score 1.31. Continue to full eval and add to candidate pool.
+Iteration 4: Valset score for new program: 0.6083333333333333 (coverage 12 / 12)
+Iteration 4: Val aggregate for new program: 0.6083333333333333
+Iteration 4: Individual valset scores for new program: {5: 0.3, 8: 0.36, 10: 1.0, 0: 1.0, 1: 0.8800000000000001, 2: 1.0, 3: 0.18, 4: 0.47000000000000003, 6: 0.1, 7: 0.8, 9: 0.21000000000000002, 11: 1.0}
+Iteration 4: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.18, 4: 0.96, 5: 0.3, 6: 0.7, 7: 0.8, 8: 0.36, 9: 0.25, 10: 1.0, 11: 1.0}
+Iteration 4: Valset pareto front aggregate score: 0.7125
+Iteration 4: Updated valset pareto front programs: {0: {2}, 1: {0, 1}, 2: {1, 2}, 3: {2}, 4: {0}, 5: {2}, 6: {0}, 7: {2}, 8: {2}, 9: {1}, 10: {1, 2}, 11: {0, 1, 2}}
+Iteration 4: Best valset aggregate score so far: 0.6116666666666667
+Iteration 4: Best program as per aggregate score on valset: 0
+Iteration 4: Best score on valset: 0.6116666666666667
+Iteration 4: Linear pareto front program index: 0
+Iteration 4: New program candidate index: 2
+Iteration 5: Selected program 1 score: 0.6116666666666667
+Iteration 5: Proposed new text for reasoning_content: Each skill block is a fresh start, so I discard every reply from earlier blocks and read only the bare argument right after this block's closing tag, or take the default this skill's own Usage lists when there is none. I will follow exactly the steps this block defines, then reply with the single line this block requires, word for word, and nothing else.
+Iteration 5: New subsample score 2.0 is better than old score 1.73. Continue to full eval and add to candidate pool.
+Iteration 5: Found a better program on the valset with score 0.6283333333333333.
+Iteration 5: Valset score for new program: 0.6283333333333333 (coverage 12 / 12)
+Iteration 5: Val aggregate for new program: 0.6283333333333333
+Iteration 5: Individual valset scores for new program: {4: 1.0, 6: 0.3, 7: 0.7, 0: 1.0, 1: 1.0, 2: 1.0, 3: 0.12, 5: 0.12, 8: 0.06, 9: 0.24, 10: 1.0, 11: 1.0}
+Iteration 5: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.18, 4: 1.0, 5: 0.3, 6: 0.7, 7: 0.8, 8: 0.36, 9: 0.25, 10: 1.0, 11: 1.0}
+Iteration 5: Valset pareto front aggregate score: 0.7158333333333333
+Iteration 5: Updated valset pareto front programs: {0: {2, 3}, 1: {0, 1, 3}, 2: {1, 2, 3}, 3: {2}, 4: {3}, 5: {2}, 6: {0}, 7: {2}, 8: {2}, 9: {1}, 10: {1, 2, 3}, 11: {0, 1, 2, 3}}
+Iteration 5: Best valset aggregate score so far: 0.6283333333333333
+Iteration 5: Best program as per aggregate score on valset: 3
+Iteration 5: Best score on valset: 0.6283333333333333
+Iteration 5: Linear pareto front program index: 3
+Iteration 5: New program candidate index: 3
+Iteration 6: Selected program 1 score: 0.6116666666666667
+Iteration 6: Proposed new text for user_content: When a skill block appears in a message, it's a fresh invocation that I must treat independently of any earlier skill or exchange. I take the bare argument right after the block's closing tag, map it against that skill's own usage list exactly as written (case matters), fall back to that skill's own default if there is no argument, and then reply with the exact text the skill's instructions specify, adding nothing from previous turns.
+Iteration 6: New subsample score 2.11 is not better than old score 2.21, skipping
+Iteration 7: Selected program 3 score: 0.6283333333333333
+Iteration 7: Proposed new text for user_content: When a skill block appears in a message, how should I read the argument that follows it and decide my exact reply?
+Iteration 7: New subsample score 1.8599999999999999 is not better than old score 2.06, skipping
+Iteration 8: Selected program 2 score: 0.6083333333333333
+Iteration 8: Proposed new text for reasoning_content: The user invoked a fresh skill, so I ignore every earlier skill's reply and treat the bare text after the block's closing tag as the sole argument. I will match that argument—exactly as spelled—to the skill's own Usage list, or use the skill's own default when it is empty. I will then follow only this skill's instructions and reply with exactly the short line it requires, adding nothing.
+Iteration 8: New subsample score 1.23 is not better than old score 1.3900000000000001, skipping
+Iteration 9: Selected program 3 score: 0.6283333333333333
+Iteration 9: Proposed new text for assistant_content: Every skill block is a fresh, independent invocation—ignore any prior skill's rules or replies. The argument is the bare text right after its closing tag; if there's no argument, use the skill's own default. Follow the current block's instructions exactly (including any tool steps), and reply with only the exact response the skill specifies, verbatim, adding nothing.
+Iteration 9: New subsample score 1.73 is not better than old score 1.8199999999999998, skipping
+Iteration 10: Selected program 2 score: 0.6083333333333333
+Iteration 10: Proposed new text for user_content: When a skill block shows up in a message, how do I decide which argument to act on, how to apply the default when no argument is given, and how to make sure my reply is exactly what that particular skill requires without carrying over anything from earlier skills?
+Iteration 10: New subsample score 2.04 is not better than old score 2.36, skipping
+Iteration 11: Selected program 1 score: 0.6116666666666667
+Iteration 11: Proposed new text for assistant_content: A skill block is a fresh, self-contained invocation: ignore replies from any earlier block and work only from the current block's own instructions. The bare text immediately after its closing tag is the argument—if there is none, use the default that block specifies—so map that exact text to the block's accepted-argument list, follow any tool steps the block defines, and reply verbatim with only what the block specifies.
+Iteration 11: New subsample score 1.77 is better than old score 1.35. Continue to full eval and add to candidate pool.
+Iteration 11: Found a better program on the valset with score 0.6433333333333333.
+Iteration 11: Valset score for new program: 0.6433333333333333 (coverage 12 / 12)
+Iteration 11: Val aggregate for new program: 0.6433333333333333
+Iteration 11: Individual valset scores for new program: {1: 1.0, 6: 0.3, 9: 0.47000000000000003, 0: 0.96, 2: 1.0, 3: 0.18, 4: 0.58, 5: 0.26999999999999996, 7: 0.8, 8: 0.26, 10: 0.9, 11: 1.0}
+Iteration 11: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.18, 4: 1.0, 5: 0.3, 6: 0.7, 7: 0.8, 8: 0.36, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 11: Valset pareto front aggregate score: 0.7341666666666667
+Iteration 11: Updated valset pareto front programs: {0: {2, 3}, 1: {0, 1, 3, 4}, 2: {1, 2, 3, 4}, 3: {2, 4}, 4: {3}, 5: {2}, 6: {0}, 7: {2, 4}, 8: {2}, 9: {4}, 10: {1, 2, 3}, 11: {0, 1, 2, 3, 4}}
+Iteration 11: Best valset aggregate score so far: 0.6433333333333333
+Iteration 11: Best program as per aggregate score on valset: 4
+Iteration 11: Best score on valset: 0.6433333333333333
+Iteration 11: Linear pareto front program index: 4
+Iteration 11: New program candidate index: 4
+Iteration 12: Selected program 4 score: 0.6433333333333333
+Iteration 12: Proposed new text for reasoning_content: This is a new, self-contained invocation, so I ignore every earlier exchange and read only the bare text right after the block's closing tag as the argument. I will match that exact argument (or the skill's own default when it is empty) against the usage list inside this very block, run any tool step this block defines, and reply with exactly the line this block specifies, nothing else.
+Iteration 12: New subsample score 2.17 is better than old score 1.75. Continue to full eval and add to candidate pool.
+Iteration 12: Valset score for new program: 0.5925 (coverage 12 / 12)
+Iteration 12: Val aggregate for new program: 0.5925
+Iteration 12: Individual valset scores for new program: {4: 0.96, 5: 0.21000000000000002, 10: 1.0, 0: 1.0, 1: 0.9, 2: 1.0, 3: 0.03, 6: 0.3, 7: 0.5, 8: 0.06, 9: 0.15, 11: 1.0}
+Iteration 12: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.18, 4: 1.0, 5: 0.3, 6: 0.7, 7: 0.8, 8: 0.36, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 12: Valset pareto front aggregate score: 0.7341666666666667
+Iteration 12: Updated valset pareto front programs: {0: {2, 3, 5}, 1: {0, 1, 3, 4}, 2: {1, 2, 3, 4, 5}, 3: {2, 4}, 4: {3}, 5: {2}, 6: {0}, 7: {2, 4}, 8: {2}, 9: {4}, 10: {1, 2, 3, 5}, 11: {0, 1, 2, 3, 4, 5}}
+Iteration 12: Best valset aggregate score so far: 0.6433333333333333
+Iteration 12: Best program as per aggregate score on valset: 4
+Iteration 12: Best score on valset: 0.6433333333333333
+Iteration 12: Linear pareto front program index: 4
+Iteration 12: New program candidate index: 5
+Iteration 13: Selected program 4 score: 0.6433333333333333
+Iteration 13: Proposed new text for user_content: I'm getting mixed up on the exact reply for the next skill block. Can you restate the rule for reading the argument after a block's closing tag, using the skill's own list of accepted arguments or its default when nothing follows, and replying exactly as that skill's instructions require—so I never reuse a pattern from a different skill?
+Iteration 13: New subsample score 2.93 is better than old score 2.9. Continue to full eval and add to candidate pool.
+Iteration 13: Found a better program on the valset with score 0.6458333333333334.
+Iteration 13: Valset score for new program: 0.6458333333333334 (coverage 12 / 12)
+Iteration 13: Val aggregate for new program: 0.6458333333333334
+Iteration 13: Individual valset scores for new program: {1: 1.0, 2: 1.0, 10: 0.93, 0: 1.0, 3: 0.03, 4: 0.9, 5: 0.33999999999999997, 6: 0.12, 7: 0.8300000000000001, 8: 0.3, 9: 0.3, 11: 1.0}
+Iteration 13: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.18, 4: 1.0, 5: 0.33999999999999997, 6: 0.7, 7: 0.8300000000000001, 8: 0.36, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 13: Valset pareto front aggregate score: 0.7400000000000001
+Iteration 13: Updated valset pareto front programs: {0: {2, 3, 5, 6}, 1: {0, 1, 3, 4, 6}, 2: {1, 2, 3, 4, 5, 6}, 3: {2, 4}, 4: {3}, 5: {6}, 6: {0}, 7: {6}, 8: {2}, 9: {4}, 10: {1, 2, 3, 5}, 11: {0, 1, 2, 3, 4, 5, 6}}
+Iteration 13: Best valset aggregate score so far: 0.6458333333333334
+Iteration 13: Best program as per aggregate score on valset: 6
+Iteration 13: Best score on valset: 0.6458333333333334
+Iteration 13: Linear pareto front program index: 6
+Iteration 13: New program candidate index: 6
+Iteration 14: Selected program 2 score: 0.6083333333333333
+Iteration 14: Proposed new text for assistant_content: Each skill block is a brand-new, self-contained invocation: treat every earlier exchange and reply as unrelated, and base your answer solely on the instructions inside that block. The argument is the bare text immediately after the closing tag; with no argument, use the default the skill itself specifies, and with an argument, match it exactly to that skill's own accepted values without guessing or normalizing. Follow the skill's steps precisely and reply with only what it asks, verbatim, nothing added.
+Iteration 14: New subsample score 1.5 is not better than old score 1.9000000000000001, skipping
+Iteration 15: Selected program 6 score: 0.6458333333333334
+Iteration 15: Proposed new text for assistant_content: A skill block is a fresh, independent invocation—forget every earlier block's instructions and reply patterns, and act only from the current block's own text. The argument is the bare text immediately after the block's closing tag: match it verbatim (case included) against the current block's own accepted-argument list, and if there is none, use the default that current block specifies. Follow that block's instructions exactly, including any tool steps it defines, and reply with only what it asks for—verbatim, nothing added.
+Iteration 15: New subsample score 0.52 is not better than old score 0.6699999999999999, skipping
+Iteration 16: Selected program 6 score: 0.6458333333333334
+Iteration 16: Proposed new text for reasoning_content: This is a fresh skill invocation, so I ignore every earlier skill's replies and treat the current block as self-contained. I will read the bare text right after the block as the argument (or use the skill's own default when there is none), match that exact argument case-sensitively against the skill's Usage list, run any tool step the skill itself defines, and reply with exactly the single line that current Usage entry specifies, verbatim and with nothing added.
+Iteration 16: New subsample score 2.31 is better than old score 2.2. Continue to full eval and add to candidate pool.
+Iteration 16: Valset score for new program: 0.6066666666666667 (coverage 12 / 12)
+Iteration 16: Val aggregate for new program: 0.6066666666666667
+Iteration 16: Individual valset scores for new program: {0: 1.0, 4: 1.0, 9: 0.31, 1: 1.0, 2: 0.93, 3: 0.03, 5: 0.25, 6: 0.26, 7: 0.6, 8: 0.0, 10: 0.9, 11: 1.0}
+Iteration 16: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.18, 4: 1.0, 5: 0.33999999999999997, 6: 0.7, 7: 0.8300000000000001, 8: 0.36, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 16: Valset pareto front aggregate score: 0.7400000000000001
+Iteration 16: Updated valset pareto front programs: {0: {2, 3, 5, 6, 7}, 1: {0, 1, 3, 4, 6, 7}, 2: {1, 2, 3, 4, 5, 6}, 3: {2, 4}, 4: {3, 7}, 5: {6}, 6: {0}, 7: {6}, 8: {2}, 9: {4}, 10: {1, 2, 3, 5}, 11: {0, 1, 2, 3, 4, 5, 6, 7}}
+Iteration 16: Best valset aggregate score so far: 0.6458333333333334
+Iteration 16: Best program as per aggregate score on valset: 6
+Iteration 16: Best score on valset: 0.6458333333333334
+Iteration 16: Linear pareto front program index: 6
+Iteration 16: New program candidate index: 7
+Iteration 17: Selected program 4 score: 0.6433333333333333
+Iteration 17: Proposed new text for assistant_content: Treat every skill block as a brand-new invocation: discard what the earlier blocks said and work only from the current block's text. The argument is the bare text right after the block's closing tag—match that exact string, letter for letter, against the current block's own Usage list, and if there is no argument, fall back to the default that same block defines. Execute whatever tool steps the current block prescribes, then reply with exactly the string that block specifies, adding nothing of your own.
+Iteration 17: New subsample score 3.0 is better than old score 2.96. Continue to full eval and add to candidate pool.
+Iteration 17: Valset score for new program: 0.5733333333333334 (coverage 12 / 12)
+Iteration 17: Val aggregate for new program: 0.5733333333333334
+Iteration 17: Individual valset scores for new program: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.15, 4: 1.0, 5: 0.12, 6: 0.2, 7: 0.3, 8: 0.1, 9: 0.21000000000000002, 10: 0.8, 11: 1.0}
+Iteration 17: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.18, 4: 1.0, 5: 0.33999999999999997, 6: 0.7, 7: 0.8300000000000001, 8: 0.36, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 17: Valset pareto front aggregate score: 0.7400000000000001
+Iteration 17: Updated valset pareto front programs: {0: {2, 3, 5, 6, 7, 8}, 1: {0, 1, 3, 4, 6, 7, 8}, 2: {1, 2, 3, 4, 5, 6, 8}, 3: {2, 4}, 4: {8, 3, 7}, 5: {6}, 6: {0}, 7: {6}, 8: {2}, 9: {4}, 10: {1, 2, 3, 5}, 11: {0, 1, 2, 3, 4, 5, 6, 7, 8}}
+Iteration 17: Best valset aggregate score so far: 0.6458333333333334
+Iteration 17: Best program as per aggregate score on valset: 6
+Iteration 17: Best score on valset: 0.6458333333333334
+Iteration 17: Linear pareto front program index: 6
+Iteration 17: New program candidate index: 8
+Iteration 18: Selected program 0 score: 0.6116666666666667
+Iteration 18: Proposed new text for user_content: How should I treat each message that contains a skill block, and what reply does it require?
+Iteration 18: New subsample score 1.21 is better than old score 1.02. Continue to full eval and add to candidate pool.
+Iteration 18: Valset score for new program: 0.5525 (coverage 12 / 12)
+Iteration 18: Val aggregate for new program: 0.5525
+Iteration 18: Individual valset scores for new program: {3: 0.26999999999999996, 5: 0.24, 10: 0.7, 0: 0.8400000000000001, 1: 0.6799999999999999, 2: 1.0, 4: 1.0, 6: 0.4, 7: 0.22999999999999998, 8: 0.06, 9: 0.21000000000000002, 11: 1.0}
+Iteration 18: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.26999999999999996, 4: 1.0, 5: 0.33999999999999997, 6: 0.7, 7: 0.8300000000000001, 8: 0.36, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 18: Valset pareto front aggregate score: 0.7475
+Iteration 18: Updated valset pareto front programs: {0: {2, 3, 5, 6, 7, 8}, 1: {0, 1, 3, 4, 6, 7, 8}, 2: {1, 2, 3, 4, 5, 6, 8, 9}, 3: {9}, 4: {8, 9, 3, 7}, 5: {6}, 6: {0}, 7: {6}, 8: {2}, 9: {4}, 10: {1, 2, 3, 5}, 11: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}
+Iteration 18: Best valset aggregate score so far: 0.6458333333333334
+Iteration 18: Best program as per aggregate score on valset: 6
+Iteration 18: Best score on valset: 0.6458333333333334
+Iteration 18: Linear pareto front program index: 6
+Iteration 18: New program candidate index: 9
+Iteration 19: Selected program 6 score: 0.6458333333333334
+Iteration 19: Proposed new text for user_content: How exactly do I determine what to do when a skill block arrives? I need to be sure I'm reading the argument correctly and mapping it to that specific skill's rules instead of reusing a pattern from a previous, different skill.
+Iteration 19: New subsample score 2.42 is better than old score 2.2. Continue to full eval and add to candidate pool.
+Iteration 19: Valset score for new program: 0.595 (coverage 12 / 12)
+Iteration 19: Val aggregate for new program: 0.595
+Iteration 19: Individual valset scores for new program: {4: 1.0, 8: 0.42000000000000004, 11: 1.0, 0: 0.6799999999999999, 1: 0.8, 2: 1.0, 3: 0.18, 5: 0.26999999999999996, 6: 0.0, 7: 0.62, 9: 0.24, 10: 0.93}
+Iteration 19: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.26999999999999996, 4: 1.0, 5: 0.33999999999999997, 6: 0.7, 7: 0.8300000000000001, 8: 0.42000000000000004, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 19: Valset pareto front aggregate score: 0.7525
+Iteration 19: Updated valset pareto front programs: {0: {2, 3, 5, 6, 7, 8}, 1: {0, 1, 3, 4, 6, 7, 8}, 2: {1, 2, 3, 4, 5, 6, 8, 9, 10}, 3: {9}, 4: {3, 7, 8, 9, 10}, 5: {6}, 6: {0}, 7: {6}, 8: {10}, 9: {4}, 10: {1, 2, 3, 5}, 11: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}}
+Iteration 19: Best valset aggregate score so far: 0.6458333333333334
+Iteration 19: Best program as per aggregate score on valset: 6
+Iteration 19: Best score on valset: 0.6458333333333334
+Iteration 19: Linear pareto front program index: 6
+Iteration 19: New program candidate index: 10
+Iteration 20: Selected program 10 score: 0.595
+Iteration 20: Proposed new text for assistant_content: A skill block is a fresh, independent invocation. Treat the bare text right after its closing tag as the argument, map that exact text (case-sensitive) to the Usage list in the current block, and if no argument is present use only the default the block itself states. Re-read the current block's instructions from scratch each time, execute any tool steps it defines, and reply with exactly the text the block specifies, verbatim.
+Iteration 20: New subsample score 0.92 is better than old score 0.86. Continue to full eval and add to candidate pool.
+Iteration 20: Valset score for new program: 0.62 (coverage 12 / 12)
+Iteration 20: Val aggregate for new program: 0.62
+Iteration 20: Individual valset scores for new program: {6: 0.06, 7: 0.55, 9: 0.31, 0: 0.76, 1: 0.8400000000000001, 2: 1.0, 3: 0.24, 4: 1.0, 5: 0.37, 8: 0.48, 10: 0.8300000000000001, 11: 1.0}
+Iteration 20: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.26999999999999996, 4: 1.0, 5: 0.37, 6: 0.7, 7: 0.8300000000000001, 8: 0.48, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 20: Valset pareto front aggregate score: 0.7599999999999999
+Iteration 20: Updated valset pareto front programs: {0: {2, 3, 5, 6, 7, 8}, 1: {0, 1, 3, 4, 6, 7, 8}, 2: {1, 2, 3, 4, 5, 6, 8, 9, 10, 11}, 3: {9}, 4: {3, 7, 8, 9, 10, 11}, 5: {11}, 6: {0}, 7: {6}, 8: {11}, 9: {4}, 10: {1, 2, 3, 5}, 11: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}}
+Iteration 20: Best valset aggregate score so far: 0.6458333333333334
+Iteration 20: Best program as per aggregate score on valset: 6
+Iteration 20: Best score on valset: 0.6458333333333334
+Iteration 20: Linear pareto front program index: 6
+Iteration 20: New program candidate index: 11
+Iteration 21: Selected program 3 score: 0.6283333333333333
+Iteration 21: Proposed new text for reasoning_content: Each skill block is a completely fresh invocation, so I ignore every reply pattern from earlier blocks. I will map the bare argument after this block to the exact line this block's own Usage lists, or use this block's own default if there is no argument, then reply with exactly what this block asks for and nothing else.
+Iteration 21: New subsample score 2.12 is not better than old score 2.12, skipping
+Iteration 22: Selected program 9 score: 0.5525
+Iteration 22: Proposed new text for assistant_content: A skill block is a fresh, independent invocation, so ignore replies from earlier blocks. Extract the bare argument immediately after the closing tag (or use that skill's own default if none) and map it to the accepted arguments listed in that same block's usage. Follow the current block's instructions exactly—including any tool steps it defines—and reply with only what it specifies, verbatim.
+Iteration 22: New subsample score 2.2 is better than old score 1.97. Continue to full eval and add to candidate pool.
+Iteration 22: Valset score for new program: 0.5883333333333333 (coverage 12 / 12)
+Iteration 22: Val aggregate for new program: 0.5883333333333333
+Iteration 22: Individual valset scores for new program: {3: 0.3, 10: 0.9, 11: 1.0, 0: 0.9199999999999999, 1: 0.82, 2: 1.0, 4: 1.0, 5: 0.24, 6: 0.4, 7: 0.3, 8: 0.12, 9: 0.06}
+Iteration 22: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.3, 4: 1.0, 5: 0.37, 6: 0.7, 7: 0.8300000000000001, 8: 0.48, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 22: Valset pareto front aggregate score: 0.7625000000000001
+Iteration 22: Updated valset pareto front programs: {0: {2, 3, 5, 6, 7, 8}, 1: {0, 1, 3, 4, 6, 7, 8}, 2: {1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12}, 3: {12}, 4: {3, 7, 8, 9, 10, 11, 12}, 5: {11}, 6: {0}, 7: {6}, 8: {11}, 9: {4}, 10: {1, 2, 3, 5}, 11: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}}
+Iteration 22: Best valset aggregate score so far: 0.6458333333333334
+Iteration 22: Best program as per aggregate score on valset: 6
+Iteration 22: Best score on valset: 0.6458333333333334
+Iteration 22: Linear pareto front program index: 6
+Iteration 22: New program candidate index: 12
+Iteration 23: Selected program 4 score: 0.6433333333333333
+Iteration 23: Proposed new text for reasoning_content: This is a fresh, independent skill invocation, so I ignore all earlier replies and read only the bare text right after the block's closing tag as the argument. I will look up that exact argument in the current block's Usage (using the default if there is none), follow any tool step the skill defines, and reply with exactly the short line the skill specifies, nothing more.
+Iteration 23: New subsample score 1.6 is better than old score 1.57. Continue to full eval and add to candidate pool.
+Iteration 23: Found a better program on the valset with score 0.655.
+Iteration 23: Valset score for new program: 0.655 (coverage 12 / 12)
+Iteration 23: Val aggregate for new program: 0.655
+Iteration 23: Individual valset scores for new program: {6: 0.5, 7: 0.8, 9: 0.3, 0: 0.93, 1: 1.0, 2: 1.0, 3: 0.12, 4: 0.93, 5: 0.27999999999999997, 8: 0.0, 10: 1.0, 11: 1.0}
+Iteration 23: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.3, 4: 1.0, 5: 0.37, 6: 0.7, 7: 0.8300000000000001, 8: 0.48, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 23: Valset pareto front aggregate score: 0.7625000000000001
+Iteration 23: Updated valset pareto front programs: {0: {2, 3, 5, 6, 7, 8}, 1: {0, 1, 3, 4, 6, 7, 8, 13}, 2: {1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13}, 3: {12}, 4: {3, 7, 8, 9, 10, 11, 12}, 5: {11}, 6: {0}, 7: {6}, 8: {11}, 9: {4}, 10: {1, 2, 3, 5, 13}, 11: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}}
+Iteration 23: Best valset aggregate score so far: 0.655
+Iteration 23: Best program as per aggregate score on valset: 13
+Iteration 23: Best score on valset: 0.655
+Iteration 23: Linear pareto front program index: 13
+Iteration 23: New program candidate index: 13
+Iteration 24: Selected program 12 score: 0.5883333333333333
+Iteration 24: Proposed new text for reasoning_content: The user sent a new skill block, so this is a fresh, independent invocation and I ignore all prior replies and habits. I will take only the bare text right after the closing tag as the argument, look it up in this block's own Usage (using its own default when the text is empty), run any tool step the block defines, and reply with exactly the line this block specifies, nothing added.
+Iteration 24: New subsample score 1.96 is better than old score 1.8599999999999999. Continue to full eval and add to candidate pool.
+Iteration 24: Valset score for new program: 0.635 (coverage 12 / 12)
+Iteration 24: Val aggregate for new program: 0.635
+Iteration 24: Individual valset scores for new program: {0: 0.96, 1: 1.0, 8: 0.0, 2: 1.0, 3: 0.24, 4: 0.86, 5: 0.18, 6: 0.6, 7: 0.7, 9: 0.27999999999999997, 10: 0.8, 11: 1.0}
+Iteration 24: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.3, 4: 1.0, 5: 0.37, 6: 0.7, 7: 0.8300000000000001, 8: 0.48, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 24: Valset pareto front aggregate score: 0.7625000000000001
+Iteration 24: Updated valset pareto front programs: {0: {2, 3, 5, 6, 7, 8}, 1: {0, 1, 3, 4, 6, 7, 8, 13, 14}, 2: {1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14}, 3: {12}, 4: {3, 7, 8, 9, 10, 11, 12}, 5: {11}, 6: {0}, 7: {6}, 8: {11}, 9: {4}, 10: {1, 2, 3, 5, 13}, 11: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}}
+Iteration 24: Best valset aggregate score so far: 0.655
+Iteration 24: Best program as per aggregate score on valset: 13
+Iteration 24: Best score on valset: 0.655
+Iteration 24: Linear pareto front program index: 13
+Iteration 24: New program candidate index: 14
+Iteration 25: Selected program 11 score: 0.62
+Iteration 25: Proposed new text for reasoning_content: This is a completely fresh invocation, so I ignore all previous skill context and treat only the bare text after the current block's closing tag as the argument. I will find that exact argument, or the skill's own default if empty, in this skill's Usage and follow its steps exactly. I will reply with exactly the response this skill specifies, adding nothing.
+Iteration 25: New subsample score 2.64 is better than old score 2.59. Continue to full eval and add to candidate pool.
+Iteration 25: Valset score for new program: 0.6025 (coverage 12 / 12)
+Iteration 25: Val aggregate for new program: 0.6025
+Iteration 25: Individual valset scores for new program: {0: 0.8800000000000001, 2: 1.0, 10: 0.76, 1: 0.61, 3: 0.32999999999999996, 4: 1.0, 5: 0.44000000000000006, 6: 0.0, 7: 0.63, 8: 0.4, 9: 0.18, 11: 1.0}
+Iteration 25: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.32999999999999996, 4: 1.0, 5: 0.44000000000000006, 6: 0.7, 7: 0.8300000000000001, 8: 0.48, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 25: Valset pareto front aggregate score: 0.7708333333333334
+Iteration 25: Updated valset pareto front programs: {0: {2, 3, 5, 6, 7, 8}, 1: {0, 1, 3, 4, 6, 7, 8, 13, 14}, 2: {1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15}, 3: {15}, 4: {3, 7, 8, 9, 10, 11, 12, 15}, 5: {15}, 6: {0}, 7: {6}, 8: {11}, 9: {4}, 10: {1, 2, 3, 5, 13}, 11: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}}
+Iteration 25: Best valset aggregate score so far: 0.655
+Iteration 25: Best program as per aggregate score on valset: 13
+Iteration 25: Best score on valset: 0.655
+Iteration 25: Linear pareto front program index: 13
+Iteration 25: New program candidate index: 15
+Iteration 26: Selected program 6 score: 0.6458333333333334
+Iteration 26: Proposed new text for assistant_content: Treat each skill block as a fresh, self-contained invocation: ignore any reply from an earlier block and work only from the current block's own instructions. The bare text immediately after its closing tag is the argument—if there is none, use the default that block specifies—so map that exact text (without normalizing or second-guessing) to the block's accepted-argument list, follow any tool steps the block defines, and reply verbatim with only what the block specifies.
+Iteration 26: New subsample score 1.47 is better than old score 1.3699999999999999. Continue to full eval and add to candidate pool.
+Iteration 26: Found a better program on the valset with score 0.6566666666666666.
+Iteration 26: Valset score for new program: 0.6566666666666666 (coverage 12 / 12)
+Iteration 26: Val aggregate for new program: 0.6566666666666666
+Iteration 26: Individual valset scores for new program: {1: 1.0, 3: 0.03, 5: 0.44000000000000006, 0: 0.96, 2: 1.0, 4: 0.96, 6: 0.0, 7: 0.8, 8: 0.45999999999999996, 9: 0.3, 10: 0.93, 11: 1.0}
+Iteration 26: New valset pareto front scores: {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.32999999999999996, 4: 1.0, 5: 0.44000000000000006, 6: 0.7, 7: 0.8300000000000001, 8: 0.48, 9: 0.47000000000000003, 10: 1.0, 11: 1.0}
+Iteration 26: Valset pareto front aggregate score: 0.7708333333333334
+Iteration 26: Updated valset pareto front programs: {0: {2, 3, 5, 6, 7, 8}, 1: {0, 1, 3, 4, 6, 7, 8, 13, 14, 16}, 2: {1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 3: {15}, 4: {3, 7, 8, 9, 10, 11, 12, 15}, 5: {16, 15}, 6: {0}, 7: {6}, 8: {11}, 9: {4}, 10: {1, 2, 3, 5, 13}, 11: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}}
+Iteration 26: Best valset aggregate score so far: 0.6566666666666666
+Iteration 26: Best program as per aggregate score on valset: 16
+Iteration 26: Best score on valset: 0.6566666666666666
+Iteration 26: Linear pareto front program index: 16
+Iteration 26: New program candidate index: 16

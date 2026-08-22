@@ -1,0 +1,14 @@
+{
+  "tzip-empty": 0.6,
+  "tzip-on": 0.61,
+  "tzip-lite": 1.0,
+  "tzip-full": 0.36,
+  "tzip-ultra": 0.8,
+  "tzip-off": 0.3,
+  "example-hello": 0.0,
+  "example-by": 0.55,
+  "example-empty": 0.52,
+  "tzip-OFF": 0.27,
+  "example-hello-lower": 1.0,
+  "example-call-script": 1.0
+}

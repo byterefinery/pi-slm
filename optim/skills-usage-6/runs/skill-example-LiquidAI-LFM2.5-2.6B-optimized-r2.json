@@ -1,0 +1,270 @@
+{
+  "model": "LiquidAI/LFM2.5-2.6B",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.\n\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>git</name>\n    <description>Git version control. Use when the user mentions git, commits, branches, pushing, pulling, merging, rebasing, stashing, worktrees, submodules, or any version control task. Covers straightforward workflows (add/commit/push) and advanced topics.</description>\n    <location>/home/mtasic/projects-b/pi-slm/.agents/skills/git/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>skman</name>\n    <description>Introduces the Agent Skills System \u2014 a standardized, lightweight, open format for extending AI agent capabilities with specialized knowledge and workflows. Use for scaffolding, validating, and inspecting agent skills (SKILL.md files and other skills&apos; files and directories).</description>\n    <location>/home/mtasic/projects-b/pi-slm/.agents/skills/skman/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>webfetch</name>\n    <description>Fetches web pages as LLM-ready markdown. Use when the user wants to fetch, scrape, download, retrieve, grab, pull, or access any URL or webpage content. Defaults to Safari impersonation and AI-targeted markdown output optimized for LLM consumption. Falls back through browser \u2192 requests if needed. Supports --html, --file, --tool, --impersonate, --no-ai-targeted. Use this whenever the user asks to read a website, get page content, or fetch a URL.</description>\n    <location>/home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>websearch</name>\n    <description>Searches DuckDuckGo and returns LLM-optimized markdown, JSON, or YAML. Use this skill whenever the user wants to search the web, look up information online, find URLs, do web search, research a topic, or needs current/web-based answers. Uses Safari TLS impersonation and AI-targeted sanitization. Output can be markdown (default), --json, --yaml.</description>\n    <location>/home/mtasic/projects-b/pi-slm/.agents/skills/websearch/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>find-skills</name>\n    <description>Helps users discover and install agent skills when they ask questions like &quot;how do I do X&quot;, &quot;find a skill for X&quot;, &quot;is there a skill that can...&quot;, or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.</description>\n    <location>/home/mtasic/.pi/agent/skills/find-skills/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>tzip</name>\n    <description>Lightweight token-pruning communication mode that drops filler and hedging while keeping full sentences and professional tone. Follows guidelines for code quality. Default intensity is lite. Use when user requests tzip, prune tokens, be concise, or needs efficient communication without losing clarity.</description>\n    <location>/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/tzip/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>example</name>\n    <description>Minimal example skill that demonstrates what an agent skill looks like without doing anything special. Use when the user asks for a skill example, wants to inspect the skill format, or asks to run or call the example skill.</description>\n    <location>/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md</location>\n  </skill>\n</available_skills>\nCurrent working directory: /home/mtasic/projects-b/pi-slm\n"
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What are available skills?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "Available skills are:\n  - name: git\n    description: Git version control. Use when the user mentions git, commits, branches, pushing, pulling, merging, rebasing, stashing, worktrees, submodules, or any version control task. Covers straightforward workflows (add/commit/push) and advanced topics.\n    references:\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/git/references/01-command-reference.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/git/references/02-worktrees.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/git/references/03-request-pull.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/git/references/04-rebase-strategies.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/git/references/05-undo-operations.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/git/references/06-submodules.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/git/references/07-bisect-debugging.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/git/references/08-conventional-commits.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/git/references/09-keep-a-changelog.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/git/references/10-semver.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/git/references/11-closing-issues.md\n    scripts: []\n  - name: skman\n    description: Introduces the Agent Skills System \u2014 a standardized, lightweight, open format for extending AI agent capabilities with specialized knowledge and workflows. Use for scaffolding, validating, and inspecting agent skills (SKILL.md files and other skills' files and directories).\n    references:\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/skman/references/01-python-scripts.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/skman/references/02-repo-analysis.md\n    scripts:\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/skman/scripts/__pycache__/skman.cpython-314.pyc\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/skman/scripts/skman.py\n  - name: webfetch\n    description: Fetches web pages as LLM-ready markdown. Use when the user wants to fetch, scrape, download, retrieve, grab, pull, or access any URL or webpage content. Defaults to Safari impersonation and AI-targeted markdown output optimized for LLM consumption. Falls back through browser \u2192 requests if needed. Supports --html, --file, --tool, --impersonate, --no-ai-targeted. Use this whenever the user asks to read a website, get page content, or fetch a URL.\n    references: []\n    scripts:\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/webfetch/scripts/webfetch.py\n  - name: websearch\n    description: Searches DuckDuckGo and returns LLM-optimized markdown, JSON, or YAML. Use this skill whenever the user wants to search the web, look up information online, find URLs, do web search, research a topic, or needs current/web-based answers. Uses Safari TLS impersonation and AI-targeted sanitization. Output can be markdown (default), --json, --yaml.\n    references: []\n    scripts:\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/websearch/scripts/__pycache__/websearch.cpython-314.pyc\n      - /home/mtasic/projects-b/pi-slm/.agents/skills/websearch/scripts/websearch.py\n  - name: find-skills\n    description: Helps users discover and install agent skills when they ask questions like \"how do I do X\", \"find a skill for X\", \"is there a skill that can...\", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.\n    references: []\n    scripts: []\n  - name: tzip\n    description: Lightweight token-pruning communication mode that drops filler and hedging while keeping full sentences and professional tone. Follows guidelines for code quality. Default intensity is lite. Use when user requests tzip, prune tokens, be concise, or needs efficient communication without losing clarity.\n    references: []\n    scripts: []\n  - name: example\n    description: Minimal example skill that demonstrates what an agent skill looks like without doing anything special. Use when the user asks for a skill example, wants to inspect the skill format, or asks to run or call the example skill.\n    references:\n      - /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/references/01-structure.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/references/02-invocation.md\n      - /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/references/03-hello.md\n    scripts:\n      - /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh\nThese are skills, not tools.",
+      "reasoning_content": "I found 7 skills. I will check whether the task matches a description, and if so read that skill's SKILL.md and the reference files listed below."
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What are available tools?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "Available tools are:\n  - name: read\n    description: Read file contents\n    parameters:\n      type: object\n      required: [path]\n      properties:\n        path:\n          type: string\n          description: Path to the file to read (relative or absolute)\n        offset:\n          type: number\n          description: Line number to start reading from (1-indexed)\n        limit:\n          type: number\n          description: Maximum number of lines to read\n  - name: write\n    description: Create or overwrite files\n    parameters:\n      type: object\n      required: [path, content]\n      properties:\n        path:\n          type: string\n          description: Path to the file to write (relative or absolute)\n        content:\n          type: string\n          description: Content to write to the file\n  - name: edit\n    description: Make precise file edits with exact text replacement, including multiple disjoint edits in one call\n    parameters:\n      type: object\n      required: [path, edits]\n      properties:\n        path:\n          type: string\n          description: Path to the file to edit (relative or absolute)\n        edits:\n          type: array\n          items:\n            type: object\n            required: [oldText, newText]\n            properties:\n              oldText:\n                type: string\n                description: Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call.\n              newText:\n                type: string\n                description: Replacement text for this targeted edit.\n          description: One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead.\n  - name: bash\n    description: Execute bash commands (ls, grep, find, etc.)\n    parameters:\n      type: object\n      required: [command]\n      properties:\n        command:\n          type: string\n          description: Bash command to execute\n        timeout:\n          type: number\n          description: Timeout in seconds (optional, no default timeout)\n\nThese are tools, not skills.",
+      "reasoning_content": "I found 4 tools. I will pick the narrowest tool that fits the task."
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'm getting mixed up on the exact reply for the next skill block. Can you restate the rule for reading the argument after a block's closing tag, using the skill's own list of accepted arguments or its default when nothing follows, and replying exactly as that skill's instructions require\u2014so I never reuse a pattern from a different skill?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "Treat each skill block as a fresh, self-contained invocation: ignore any reply from an earlier block and work only from the current block's own instructions. The bare text immediately after its closing tag is the argument\u2014if there is none, use the default that block specifies\u2014so map that exact text (without normalizing or second-guessing) to the block's accepted-argument list, follow any tool steps the block defines, and reply verbatim with only what the block specifies.",
+      "reasoning_content": "This is a fresh skill invocation, so I ignore earlier context and read only the bare text right after the block's closing tag as the argument. I will check the skill's Usage for that exact argument (defaulting to the default mode when it is empty), perform any tool step the skill requires, and reply with exactly the short line the skill specifies, adding nothing."
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<skill name=\"example\" location=\"/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md\">\nReferences are relative to /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example.\n\n# example\n\nA minimal skill that demonstrates the shape of an agent skill without doing anything special.\n\n## Overview\n\n`example` exists to show what a skill is made of \u2014 frontmatter metadata, a SKILL.md body, a helper script in `scripts/`, and on-demand docs in `references/` \u2014 with the least possible behavior. Its only jobs are replying with a fixed message or running `example.sh`.\n\n## Usage\n\n- **Invoked with no extra text** \u2014 reply exactly `This is an example skill.` Nothing else. No explanations, no script.\n- **Invoked with \"Hello\"** \u2014 do not guess the response. Load [03-hello](references/03-hello.md) and follow it exactly; the instructions for this case live there and nowhere else.\n- **Invoked with any other text, or asked to \"call script\"** \u2014 pass the user's text (if any) as CLI parameters to `example.sh` and report the output; running with no parameters is fine:\n\n  ```bash\n  bash scripts/example.sh any given text\n  ```\n\nScript paths are relative to this skill's directory. The script echoes a fixed line regardless of the parameters; the parameters only demonstrate how the agent forwards input to a script.\n\n## References\n\n- [01-structure](references/01-structure.md) \u2014 What each part of this skill is for\n- [02-invocation](references/02-invocation.md) \u2014 How invocation and script calls behave\n- [03-hello](references/03-hello.md) \u2014 Full instructions for the \"Invoked with 'Hello'\" scenario\n</skill>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "This is an example skill.",
+      "reasoning_content": "The user is invoking the example skill with no extra text. The Usage rule says to reply exactly `This is an example skill.` with nothing else. I will reply with that exact line."
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<skill name=\"example\" location=\"/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md\">\nReferences are relative to /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example.\n\n# example\n\nA minimal skill that demonstrates the shape of an agent skill without doing anything special.\n\n## Overview\n\n`example` exists to show what a skill is made of \u2014 frontmatter metadata, a SKILL.md body, a helper script in `scripts/`, and on-demand docs in `references/` \u2014 with the least possible behavior. Its only jobs are replying with a fixed message or running `example.sh`.\n\n## Usage\n\n- **Invoked with no extra text** \u2014 reply exactly `This is an example skill.` Nothing else. No explanations, no script.\n- **Invoked with \"Hello\"** \u2014 do not guess the response. Load [03-hello](references/03-hello.md) and follow it exactly; the instructions for this case live there and nowhere else.\n- **Invoked with any other text, or asked to \"call script\"** \u2014 pass the user's text (if any) as CLI parameters to `example.sh` and report the output; running with no parameters is fine:\n\n  ```bash\n  bash scripts/example.sh any given text\n  ```\n\nScript paths are relative to this skill's directory. The script echoes a fixed line regardless of the parameters; the parameters only demonstrate how the agent forwards input to a script.\n\n## References\n\n- [01-structure](references/01-structure.md) \u2014 What each part of this skill is for\n- [02-invocation](references/02-invocation.md) \u2014 How invocation and script calls behave\n- [03-hello](references/03-hello.md) \u2014 Full instructions for the \"Invoked with 'Hello'\" scenario\n</skill>\n\nHello"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "reasoning_content": "The user invoked the example skill with \"Hello\". The Usage rule says not to guess the response: load references/03-hello.md and follow it exactly. Let me read that file.",
+      "tool_calls": [
+        {
+          "id": "1juKPjqsGTBbNP0MR1I560XFx44dOcx7",
+          "type": "function",
+          "function": {
+            "name": "read",
+            "arguments": {
+              "path": "/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/references/03-hello.md"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "# Hello Invocation\n\nThe instruction source for the \"Invoked with 'Hello'\" scenario in SKILL.md's `## Usage`. When the user invokes the skill with \"Hello\", load this file and follow it \u2014 SKILL.md deliberately holds no instructions for this case.\n\n## Response\n\nReply exactly:\n\n> world\n\nNo greeting, no punctuation, no commentary, no script. The reply is the single word above and nothing else.\n\n## Why it lives here\n\nThis file demonstrates progressive disclosure. The logic for the \"Hello\" case sits in a reference file instead of in SKILL.md or `scripts/`, so the agent must open a reference to learn how to respond. The fixed \"Hello\" \u2192 \"world\" mapping is part of the demonstration.\n",
+      "tool_call_id": "1juKPjqsGTBbNP0MR1I560XFx44dOcx7"
+    },
+    {
+      "role": "assistant",
+      "content": "world",
+      "reasoning_content": "The reference file says to reply exactly `world` with no greeting, punctuation, or commentary. I will reply with that single word."
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<skill name=\"example\" location=\"/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md\">\nReferences are relative to /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example.\n\n# example\n\nA minimal skill that demonstrates the shape of an agent skill without doing anything special.\n\n## Overview\n\n`example` exists to show what a skill is made of \u2014 frontmatter metadata, a SKILL.md body, a helper script in `scripts/`, and on-demand docs in `references/` \u2014 with the least possible behavior. Its only jobs are replying with a fixed message or running `example.sh`.\n\n## Usage\n\n- **Invoked with no extra text** \u2014 reply exactly `This is an example skill.` Nothing else. No explanations, no script.\n- **Invoked with \"Hello\"** \u2014 do not guess the response. Load [03-hello](references/03-hello.md) and follow it exactly; the instructions for this case live there and nowhere else.\n- **Invoked with any other text, or asked to \"call script\"** \u2014 pass the user's text (if any) as CLI parameters to `example.sh` and report the output; running with no parameters is fine:\n\n  ```bash\n  bash scripts/example.sh any given text\n  ```\n\nScript paths are relative to this skill's directory. The script echoes a fixed line regardless of the parameters; the parameters only demonstrate how the agent forwards input to a script.\n\n## References\n\n- [01-structure](references/01-structure.md) \u2014 What each part of this skill is for\n- [02-invocation](references/02-invocation.md) \u2014 How invocation and script calls behave\n- [03-hello](references/03-hello.md) \u2014 Full instructions for the \"Invoked with 'Hello'\" scenario\n</skill>\n\nHi"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "reasoning_content": "The user invoked the example skill with \"Hi\". That is any other text, so I will pass it as CLI parameters to scripts/example.sh and report the output. Let me run the script.",
+      "tool_calls": [
+        {
+          "id": "5wi4XVTF6doSiyHCRNEnB3UKqxxxSCbg",
+          "type": "function",
+          "function": {
+            "name": "bash",
+            "arguments": {
+              "command": "bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh Hi"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "This is example.sh output.\n",
+      "tool_call_id": "5wi4XVTF6doSiyHCRNEnB3UKqxxxSCbg"
+    },
+    {
+      "role": "assistant",
+      "content": "example.sh output:\n\n```\nThis is example.sh output.\n```",
+      "reasoning_content": "The script printed one line. The skill says to report the output. I will report it in a code block."
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  },
+  "max_tokens": 65536,
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "read",
+        "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to read (relative or absolute)"
+            },
+            "offset": {
+              "type": "number",
+              "description": "Line number to start reading from (1-indexed)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of lines to read"
+            }
+          }
+        },
+        "strict": false
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "write",
+        "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "content"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to write (relative or absolute)"
+            },
+            "content": {
+              "type": "string",
+              "description": "Content to write to the file"
+            }
+          }
+        },
+        "strict": false
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "edit",
+        "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "edits"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to edit (relative or absolute)"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "oldText",
+                  "newText"
+                ],
+                "properties": {
+                  "oldText": {
+                    "type": "string",
+                    "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                  },
+                  "newText": {
+                    "type": "string",
+                    "description": "Replacement text for this targeted edit."
+                  }
+                }
+              },
+              "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+            }
+          }
+        },
+        "strict": false
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "bash",
+        "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "command"
+          ],
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "Bash command to execute"
+            },
+            "timeout": {
+              "type": "number",
+              "description": "Timeout in seconds (optional, no default timeout)"
+            }
+          }
+        },
+        "strict": false
+      }
+    }
+  ],
+  "chat_template_kwargs": {
+    "enable_thinking": true,
+    "preserve_thinking": true
+  },
+  "temperature": 0.1,
+  "top_k": 50,
+  "repeat_penalty": 1.1
+}

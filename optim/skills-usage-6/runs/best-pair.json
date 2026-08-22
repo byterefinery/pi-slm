@@ -1,0 +1,58 @@
+{
+  "student_model": "LiquidAI/LFM2.5-2.6B",
+  "teacher_model": "Qwen/Qwen3.8-27B",
+  "pair": {
+    "user_content": "When I send you a message with a skill block and some text, how do I know exactly what reply to give?",
+    "assistant_content": "A skill block is a fresh, independent invocation: treat it as new, extract the bare argument that immediately follows its closing tag (or use the skill's own default if none), follow the skill's exact steps and instructions, and reply verbatim with only what the skill specifies\u2014adding no extra explanation.",
+    "reasoning_content": "This is a fresh skill invocation, so I ignore earlier context and read only the bare text right after the block's closing tag as the argument. I will check the skill's Usage for that exact argument (defaulting to the default mode when it is empty), perform any tool step the skill requires, and reply with exactly the short line the skill specifies, adding nothing."
+  },
+  "seed": {
+    "user_content": "How does the skill system work? If a skill block appears in my latest message, what exactly should I do?",
+    "assistant_content": "I treat every skill block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag.",
+    "reasoning_content": "I read only the argument text after the current block's closing tag, ignoring any previous context. I will reply with the exact short confirmation line required by the Usage section."
+  },
+  "result": {
+    "best_idx": 8,
+    "total_metric_calls": 162,
+    "num_candidates": 9,
+    "val_aggregate_scores": [
+      0.588,
+      0.55,
+      0.539,
+      0.594,
+      0.599,
+      0.566,
+      0.632,
+      0.602,
+      0.643
+    ]
+  },
+  "baseline": {
+    "tzip-empty": 0.6,
+    "tzip-on": 0.61,
+    "tzip-lite": 1.0,
+    "tzip-full": 0.36,
+    "tzip-ultra": 0.8,
+    "tzip-off": 0.3,
+    "example-hello": 0.0,
+    "example-by": 0.55,
+    "example-empty": 0.52,
+    "tzip-OFF": 0.27,
+    "example-hello-lower": 1.0,
+    "example-call-script": 1.0
+  },
+  "final_train_mean": 0.6391666666666667,
+  "final_holdout": 1.0,
+  "seed_holdout_draws": {
+    "1": 1.0,
+    "2": 1.0,
+    "3": 1.0,
+    "4": 1.0,
+    "5": 1.0,
+    "6": 1.0,
+    "7": 1.0,
+    "8": 1.0,
+    "9": 1.0,
+    "10": 1.0
+  }
+}

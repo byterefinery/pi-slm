@@ -1,0 +1,47 @@
+[
+  {
+    "user_content": "How does the skill system work? If a skill block appears in my latest message, what exactly should I do?",
+    "assistant_content": "I treat every skill block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag.",
+    "reasoning_content": "I read only the argument text after the current block's closing tag, ignoring any previous context. I will reply with the exact short confirmation line required by the Usage section."
+  },
+  {
+    "user_content": "How does the skill system work? If a skill block appears in my latest message, what exactly should I do?",
+    "assistant_content": "I treat every skill block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag.",
+    "reasoning_content": "The user pasted a new skill block, so I treat this as a fresh, standalone invocation whose only argument is the bare text right after the block's closing tag (or none at all). I will read that argument, follow the skill's own instructions exactly\u2014including any tool steps it defines and its default when no argument is given\u2014and reply with precisely the text the skill asks for, verbatim, with nothing added."
+  },
+  {
+    "user_content": "When I send you a message with a skill block and some text, how do I know exactly what reply to give?",
+    "assistant_content": "I treat every skill block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag.",
+    "reasoning_content": "I read only the argument text after the current block's closing tag, ignoring any previous context. I will reply with the exact short confirmation line required by the Usage section."
+  },
+  {
+    "user_content": "When I send you a message with a skill block and some text, how do I know exactly what reply to give?",
+    "assistant_content": "Each skill block is a fresh, independent invocation: the argument is the bare text immediately after the block's closing tag, and if there is none, the skill's own default applies. I follow the skill's instructions exactly\u2014including any tool steps it defines\u2014and then reply with exactly what the skill asks for, verbatim, adding nothing.",
+    "reasoning_content": "I read only the argument text after the current block's closing tag, ignoring any previous context. I will reply with the exact short confirmation line required by the Usage section."
+  },
+  {
+    "user_content": "When I send you a message with a skill block and some text, how do I know exactly what reply to give?",
+    "assistant_content": "I treat every skill block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag.",
+    "reasoning_content": "This is a fresh skill invocation, so I ignore earlier context and read only the bare text right after the block's closing tag as the argument. I will check the skill's Usage for that exact argument (defaulting to the default mode when it is empty), perform any tool step the skill requires, and reply with exactly the short line the skill specifies, adding nothing."
+  },
+  {
+    "user_content": "How does the skill system work? If a skill block appears in my latest message, what exactly should I do?",
+    "assistant_content": "Every skill block is a fresh, independent invocation: the argument is the bare text after the block's closing tag (none means use the default the skill specifies), so I follow that skill's instructions exactly\u2014including any tool steps it defines\u2014and reply with exactly what it asks for, verbatim, nothing added.",
+    "reasoning_content": "I read only the argument text after the current block's closing tag, ignoring any previous context. I will reply with the exact short confirmation line required by the Usage section."
+  },
+  {
+    "user_content": "When a message contains a skill block, how do I decide the exact reply based on the text after it?",
+    "assistant_content": "I treat every skill block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag.",
+    "reasoning_content": "This is a fresh skill invocation, so I ignore earlier context and read only the bare text right after the block's closing tag as the argument. I will check the skill's Usage for that exact argument (defaulting to the default mode when it is empty), perform any tool step the skill requires, and reply with exactly the short line the skill specifies, adding nothing."
+  },
+  {
+    "user_content": "If a message contains a skill block, how do I determine the exact reply it demands, including what counts as its argument and what I do when none is given?",
+    "assistant_content": "I treat every skill block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag.",
+    "reasoning_content": "I read only the argument text after the current block's closing tag, ignoring any previous context. I will reply with the exact short confirmation line required by the Usage section."
+  },
+  {
+    "user_content": "When I send you a message with a skill block and some text, how do I know exactly what reply to give?",
+    "assistant_content": "A skill block is a fresh, independent invocation: treat it as new, extract the bare argument that immediately follows its closing tag (or use the skill's own default if none), follow the skill's exact steps and instructions, and reply verbatim with only what the skill specifies\u2014adding no extra explanation.",
+    "reasoning_content": "This is a fresh skill invocation, so I ignore earlier context and read only the bare text right after the block's closing tag as the argument. I will check the skill's Usage for that exact argument (defaulting to the default mode when it is empty), perform any tool step the skill requires, and reply with exactly the short line the skill specifies, adding nothing."
+  }
+]
