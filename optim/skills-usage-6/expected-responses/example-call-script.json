@@ -1,0 +1,45 @@
+{
+  "case": "example-call-script",
+  "skill": "example",
+  "argument": "call script",
+  "student_model": "LiquidAI/LFM2.5-2.6B",
+  "generated_by": "pi coding agent, isolated temp dir, --mode json, Qwen/Qwen3.8-27B thinking high, 1 attempt",
+  "user": {
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": "<skill name=\"example\" location=\"/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md\">\nReferences are relative to /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example.\n\n# example\n\nA minimal skill that demonstrates the shape of an agent skill without doing anything special.\n\n## Overview\n\n`example` exists to show what a skill is made of \u2014 frontmatter metadata, a SKILL.md body, a helper script in `scripts/`, and on-demand docs in `references/` \u2014 with the least possible behavior. Its only jobs are replying with a fixed message or running `example.sh`.\n\n## Usage\n\n- **Invoked with no extra text** \u2014 reply exactly `This is an example skill.` Nothing else. No explanations, no script.\n- **Invoked with \"Hello\"** \u2014 do not guess the response. Load [03-hello](references/03-hello.md) and follow it exactly; the instructions for this case live there and nowhere else.\n- **Invoked with any other text, or asked to \"call script\"** \u2014 pass the user's text (if any) as CLI parameters to `example.sh` and report the output; running with no parameters is fine:\n\n  ```bash\n  bash scripts/example.sh any given text\n  ```\n\nScript paths are relative to this skill's directory. The script echoes a fixed line regardless of the parameters; the parameters only demonstrate how the agent forwards input to a script.\n\n## References\n\n- [01-structure](references/01-structure.md) \u2014 What each part of this skill is for\n- [02-invocation](references/02-invocation.md) \u2014 How invocation and script calls behave\n- [03-hello](references/03-hello.md) \u2014 Full instructions for the \"Invoked with 'Hello'\" scenario\n</skill>\n\ncall script"
+      }
+    ]
+  },
+  "assistant": [
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "zQ8by4oFwr9KnJZd76oedChteKTlBA4J",
+          "type": "function",
+          "function": {
+            "name": "bash",
+            "arguments": {
+              "command": "bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh"
+            }
+          }
+        }
+      ],
+      "reasoning_content": "The user is invoking the \"example\" skill with \"call script\". Following the skill's instructions:\n\n- **Invoked with any other text, or asked to \"call script\"** \u2014 pass the user's text (if any) as a CLI parameter to `example.sh` and report the output. Running with no parameters is fine.\n\nThe user said exactly \"call script\" \u2014 this is a \"call script\" request. So, I should run example.sh. The user's text is \"call script\", which is a meta-instruction rather than additional text to pass. The instructions say \"pass the user's text (if any) as a CLI parameter.\" \"call script\" is the invocation phrase, not additional text. So run it with no parameters (or with the text). I think the safest thing is to run it as shown: `bash scripts/example.sh` with no parameters. The script echoes a fixed line regardless of parameters.\n\nThe script's path is relative to the skill directory: /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh.\n\nLet's run it.\n"
+    },
+    {
+      "role": "tool",
+      "content": "This is example.sh output.\n",
+      "tool_call_id": "zQ8by4oFwr9KnJZd76oedChteKTlBA4J"
+    },
+    {
+      "role": "assistant",
+      "content": "Ran `scripts/example.sh` (no parameters):\n\n```\nThis is example.sh output.\n```",
+      "reasoning_content": "The script was executed. I'll report the output.\n"
+    }
+  ]
+}
