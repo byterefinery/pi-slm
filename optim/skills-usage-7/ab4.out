@@ -1,0 +1,237 @@
+[2026-08-23 16:27:42] === evaluating pair (ab4-live-r0) on 13 cases + 3 chains ===
+[2026-08-23 16:27:42] pair file updated hash=467f62009f (ask=2078c explain=1610c thinking=1479c)
+[2026-08-23 16:27:54] eval example-by             score=0.38 (base 0.75) skill_leak=1 self_echo=1/2 t=11s final='This is example.sh output.'
+[2026-08-23 16:27:58] eval example-call-script    score=0.75 (base 0.75) skill_leak=0 self_echo=1/2 t=4s final='This is example.sh output.'
+[2026-08-23 16:28:01] eval example-empty          score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=4s final='This is an example skill.'
+[2026-08-23 16:28:10] eval example-hello-lower    score=0.12 (base 0.25) skill_leak=1 self_echo=1/2 t=9s final='This is example.sh output.'
+[2026-08-23 16:28:12] eval example-hello          score=1.00 (base 1.00) skill_leak=0 self_echo=1/2 t=2s final='world'
+[2026-08-23 16:28:16] eval example-hi             score=0.75 (base 0.75) skill_leak=0 self_echo=1/2 t=3s final='This is example.sh output.'
+[2026-08-23 16:28:21] eval tzip-empty             score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=6s final='tzip lite activated'
+[2026-08-23 16:28:23] eval tzip-full              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=2s final='tzip full activated'
+[2026-08-23 16:28:24] eval tzip-lite              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip lite activated'
+[2026-08-23 16:28:26] eval tzip-off               score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip deactivated'
+[2026-08-23 16:28:27] eval tzip-on                score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=2s final='tzip lite activated'
+[2026-08-23 16:28:29] eval tzip-ultra             score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip ultra activated'
+[2026-08-23 16:28:32] eval webfetch-plain         score=0.50 (base 0.50) skill_leak=0 self_echo=0/2 t=4s final='Example Domain\n\n# Example Domain\n\nThis domain is for use in '
+[2026-08-23 16:28:35] eval chain-tzip-to-example      score=1.00 skill_leak=0 self_echo=1/3 t=3s [tzip-lite] 'tzip lite activated' | [example-hello] 'world'
+[2026-08-23 16:28:39] eval chain-example-to-tzip      score=1.00 skill_leak=0 self_echo=1/3 t=3s [example-hello] 'world' | [tzip-off] 'tzip deactivated'
+[2026-08-23 16:28:41] eval chain-tzip-full-to-lite    score=0.75 skill_leak=1 self_echo=0/2 t=2s [tzip-full] 'tzip full activated' | [tzip-lite] 'tzip lite activated'
+[2026-08-23 16:28:41] === RESULT (ab4-live-r0) accuracy=82.81%  skill-message leak=11.11% (3/27 msgs)  self-echo=25.93% (7/27) ===
+[2026-08-23 16:28:41]    PART example-by                 0.38  skill_leak=1 self_echo=1/2  final='This is example.sh output.'
+[2026-08-23 16:28:41]    PART example-call-script        0.75  skill_leak=0 self_echo=1/2  final='This is example.sh output.'
+[2026-08-23 16:28:41]    OK  example-empty              1.00  skill_leak=0 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 16:28:41]    PART example-hello-lower        0.12  skill_leak=1 self_echo=1/2  final='This is example.sh output.'
+[2026-08-23 16:28:41]    OK  example-hello              1.00  skill_leak=0 self_echo=1/2  final='world'
+[2026-08-23 16:28:41]    PART example-hi                 0.75  skill_leak=0 self_echo=1/2  final='This is example.sh output.'
+[2026-08-23 16:28:41]    OK  tzip-empty                 1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 16:28:41]    OK  tzip-full                  1.00  skill_leak=0 self_echo=0/1  final='tzip full activated'
+[2026-08-23 16:28:41]    OK  tzip-lite                  1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 16:28:41]    OK  tzip-off                   1.00  skill_leak=0 self_echo=0/1  final='tzip deactivated'
+[2026-08-23 16:28:41]    OK  tzip-on                    1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 16:28:41]    OK  tzip-ultra                 1.00  skill_leak=0 self_echo=0/1  final='tzip ultra activated'
+[2026-08-23 16:28:41]    PART webfetch-plain             0.50  skill_leak=0 self_echo=0/2  final='Example Domain\n\n# Example Domain\n\nThis domain is for use in documentat'
+[2026-08-23 16:28:41]    OK  chain-tzip-to-example      1.00  skill_leak=0 self_echo=1/3  final=''
+[2026-08-23 16:28:41]    OK  chain-example-to-tzip      1.00  skill_leak=0 self_echo=1/3  final=''
+[2026-08-23 16:28:41]    PART chain-tzip-full-to-lite    0.75  skill_leak=1 self_echo=0/2  final=''
+r0 live: acc=82.81% skill_leak=11.11% self_echo=25.93%
+[2026-08-23 16:28:41] === evaluating pair (ab4-cand-r0) on 13 cases + 3 chains ===
+[2026-08-23 16:28:41] pair file updated hash=dd5d379625 (ask=1431c explain=842c thinking=1055c)
+[2026-08-23 16:28:47] eval example-by             score=0.00 (base 0.00) skill_leak=0 self_echo=0/1 t=7s final='This is an example skill.'
+[2026-08-23 16:28:57] eval example-call-script    score=0.50 (base 0.50) skill_leak=0 self_echo=1/5 t=9s final='This is example.sh output.'
+[2026-08-23 16:29:08] eval example-empty          score=1.00 (base 1.00) skill_leak=0 self_echo=1/2 t=11s final='This is an example skill.'
+[2026-08-23 16:29:09] eval example-hello-lower    score=0.00 (base 0.00) skill_leak=0 self_echo=0/1 t=1s final='This is an example skill.'
+[2026-08-23 16:29:12] eval example-hello          score=1.00 (base 1.00) skill_leak=0 self_echo=0/2 t=3s final='world'
+[2026-08-23 16:29:16] eval example-hi             score=0.75 (base 0.75) skill_leak=0 self_echo=1/2 t=3s final='This is example.sh output.'
+[2026-08-23 16:29:18] eval tzip-empty             score=0.00 (base 0.00) skill_leak=0 self_echo=0/1 t=3s final='tzip full activated'
+[2026-08-23 16:29:20] eval tzip-full              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip full activated'
+[2026-08-23 16:29:21] eval tzip-lite              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip lite activated'
+[2026-08-23 16:29:22] eval tzip-off               score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip deactivated'
+[2026-08-23 16:29:24] eval tzip-on                score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=3s final='tzip lite activated'
+[2026-08-23 16:29:26] eval tzip-ultra             score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip ultra activated'
+[2026-08-23 16:29:31] eval webfetch-plain         score=1.00 (base 1.00) skill_leak=0 self_echo=0/2 t=5s final='Example Domain\n\n# Example Domain\n\nThis domain is for use in '
+[2026-08-23 16:29:33] eval chain-tzip-to-example      score=1.00 skill_leak=0 self_echo=1/3 t=2s [tzip-lite] 'tzip lite activated' | [example-hello] 'world'
+[2026-08-23 16:29:36] eval chain-example-to-tzip      score=0.88 skill_leak=0 self_echo=1/3 t=3s [example-hello] 'world' | [tzip-off] 'tzip deactivated'
+[2026-08-23 16:29:37] eval chain-tzip-full-to-lite    score=0.75 skill_leak=1 self_echo=0/2 t=2s [tzip-full] 'tzip full activated' | [tzip-lite] 'tzip lite activated'
+[2026-08-23 16:29:37] === RESULT (ab4-cand-r0) accuracy=74.22%  skill-message leak=3.45% (1/29 msgs)  self-echo=17.24% (5/29) ===
+[2026-08-23 16:29:37]    FAIL example-by                 0.00  skill_leak=0 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 16:29:37]    PART example-call-script        0.50  skill_leak=0 self_echo=1/5  final='This is example.sh output.'
+[2026-08-23 16:29:37]    OK  example-empty              1.00  skill_leak=0 self_echo=1/2  final='This is an example skill.'
+[2026-08-23 16:29:37]    FAIL example-hello-lower        0.00  skill_leak=0 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 16:29:37]    OK  example-hello              1.00  skill_leak=0 self_echo=0/2  final='world'
+[2026-08-23 16:29:37]    PART example-hi                 0.75  skill_leak=0 self_echo=1/2  final='This is example.sh output.'
+[2026-08-23 16:29:37]    FAIL tzip-empty                 0.00  skill_leak=0 self_echo=0/1  final='tzip full activated'
+[2026-08-23 16:29:37]    OK  tzip-full                  1.00  skill_leak=0 self_echo=0/1  final='tzip full activated'
+[2026-08-23 16:29:37]    OK  tzip-lite                  1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 16:29:37]    OK  tzip-off                   1.00  skill_leak=0 self_echo=0/1  final='tzip deactivated'
+[2026-08-23 16:29:37]    OK  tzip-on                    1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 16:29:37]    OK  tzip-ultra                 1.00  skill_leak=0 self_echo=0/1  final='tzip ultra activated'
+[2026-08-23 16:29:37]    OK  webfetch-plain             1.00  skill_leak=0 self_echo=0/2  final='Example Domain\n\n# Example Domain\n\nThis domain is for use in documentat'
+[2026-08-23 16:29:37]    OK  chain-tzip-to-example      1.00  skill_leak=0 self_echo=1/3  final=''
+[2026-08-23 16:29:37]    PART chain-example-to-tzip      0.88  skill_leak=0 self_echo=1/3  final=''
+[2026-08-23 16:29:37]    PART chain-tzip-full-to-lite    0.75  skill_leak=1 self_echo=0/2  final=''
+r0 cand: acc=74.22% skill_leak=3.45% self_echo=17.24%
+[2026-08-23 16:29:37] === evaluating pair (ab4-cand-r1) on 13 cases + 3 chains ===
+[2026-08-23 16:29:46] eval example-by             score=0.00 (base 0.00) skill_leak=0 self_echo=0/1 t=8s final='This is an example skill.'
+[2026-08-23 16:30:20] eval example-call-script    score=0.25 (base 0.25) skill_leak=0 self_echo=4/8 t=35s final='This is example.sh output.'
+[2026-08-23 16:31:50] run_pi timeout (attempt 1), retrying
+[2026-08-23 16:31:57] eval example-empty          score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=97s final='This is an example skill.'
+[2026-08-23 16:31:58] eval example-hello-lower    score=0.00 (base 0.00) skill_leak=0 self_echo=0/1 t=1s final='This is an example skill.'
+[2026-08-23 16:32:00] eval example-hello          score=0.75 (base 0.75) skill_leak=0 self_echo=1/2 t=2s final='world'
+[2026-08-23 16:33:30] run_pi timeout (attempt 1), retrying
+[2026-08-23 16:33:34] eval example-hi             score=0.00 (base 0.00) skill_leak=0 self_echo=0/1 t=94s final='This is an example skill.'
+[2026-08-23 16:33:37] eval tzip-empty             score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=2s final='tzip lite activated'
+[2026-08-23 16:33:38] eval tzip-full              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip full activated'
+[2026-08-23 16:33:39] eval tzip-lite              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip lite activated'
+[2026-08-23 16:33:40] eval tzip-off               score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip deactivated'
+[2026-08-23 16:35:10] run_pi timeout (attempt 1), retrying
+[2026-08-23 16:35:18] eval tzip-on                score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=98s final='tzip lite activated'
+[2026-08-23 16:35:19] eval tzip-ultra             score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip ultra activated'
+[2026-08-23 16:35:22] eval webfetch-plain         score=0.50 (base 0.50) skill_leak=0 self_echo=0/2 t=3s final='Example Domain\n\n# Example Domain\n\nThis domain is for use in '
+[2026-08-23 16:35:25] eval chain-tzip-to-example      score=1.00 skill_leak=0 self_echo=1/3 t=2s [tzip-lite] 'tzip lite activated' | [example-hello] 'world'
+[2026-08-23 16:35:28] eval chain-example-to-tzip      score=0.88 skill_leak=0 self_echo=1/3 t=3s [example-hello] 'world' | [tzip-off] 'tzip deactivated'
+[2026-08-23 16:35:30] eval chain-tzip-full-to-lite    score=0.75 skill_leak=1 self_echo=0/2 t=2s [tzip-full] 'tzip full activated' | [tzip-lite] 'tzip lite activated'
+[2026-08-23 16:35:30] === RESULT (ab4-cand-r1) accuracy=69.53%  skill-message leak=3.33% (1/30 msgs)  self-echo=23.33% (7/30) ===
+[2026-08-23 16:35:30]    FAIL example-by                 0.00  skill_leak=0 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 16:35:30]    PART example-call-script        0.25  skill_leak=0 self_echo=4/8  final='This is example.sh output.'
+[2026-08-23 16:35:30]    OK  example-empty              1.00  skill_leak=0 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 16:35:30]    FAIL example-hello-lower        0.00  skill_leak=0 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 16:35:30]    PART example-hello              0.75  skill_leak=0 self_echo=1/2  final='world'
+[2026-08-23 16:35:30]    FAIL example-hi                 0.00  skill_leak=0 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 16:35:30]    OK  tzip-empty                 1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 16:35:30]    OK  tzip-full                  1.00  skill_leak=0 self_echo=0/1  final='tzip full activated'
+[2026-08-23 16:35:30]    OK  tzip-lite                  1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 16:35:30]    OK  tzip-off                   1.00  skill_leak=0 self_echo=0/1  final='tzip deactivated'
+[2026-08-23 16:35:30]    OK  tzip-on                    1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 16:35:30]    OK  tzip-ultra                 1.00  skill_leak=0 self_echo=0/1  final='tzip ultra activated'
+[2026-08-23 16:35:30]    PART webfetch-plain             0.50  skill_leak=0 self_echo=0/2  final='Example Domain\n\n# Example Domain\n\nThis domain is for use in documentat'
+[2026-08-23 16:35:30]    OK  chain-tzip-to-example      1.00  skill_leak=0 self_echo=1/3  final=''
+[2026-08-23 16:35:30]    PART chain-example-to-tzip      0.88  skill_leak=0 self_echo=1/3  final=''
+[2026-08-23 16:35:30]    PART chain-tzip-full-to-lite    0.75  skill_leak=1 self_echo=0/2  final=''
+r1 cand: acc=69.53% skill_leak=3.33% self_echo=23.33%
+[2026-08-23 16:35:30] === evaluating pair (ab4-live-r1) on 13 cases + 3 chains ===
+[2026-08-23 16:35:30] pair file updated hash=467f62009f (ask=2078c explain=1610c thinking=1479c)
+[2026-08-23 16:37:00] run_pi timeout (attempt 1), retrying
+[2026-08-23 16:37:05] eval example-by             score=0.00 (base 0.00) skill_leak=0 self_echo=0/1 t=96s final='This is an example skill.'
+[2026-08-23 16:37:13] eval example-call-script    score=0.75 (base 0.75) skill_leak=0 self_echo=1/2 t=7s final='This is example.sh output.'
+[2026-08-23 16:38:43] run_pi timeout (attempt 1), retrying
+[2026-08-23 16:38:47] eval example-empty          score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=94s final='This is an example skill.'
+[2026-08-23 16:38:52] eval example-hello-lower    score=0.00 (base 0.00) skill_leak=0 self_echo=1/2 t=5s final='world'
+[2026-08-23 16:38:56] eval example-hello          score=1.00 (base 1.00) skill_leak=0 self_echo=1/2 t=4s final='world'
+[2026-08-23 16:40:26] run_pi timeout (attempt 1), retrying
+[2026-08-23 16:40:29] eval example-hi             score=0.75 (base 0.75) skill_leak=0 self_echo=1/2 t=93s final='This is example.sh output.'
+[2026-08-23 16:41:59] run_pi timeout (attempt 1), retrying
+[2026-08-23 16:42:02] eval tzip-empty             score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=93s final='tzip lite activated'
+[2026-08-23 16:43:32] run_pi timeout (attempt 1), retrying
+[2026-08-23 16:43:33] eval tzip-full              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=92s final='tzip full activated'
+[2026-08-23 16:43:34] eval tzip-lite              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip lite activated'
+[2026-08-23 16:43:35] eval tzip-off               score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip deactivated'
+[2026-08-23 16:43:37] eval tzip-on                score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=2s final='tzip lite activated'
+[2026-08-23 16:45:07] run_pi timeout (attempt 1), retrying
+[2026-08-23 16:46:37] eval tzip-ultra: pi timeout
+[2026-08-23 16:46:42] eval webfetch-plain         score=0.50 (base 0.50) skill_leak=0 self_echo=1/2 t=5s final='Example Domain\n\n# Example Domain\n\nThis domain is for use in '
+[2026-08-23 16:51:42] run_pi_chain failed (TimeoutExpired, attempt 1), retrying
+[2026-08-23 16:56:42] eval chain-tzip-to-example: chain failed (TimeoutExpired: Command '['pi', '--mode', 'rpc', '--no-session', '--model', 'llamacpp/LiquidAI/LFM2.5-2.6B', '--thinking', 'high', '--no-tools', '--tools', 'read,write,edit,bash', '--no-skills', '--skill', '../../.ag)
+[2026-08-23 16:56:46] eval chain-example-to-tzip      score=1.00 skill_leak=0 self_echo=2/4 t=4s [example-hello] 'world' | [tzip-off] 'tzip deactivated'
+[2026-08-23 16:56:48] eval chain-tzip-full-to-lite    score=0.75 skill_leak=1 self_echo=0/2 t=2s [tzip-full] 'tzip full activated' | [tzip-lite] 'tzip lite activated'
+[2026-08-23 16:56:48] === RESULT (ab4-live-r1) accuracy=67.19%  skill-message leak=4.35% (1/23 msgs)  self-echo=30.43% (7/23) ===
+[2026-08-23 16:56:48]    FAIL example-by                 0.00  skill_leak=0 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 16:56:48]    PART example-call-script        0.75  skill_leak=0 self_echo=1/2  final='This is example.sh output.'
+[2026-08-23 16:56:48]    OK  example-empty              1.00  skill_leak=0 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 16:56:48]    FAIL example-hello-lower        0.00  skill_leak=0 self_echo=1/2  final='world'
+[2026-08-23 16:56:48]    OK  example-hello              1.00  skill_leak=0 self_echo=1/2  final='world'
+[2026-08-23 16:56:48]    PART example-hi                 0.75  skill_leak=0 self_echo=1/2  final='This is example.sh output.'
+[2026-08-23 16:56:48]    OK  tzip-empty                 1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 16:56:48]    OK  tzip-full                  1.00  skill_leak=0 self_echo=0/1  final='tzip full activated'
+[2026-08-23 16:56:48]    OK  tzip-lite                  1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 16:56:48]    OK  tzip-off                   1.00  skill_leak=0 self_echo=0/1  final='tzip deactivated'
+[2026-08-23 16:56:48]    OK  tzip-on                    1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 16:56:48]    FAIL tzip-ultra                 0.00  skill_leak=0 self_echo=0/0  final=''
+[2026-08-23 16:56:48]    PART webfetch-plain             0.50  skill_leak=0 self_echo=1/2  final='Example Domain\n\n# Example Domain\n\nThis domain is for use in documentat'
+[2026-08-23 16:56:48]    FAIL chain-tzip-to-example      0.00  skill_leak=0 self_echo=0/0  final=''
+[2026-08-23 16:56:48]    OK  chain-example-to-tzip      1.00  skill_leak=0 self_echo=2/4  final=''
+[2026-08-23 16:56:48]    PART chain-tzip-full-to-lite    0.75  skill_leak=1 self_echo=0/2  final=''
+r1 live: acc=67.19% skill_leak=4.35% self_echo=30.43%
+[2026-08-23 16:56:48] === evaluating pair (ab4-live-r2) on 13 cases + 3 chains ===
+[2026-08-23 16:57:01] eval example-by             score=0.00 (base 0.00) skill_leak=1 self_echo=0/1 t=13s final='This is an example skill.'
+[2026-08-23 16:57:04] eval example-call-script    score=0.75 (base 0.75) skill_leak=0 self_echo=0/2 t=2s final='This is example.sh output.'
+[2026-08-23 16:57:08] eval example-empty          score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=5s final='This is an example skill.'
+[2026-08-23 16:57:12] eval example-hello-lower    score=0.00 (base 0.00) skill_leak=0 self_echo=1/2 t=3s final='world'
+[2026-08-23 16:58:42] run_pi timeout (attempt 1), retrying
+[2026-08-23 17:00:12] eval example-hello: pi timeout
+[2026-08-23 17:01:42] run_pi timeout (attempt 1), retrying
+[2026-08-23 17:01:46] eval example-hi             score=0.50 (base 0.50) skill_leak=0 self_echo=2/3 t=94s final='This is example.sh output.'
+[2026-08-23 17:03:16] run_pi timeout (attempt 1), retrying
+[2026-08-23 17:03:22] eval tzip-empty             score=0.50 (base 1.00) skill_leak=1 self_echo=0/1 t=96s final='tzip lite activated'
+[2026-08-23 17:03:23] eval tzip-full              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip full activated'
+[2026-08-23 17:03:24] eval tzip-lite              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip lite activated'
+[2026-08-23 17:03:26] eval tzip-off               score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip deactivated'
+[2026-08-23 17:03:27] eval tzip-on                score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=2s final='tzip lite activated'
+[2026-08-23 17:04:57] run_pi timeout (attempt 1), retrying
+[2026-08-23 17:04:58] eval tzip-ultra             score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=91s final='tzip ultra activated'
+[2026-08-23 17:05:04] eval webfetch-plain         score=0.50 (base 0.50) skill_leak=0 self_echo=0/2 t=6s final='Example Domain\n\n# Example Domain\n\nThis domain is for use in '
+[2026-08-23 17:05:07] eval chain-tzip-to-example      score=1.00 skill_leak=0 self_echo=1/3 t=3s [tzip-lite] 'tzip lite activated' | [example-hello] 'world'
+[2026-08-23 17:10:07] run_pi_chain failed (TimeoutExpired, attempt 1), retrying
+[2026-08-23 17:10:13] eval chain-example-to-tzip      score=0.88 skill_leak=0 self_echo=1/4 t=306s [example-hello] 'world' | [tzip-off] 'tzip deactivated'
+[2026-08-23 17:10:15] eval chain-tzip-full-to-lite    score=0.75 skill_leak=1 self_echo=0/2 t=2s [tzip-full] 'tzip full activated' | [tzip-lite] 'tzip lite activated'
+[2026-08-23 17:10:15] === RESULT (ab4-live-r2) accuracy=67.97%  skill-message leak=11.54% (3/26 msgs)  self-echo=19.23% (5/26) ===
+[2026-08-23 17:10:15]    FAIL example-by                 0.00  skill_leak=1 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 17:10:15]    PART example-call-script        0.75  skill_leak=0 self_echo=0/2  final='This is example.sh output.'
+[2026-08-23 17:10:15]    OK  example-empty              1.00  skill_leak=0 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 17:10:15]    FAIL example-hello-lower        0.00  skill_leak=0 self_echo=1/2  final='world'
+[2026-08-23 17:10:15]    FAIL example-hello              0.00  skill_leak=0 self_echo=0/0  final=''
+[2026-08-23 17:10:15]    PART example-hi                 0.50  skill_leak=0 self_echo=2/3  final='This is example.sh output.'
+[2026-08-23 17:10:15]    PART tzip-empty                 0.50  skill_leak=1 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 17:10:15]    OK  tzip-full                  1.00  skill_leak=0 self_echo=0/1  final='tzip full activated'
+[2026-08-23 17:10:15]    OK  tzip-lite                  1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 17:10:15]    OK  tzip-off                   1.00  skill_leak=0 self_echo=0/1  final='tzip deactivated'
+[2026-08-23 17:10:15]    OK  tzip-on                    1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 17:10:15]    OK  tzip-ultra                 1.00  skill_leak=0 self_echo=0/1  final='tzip ultra activated'
+[2026-08-23 17:10:15]    PART webfetch-plain             0.50  skill_leak=0 self_echo=0/2  final='Example Domain\n\n# Example Domain\n\nThis domain is for use in documentat'
+[2026-08-23 17:10:15]    OK  chain-tzip-to-example      1.00  skill_leak=0 self_echo=1/3  final=''
+[2026-08-23 17:10:15]    PART chain-example-to-tzip      0.88  skill_leak=0 self_echo=1/4  final=''
+[2026-08-23 17:10:15]    PART chain-tzip-full-to-lite    0.75  skill_leak=1 self_echo=0/2  final=''
+r2 live: acc=67.97% skill_leak=11.54% self_echo=19.23%
+[2026-08-23 17:10:15] === evaluating pair (ab4-cand-r2) on 13 cases + 3 chains ===
+[2026-08-23 17:10:15] pair file updated hash=dd5d379625 (ask=1431c explain=842c thinking=1055c)
+[2026-08-23 17:10:28] eval example-by             score=0.00 (base 0.00) skill_leak=0 self_echo=1/2 t=13s final='This is an example skill.'
+[2026-08-23 17:10:46] eval example-call-script    score=0.25 (base 0.25) skill_leak=0 self_echo=2/5 t=18s final='This is example.sh output.'
+[2026-08-23 17:10:52] eval example-empty          score=1.00 (base 1.00) skill_leak=0 self_echo=1/2 t=6s final='This is an example skill.'
+[2026-08-23 17:10:52] eval example-hello-lower    score=0.00 (base 0.00) skill_leak=0 self_echo=0/1 t=1s final='This is an example skill.'
+[2026-08-23 17:12:23] run_pi timeout (attempt 1), retrying
+[2026-08-23 17:12:25] eval example-hello          score=0.75 (base 0.75) skill_leak=0 self_echo=1/2 t=92s final='world'
+[2026-08-23 17:12:30] eval example-hi             score=0.75 (base 0.75) skill_leak=0 self_echo=1/2 t=5s final='This is example.sh output.'
+[2026-08-23 17:14:00] run_pi timeout (attempt 1), retrying
+[2026-08-23 17:14:07] eval tzip-empty             score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=97s final='tzip lite activated'
+[2026-08-23 17:14:08] eval tzip-full              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip full activated'
+[2026-08-23 17:14:09] eval tzip-lite              score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip lite activated'
+[2026-08-23 17:14:11] eval tzip-off               score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip deactivated'
+[2026-08-23 17:15:41] run_pi timeout (attempt 1), retrying
+[2026-08-23 17:17:11] eval tzip-on: pi timeout
+[2026-08-23 17:17:12] eval tzip-ultra             score=1.00 (base 1.00) skill_leak=0 self_echo=0/1 t=1s final='tzip ultra activated'
+[2026-08-23 17:17:21] eval webfetch-plain         score=1.00 (base 1.00) skill_leak=0 self_echo=1/2 t=9s final='Example Domain\n\n# Example Domain\n\nThis domain is for use in '
+[2026-08-23 17:22:21] run_pi_chain failed (TimeoutExpired, attempt 1), retrying
+[2026-08-23 17:22:23] eval chain-tzip-to-example      score=1.00 skill_leak=0 self_echo=1/3 t=302s [tzip-lite] 'tzip lite activated' | [example-hello] 'world'
+[2026-08-23 17:27:23] run_pi_chain failed (TimeoutExpired, attempt 1), retrying
+[2026-08-23 17:27:27] eval chain-example-to-tzip      score=0.88 skill_leak=0 self_echo=1/3 t=303s [example-hello] 'world' | [tzip-off] 'tzip deactivated'
+[2026-08-23 17:27:28] eval chain-tzip-full-to-lite    score=0.75 skill_leak=1 self_echo=0/2 t=2s [tzip-full] 'tzip full activated' | [tzip-lite] 'tzip lite activated'
+[2026-08-23 17:27:28] === RESULT (ab4-cand-r2) accuracy=71.09%  skill-message leak=3.45% (1/29 msgs)  self-echo=31.03% (9/29) ===
+[2026-08-23 17:27:28]    FAIL example-by                 0.00  skill_leak=0 self_echo=1/2  final='This is an example skill.'
+[2026-08-23 17:27:28]    PART example-call-script        0.25  skill_leak=0 self_echo=2/5  final='This is example.sh output.'
+[2026-08-23 17:27:28]    OK  example-empty              1.00  skill_leak=0 self_echo=1/2  final='This is an example skill.'
+[2026-08-23 17:27:28]    FAIL example-hello-lower        0.00  skill_leak=0 self_echo=0/1  final='This is an example skill.'
+[2026-08-23 17:27:28]    PART example-hello              0.75  skill_leak=0 self_echo=1/2  final='world'
+[2026-08-23 17:27:28]    PART example-hi                 0.75  skill_leak=0 self_echo=1/2  final='This is example.sh output.'
+[2026-08-23 17:27:28]    OK  tzip-empty                 1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 17:27:28]    OK  tzip-full                  1.00  skill_leak=0 self_echo=0/1  final='tzip full activated'
+[2026-08-23 17:27:28]    OK  tzip-lite                  1.00  skill_leak=0 self_echo=0/1  final='tzip lite activated'
+[2026-08-23 17:27:28]    OK  tzip-off                   1.00  skill_leak=0 self_echo=0/1  final='tzip deactivated'
+[2026-08-23 17:27:28]    FAIL tzip-on                    0.00  skill_leak=0 self_echo=0/0  final=''
+[2026-08-23 17:27:28]    OK  tzip-ultra                 1.00  skill_leak=0 self_echo=0/1  final='tzip ultra activated'
+[2026-08-23 17:27:28]    OK  webfetch-plain             1.00  skill_leak=0 self_echo=1/2  final='Example Domain\n\n# Example Domain\n\nThis domain is for use in documentat'
+[2026-08-23 17:27:28]    OK  chain-tzip-to-example      1.00  skill_leak=0 self_echo=1/3  final=''
+[2026-08-23 17:27:28]    PART chain-example-to-tzip      0.88  skill_leak=0 self_echo=1/3  final=''
+[2026-08-23 17:27:28]    PART chain-tzip-full-to-lite    0.75  skill_leak=1 self_echo=0/2  final=''
+r2 cand: acc=71.09% skill_leak=3.45% self_echo=31.03%
+MEAN live: acc=72.66% leak=9.00% rounds=[82.81, 67.19, 67.97]
+MEAN cand: acc=71.61% leak=3.41% rounds=[74.22, 69.53, 71.09]
+WINNER kept live: cand (design-preferred, within 3 pts)

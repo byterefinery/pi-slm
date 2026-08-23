@@ -301,6 +301,26 @@ def ensure_pair(candidate: dict) -> None:
 # evaluation cases
 # --------------------------------------------------------------------------
 
+_SKILL_BLOCK_RE = re.compile(
+    r'^(<skill name="[^"]+" location="([^"]+)">\n[^\n]*\n)(.*)(</skill>)(.*)$',
+    re.DOTALL,
+)
+
+
+def refresh_skill_prompt(prompt: str) -> str:
+    """Replace the embedded SKILL.md body with the live file at the block's
+    location path, so evals track skill updates on disk."""
+    m = _SKILL_BLOCK_RE.match(prompt)
+    if not m:
+        return prompt
+    header, loc, tail = m.group(1), m.group(2), m.group(5)
+    try:
+        live = Path(loc).read_text()
+    except OSError:
+        return prompt
+    return f"{header}\n{live.rstrip()}\n{m.group(4)}{tail}"
+
+
 def load_cases() -> list[dict]:
     cases = []
     for f in sorted((HERE / "expected-responses").glob("*.json")):
@@ -310,7 +330,7 @@ def load_cases() -> list[dict]:
                 "case": data["case"],
                 "skill": data.get("skill", ""),
                 "argument": data.get("argument", ""),
-                "prompt": data["user"]["content"][0]["text"],
+                "prompt": refresh_skill_prompt(data["user"]["content"][0]["text"]),
                 "expected": data["assistant"],
             }
         )
@@ -339,14 +359,27 @@ PI_CMD = [
 ]
 
 
-def run_pi(prompt: str, timeout: int = 150) -> dict:
-    p = subprocess.run(
-        PI_CMD + [prompt],
-        cwd=str(HERE),
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
+def run_pi(prompt: str, timeout: int = 90, retries: int = 1) -> dict:
+    """Run one single-shot pi eval. Correct answers complete in seconds, so a
+    timeout means the student spiralled; retry once before scoring 0 (spirals
+    are partly stochastic and re-runs of the same case often succeed)."""
+    last_exc: Exception | None = None
+    for attempt in range(1 + max(0, retries)):
+        try:
+            p = subprocess.run(
+                PI_CMD + [prompt],
+                cwd=str(HERE),
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+            break
+        except subprocess.TimeoutExpired as e:
+            last_exc = e
+            if attempt < retries:
+                log(f"run_pi timeout (attempt {attempt + 1}), retrying")
+                continue
+            raise
     events: list[dict] = []
     session_id: str | None = None
     for line in p.stdout.splitlines():
@@ -380,12 +413,28 @@ PI_CMD_RPC = [
 ]
 
 
-def run_pi_chain(prompts: list[str], timeout: int = 420) -> dict:
+def run_pi_chain(prompts: list[str], timeout: int = 300, retries: int = 1) -> dict:
     """Multi-turn session over the RPC protocol (one pi process).
 
     Sends each prompt as a `prompt` command and waits for the matching
-    `agent_end` event before sending the next one.
+    `agent_end` event before sending the next one. Retries the whole chain
+    once on timeout (spirals are partly stochastic).
     """
+    last_exc: Exception | None = None
+    for attempt in range(1 + max(0, retries)):
+        try:
+            return _run_pi_chain_once(prompts, timeout)
+        except (subprocess.TimeoutExpired, RuntimeError) as e:
+            last_exc = e
+            if attempt < retries:
+                log(f"run_pi_chain failed ({type(e).__name__}, attempt {attempt + 1}), retrying")
+                continue
+            raise
+    raise last_exc  # pragma: no cover
+
+
+def _run_pi_chain_once(prompts: list[str], timeout: int) -> dict:
+    """Single attempt of run_pi_chain."""
     debug_root = HERE / ".pi" / "pi-llm-debugging"
     _debug_before: set[str] = set()
     t_start = time.time()
@@ -667,6 +716,22 @@ def tool_match(case: dict, students: list[dict]) -> tuple[float, str]:
             return args.get("path") == exp_args.get("path")
         if exp_name == "bash":
             path, tok = bash_tokens(str(args.get("command", "")))
+            if case["case"].startswith("webfetch"):
+                # script must be webfetch.sh (the skill doc prints an example
+                # path from a sibling repo, so accept any scripts/webfetch.sh)
+                # with the exact URL/flag tokens from the gold command
+                # (trailing slash on the URL is irrelevant)
+                def norm_url(ts: list[str]) -> list[str]:
+                    return [t[:-1] if t.startswith("http") and t.endswith("/") else t for t in ts]
+
+                exp_path, exp_tok = bash_tokens(
+                    str((exp_args or {}).get("command", ""))
+                )
+                return (
+                    path.endswith("scripts/webfetch.sh")
+                    and bool(exp_path)
+                    and norm_url(tok) == norm_url(exp_tok)
+                )
             if not path.endswith("scripts/example.sh"):
                 return False
             return tok in bash_expected_args(case)
@@ -703,6 +768,12 @@ def final_match(case: dict, final: str | None) -> tuple[float, str]:
         if norm(first_line) == n_exp:
             return 0.5, f"expected exactly {exp!r}, got {final[:160]!r}"
         return 0.0, f"expected {exp!r}, got {final[:160]!r}"
+    if case_name.startswith("webfetch"):
+        if "tangled group" in n_final:
+            return 1.0, "fetched page content reported"
+        if "tangledgroup.com" in n_final:
+            return 0.5, f"URL mentioned but page content missing: {final[:120]!r}"
+        return 0.0, f"expected the fetched page content, got {final[:160]!r}"
     # example script cases: the output must be reported
     if "this is example.sh output." in n_final:
         return 1.0, "script output reported"
@@ -774,6 +845,8 @@ def cot_leaks(chain: list, prompt: str, bound_idx: int | None = None) -> tuple[l
     if idx is None:
         return [], 0, 0
     end = bound_idx if bound_idx is not None else len(chain)
+    cur_skill_m = re.search(r'<skill name="([^"]+)"', prompt)
+    cur_skill = cur_skill_m.group(1) if cur_skill_m else None
     leaks: list[dict] = []
     student_msgs = 0
     leaked_msgs = 0
@@ -816,7 +889,13 @@ def cot_leaks(chain: list, prompt: str, bound_idx: int | None = None) -> tuple[l
         elif role == "user":
             t = user_text(m)
             if i != idx and "<skill name=" in t:
-                prev_sources.append((f"user@{i} skill block", strip_paths(t), i))
+                src_skill_m = re.search(r'<skill name="([^"]+)"', t)
+                src_skill = src_skill_m.group(1) if src_skill_m else None
+                # An earlier block of the SAME skill is the same document as
+                # the current task — quoting it is legitimate, not a leak.
+                # Earlier blocks of OTHER skills remain leak sources.
+                if not (cur_skill and src_skill and src_skill == cur_skill):
+                    prev_sources.append((f"user@{i} skill block", strip_paths(t), i))
     return leaks, leaked_msgs, student_msgs
 
 
@@ -1085,7 +1164,12 @@ followed by a bare argument after the closing tag):
    - "full"  ->  tzip full activated
    - "ultra" ->  tzip ultra activated
    - "off"   ->  tzip deactivated
-2. example skill —
+2. webfetch skill —
+   - bare URL, no other request -> run exactly one bash command: the skill
+     dir's scripts/webfetch.sh with the URL (no flags, no cd), using the path
+     built from the header's skill directory, then report the fetched content
+     from the bash result. Never read the script files, never run webfetch.py.
+3. example skill —
    - no extra text      ->  reply exactly: This is an example skill.
    - argument "Hello" (exact case) ->  call the read tool on
      <skill-dir>/references/03-hello.md, then reply exactly: world
@@ -1093,7 +1177,7 @@ followed by a bare argument after the closing tag):
      words like "Hi"/"Bye") ->  call the bash tool running
      <skill-dir>/scripts/example.sh with the text as CLI parameters, then report
      the script output in the reply.
-3. The skill dir <skill-dir> is the directory named in the block's `location`
+4. The skill dir <skill-dir> is the directory named in the block's `location`
    attribute (the folder containing SKILL.md). Reference files and scripts live
    under it, relative to it.
 
@@ -1178,7 +1262,7 @@ separately. Maximize total score; keep skill-message leak at zero."""
 # "example-empty" is excluded to keep the loop cheap; final validation always
 # runs the full set). Core: confirmation line, deactivation, reference-file
 # branch, script branch — plus the multi-turn leak chains.
-CORE_CASES = ("tzip-lite", "tzip-off", "example-hello", "example-hi")
+CORE_CASES = ("tzip-lite", "tzip-off", "tzip-full", "example-hello", "example-hi", "webfetch-plain")
 
 
 def build_examples(cases: list[dict], all_cases: bool) -> list[dict]:
@@ -1271,13 +1355,22 @@ def run_gepa(args) -> None:
         "best_idx": result.best_idx,
         "total_metric_calls": result.total_metric_calls,
         "best_candidate": best,
-        "seed_baseline": {"accuracy_pct": baseline["accuracy_pct"], "cot_leak_pct": baseline["cot_leak_pct"]},
-        "best_final": {"accuracy_pct": final["accuracy_pct"], "cot_leak_pct": final["cot_leak_pct"]},
+        "seed_baseline": {
+            "accuracy_pct": baseline["accuracy_pct"],
+            "skill_leak_pct": baseline["skill_leak_pct"],
+            "self_echo_pct": baseline["self_echo_pct"],
+        },
+        "best_final": {
+            "accuracy_pct": final["accuracy_pct"],
+            "skill_leak_pct": final["skill_leak_pct"],
+            "self_echo_pct": final["self_echo_pct"],
+        },
     }
     (run_dir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))
     log(
         f"SUMMARY: accuracy {baseline['accuracy_pct']}% -> {final['accuracy_pct']}%, "
-        f"CoT leak {baseline['cot_leak_pct']}% -> {final['cot_leak_pct']}%"
+        f"skill-leak {baseline['skill_leak_pct']}% -> {final['skill_leak_pct']}%, "
+        f"self-echo {baseline['self_echo_pct']}% -> {final['self_echo_pct']}%"
     )
 
 

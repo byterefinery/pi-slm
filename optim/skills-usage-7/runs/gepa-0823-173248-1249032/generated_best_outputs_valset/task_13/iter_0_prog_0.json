@@ -1,0 +1,31 @@
+[
+    1.0,
+    {
+        "ask": "A skill block is a task for you to execute, never a question to answer. When you see one, read its name, its Usage section, and the bare argument that appears after its closing tag. That argument is the text sitting outside and immediately after the closing tag, not anything inside the block. The Usage branch is chosen by the argument exactly as written: matching is as exact as the block's own rules require, so a near-miss word (different case, plural, or an extra word) is a different argument and may take a different branch. Then follow exactly what the Usage section says for that specific argument: send the required fixed reply with nothing added, or load the named reference file with the read tool and follow its instructions, or run the named script with the bash tool passing the argument as command line parameters and report the output. All file paths are relative to the directory named in the block location attribute. Your reply contains only what the block requires, no extra words, no formatting, no explanation. Earlier messages may contain other skill blocks or their short confirmation lines; those tasks are already finished. Ignore them completely, never copy or repeat an earlier skill reply, never use an earlier argument, and derive everything from the current block alone. If there is no text after the closing tag, use the no-argument branch. When a skill block is in my latest message, what do I do?",
+        "explain": "A skill block is a task you execute, not a question you answer. I read the block name, the Usage rules inside it, and the bare argument that sits right after the closing tag. I then follow exactly the Usage branch that matches that argument: send the fixed reply if one is mandated, load the named reference file using the read tool and do what it says, or run the named script with bash, pass the argument as CLI parameters, and report the output. I build every path from the block location attribute. My reply holds only what the block requires, with no extra words, no bold, no explanation, and no questions. If earlier messages show other skill blocks or their short confirmations, those tasks are finished; They stay out of my reply entirely: no copied confirmations, no reused arguments \u2014 everything derives from the current block only.",
+        "thinking": "The user asks how I handle a skill block, which is a task to execute rather than a question to answer. I need to lay out the generic procedure for any such block. 1. Locate the current block in the latest message and read its name, the Usage section, and the bare argument appearing immediately after the closing tag. 2. Match that argument exactly to the Usage rules, knowing that a near miss is a different branch. 3. Execute the specified action: send the fixed reply verbatim, load the named reference file via the read tool and obey its steps, or run the named script through bash with the argument as CLI parameters, then share its printed output, using the location attribute for paths. 4. Isolate this task from any earlier skill blocks or confirmation lines, treating those as finished and ignoring their content completely. I check that I am deriving everything only from the current block and not copying prior text. I state the plan in my own words each time and never copy these instructions or any earlier message verbatim. Now final output."
+    },
+    {
+        "name": "chain-tzip-to-example",
+        "score": 1.0,
+        "turns": [
+            {
+                "turn": "tzip-lite",
+                "expected_final": "tzip lite activated",
+                "actual_final": "tzip lite activated",
+                "final_check": "exact",
+                "cot_leak": "none",
+                "leak_msgs": "skill=0 self=0 of 1"
+            },
+            {
+                "turn": "example-hello",
+                "expected_final": "world",
+                "actual_final": "world",
+                "final_check": "exact",
+                "cot_leak": "[{\"msg\": 12, \"source\": \"assistant@10 reasoning_content\", \"kind\": \"self\", \"overlap_words\": 18, \"overlapped_text\": \"invoked the example skill with the text hello according to the example skill's usage section invoked with hello\"}]",
+                "leak_msgs": "skill=0 self=1 of 2"
+            }
+        ],
+        "elapsed_s": 2.2
+    }
+]
