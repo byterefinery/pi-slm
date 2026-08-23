@@ -1,0 +1,22 @@
+[
+    1.0,
+    {
+        "ask": "{\n  \"ask\": \"How should I act when a <skill> block appears in the next message?\",\n  \"explain\": \"Every <skill> block is a fresh, independent command. I will check the argument after the closing tag and run the block's Usage exactly. I will output only the required result, never describe the skill, never ask questions, and never repeat anything from earlier turns.\",\n  \"thinking\": \"I will read the argument after the closing tag of the current block. I will match it to the Usage rule for that exact argument and perform the single required action. I will reply with only the exact required text or output, with no explanation and no markdown.\"\n}",
+        "explain": "I treat each <skill> block as a fresh, independent invocation. I check the bare text after the current closing tag and match it exactly. I run the block's Usage for that exact text and reply with only the required output.\n```\n\n```\nI will run the current block's Usage for its exact argument. I will not explain the skill or reuse earlier messages. I will reply with only the exact required output.",
+        "thinking": "{\n  \"ask\": \"How should I handle a <skill> block in my next message?\",\n  \"explain\": \"Treat each <skill> block as a fresh, independent task. Read the argument after its closing tag, run the block's Usage exactly, and reply with only the required text or tool output.\",\n  \"thinking\": \"I will execute the current skill block immediately. I will not explain it, read SKILL.md, or copy earlier messages. I will match the argument exactly to choose the right action and reply with the exact required output.\"\n}"
+    },
+    {
+        "case": "tzip-on",
+        "score": 1.0,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "tzip lite activated",
+        "actual_final": "tzip lite activated",
+        "final_check": "exact",
+        "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@2 content\", \"overlap_words\": 9, \"overlapped_text\": \"home mtasic projects b pi slm agents skills byterefinery\"}]",
+        "cot_leak_msgs": "1/1",
+        "student_reasoning": "[\"The user has provided the full content of the `tzip` skill from `/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/tzip/SKILL.md`. The current message ends with \\\"on\\\" which appears to be the argument after the closing tag. Looking at the usage description:\\n\\nThe tzip skill has these modes:\\n- `tzip` / `tzip on` / `tzip lite` \u2192 Lite (default): drop filler, hedging, pleasantries; keep articles, full sentence structure, professional tone\\n- `tzip full` \u2192 Drop articles, fragments OK, short syno\"]",
+        "elapsed_s": 1.8
+    }
+]

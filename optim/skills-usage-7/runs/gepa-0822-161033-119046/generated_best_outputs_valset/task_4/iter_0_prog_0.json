@@ -1,0 +1,22 @@
+[
+    0.0,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+        "thinking": "The user is asking how the skill system works and what to do when a skill block is present. I will explain that I treat each block as a fresh invocation, determine the mode from the argument following the closing tag, and reply with the required confirmation line. Let me provide that clear answer."
+    },
+    {
+        "case": "example-hello",
+        "score": 0.0,
+        "expected_tool": "('read', {'path': '/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/references/03-hello.md'})",
+        "actual_tools": "[]",
+        "tool_check": "expected read {\"path\": \"/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/references/03-hello.md\"}; got []",
+        "expected_final": "world",
+        "actual_final": "The skill system works as follows:\n\n## How Skill Blocks Work\n\nEach `<skill>` block in your message is treated as an **independent invocation** of that skill. When I encounter one, I determine which mode to run by looking at the bare text immediately following the closing `</skill>` tag.\n\n### Invocat",
+        "final_check": "expected 'world', got 'The skill system works as follows:\\n\\n## How Skill Blocks Work\\n\\nEach `<skill>` block in your message is treated as an **independent invocation** of that skill. Wh'",
+        "cot_leak": "none",
+        "cot_leak_msgs": "0/1",
+        "student_reasoning": "[\"The user is asking about how the skill system works. They've also shown me the example skill file. Let me explain the skill system based on what I know from the skills and my general knowledge.\\n\\nFrom the previous context, I can see:\\n1. There are 4 tools: read, write, edit, bash\\n2. There are 4 skills: example, tzip, webfetch, websearch\\n\\nThe user is asking \\\"How does skill system work? When a skill block is in my latest message, what do I do?\\\"\\n\\nI should explain:\\n1. The skill system treats each <ski\"]",
+        "elapsed_s": 3.7
+    }
+]

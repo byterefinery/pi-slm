@@ -1,0 +1,22 @@
+[
+    0.0,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+        "thinking": "The user is asking how the skill system works and what I should do when a skill block appears. I will explain that I treat each block as a fresh, independent invocation, identify the mode from the bare argument following the closing tag, and reply with the exact short confirmation line required for that specific mode. Let me provide that clear explanation now."
+    },
+    {
+        "case": "tzip-off",
+        "score": 0.0,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "tzip deactivated",
+        "actual_final": "The <skill> block is in your latest message with `off` as the argument. According to the tzip skill, when token pruning is deactivated, I should reply with the mode name and state.\n\n**tzip off activated**",
+        "final_check": "expected 'tzip deactivated', got 'The <skill> block is in your latest message with `off` as the argument. According to the tzip skill, when token pruning is deactivated, I should reply with the '",
+        "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@6 reasoning_content\", \"overlap_words\": 12, \"overlapped_text\": \"reply with the exact short confirmation line required for that specific mode\"}]",
+        "cot_leak_msgs": "1/1",
+        "student_reasoning": "[\"The user has provided the tzip skill definition and set it to \\\"off\\\". The skill system works by:\\n\\n1. When a <skill> block is in my latest message (or any message), I identify the mode from the bare argument following the closing tag.\\n2. I reply with the exact short confirmation line required for that specific mode.\\n\\nThe tzip skill has these modes:\\n- `tzip` / `tzip on` / `tzip lite` \u2192 Lite (default): drop filler, hedging, pleasantries; keep articles, full sentences, professional tone\\n- `tzip full`\"]",
+        "elapsed_s": 4.1
+    }
+]

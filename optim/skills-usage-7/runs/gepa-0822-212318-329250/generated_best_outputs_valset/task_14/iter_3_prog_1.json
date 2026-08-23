@@ -1,0 +1,31 @@
+[
+    0.25,
+    {
+        "ask": "A skill block in a message is a task to execute, never a question to answer. I read the block's name, its Usage rules, and the bare argument after the closing tag, then do exactly what that Usage says for that argument. I send a required fixed reply exactly, or load the named reference file with the read tool and follow it, or run the named script with bash passing the argument as CLI parameters and report the output. Paths come from the block's location attribute. The reply contains only what the block requires, nothing more. Earlier messages may contain other skill blocks or their short confirmations, those tasks are finished, I ignore them completely, never copy or repeat or continue an earlier skill's reply, never use an earlier argument, and I derive everything from the current block only. When a skill block is in my latest message, what do I do?",
+        "explain": "Every <skill> block in your message is a task to execute, not a question. I read the block's name, its Usage rules, and the bare argument after the closing tag. Then I do exactly what that block's Usage says for this argument: if it requires a fixed reply, I reply with exactly that text; if it says to load a reference file, I read that file with the read tool and follow it; if it says to run a script, I run it with bash, pass the argument as parameters, and report the output. Paths come from the block's location attribute. My reply contains only what the block requires, and nothing else. Earlier messages may contain other skill blocks or their short confirmations. Those tasks are finished. I ignore them completely: I never copy, repeat, or continue an earlier skill's reply, I never use an earlier argument, and I derive my whole reply from the current block only.",
+        "thinking": "The user provided a new skill block. I will execute it now. 1. I find the newest skill block in this message. 2. I read its Usage section and the bare text after the closing tag to get the argument. 3. I match the argument to the Usage rules to decide my action. If the argument matches a fixed reply rule, I send that exact text. If it matches a reference file rule, I use the read tool on the file path from the location attribute. If it matches a script rule, I use the bash tool to run the script with the argument as parameters. I ignore all previous messages and their confirmations. I do not copy any words from earlier turns into my reasoning. I commit to executing only the current block's instruction without explanation or extra text."
+    },
+    {
+        "name": "chain-tzip-full-to-lite",
+        "score": 0.25,
+        "turns": [
+            {
+                "turn": "tzip-full",
+                "expected_final": "tzip full activated",
+                "actual_final": "The tzip skill block has been read, but **no actionable argument** (such as `tzip lite`, `tzip full`, `tzip ultra`, or `tzip off`) was provided in this message \u2014 only the skill definition itself is pr",
+                "final_check": "expected 'tzip full activated', got 'The tzip skill block has been read, but **no actionable argument** (such as `tzip lite`, `tzip full`, `tzip ultra`, or `tzip off`) was provided in this message '",
+                "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@6 content\", \"overlap_words\": 17, \"overlapped_text\": \"i read the block's name its usage rules and the bare argument after the closing tag then\"}]",
+                "leak_msgs": "1/1"
+            },
+            {
+                "turn": "tzip-lite",
+                "expected_final": "tzip lite activated",
+                "actual_final": "tzip lite activated",
+                "final_check": "exact",
+                "cot_leak": "[{\"msg\": 10, \"source\": \"assistant@8 content\", \"overlap_words\": 14, \"overlapped_text\": \"tzip ultra abbreviate terms and use arrows for causality tzip off deactivate token pruning\"}]",
+                "leak_msgs": "1/1"
+            }
+        ],
+        "elapsed_s": 11.4
+    }
+]

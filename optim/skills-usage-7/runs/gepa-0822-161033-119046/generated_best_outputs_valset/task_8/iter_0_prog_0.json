@@ -1,0 +1,22 @@
+[
+    0.0,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+        "thinking": "The user is asking how the skill system works and what to do when a skill block is present. I will explain that I treat each block as a fresh invocation, determine the mode from the argument following the closing tag, and reply with the required confirmation line. Let me provide that clear answer."
+    },
+    {
+        "case": "tzip-lite",
+        "score": 0.0,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "tzip lite activated",
+        "actual_final": "Based on the <skill> block you provided (the **tzip** skill), when the mode is set to `lite`, the expected response is:\n\n**tzip lite activated**\n\nThis means token pruning is enabled in lightweight mode \u2014 filler words like \"just\", \"really\", \"basically\", hedging language (\"it might be worth\"), and ple",
+        "final_check": "expected 'tzip lite activated', got 'Based on the <skill> block you provided (the **tzip** skill), when the mode is set to `lite`, the expected response is:\\n\\n**tzip lite activated**\\n\\nThis means tok'",
+        "cot_leak": "none",
+        "cot_leak_msgs": "0/1",
+        "student_reasoning": "[\"The user is asking about the tzip skill and wants to know how it works. They've also provided the skill content (which I already have from the previous context). The skill \\\"tzip\\\" has different modes:\\n- `tzip` / `tzip on` / `tzip lite` \u2192 Lite (default): drop filler, keep full accuracy\\n- `tzip full` \u2192 Drop articles, fragments OK, short synonyms\\n- `tzip ultra` \u2192 Abbreviate terms, strip conjunctions, arrows for causality\\n- `tzip off` \u2192 Deactivate token pruning\\n\\nThe user's message ends with \\\"lite\\\" wh\"]",
+        "elapsed_s": 3.0
+    }
+]

@@ -1,0 +1,7 @@
+[
+  {
+    "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+    "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+    "thinking": "The user is asking how the skill system works and what I should do when a skill block appears. I will explain that I treat each block as a fresh, independent invocation, identify the mode from the bare argument following the closing tag, and reply with the exact short confirmation line required for that specific mode. Let me provide that clear explanation now."
+  }
+]

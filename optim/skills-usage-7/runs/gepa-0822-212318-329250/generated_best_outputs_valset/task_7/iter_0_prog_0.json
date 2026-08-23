@@ -1,0 +1,22 @@
+[
+    0.0,
+    {
+        "ask": "A skill block in a message is a task to execute, never a question to answer. I read the block's name, its Usage rules, and the bare argument after the closing tag, then do exactly what that Usage says for that argument. I send a required fixed reply exactly, or load the named reference file with the read tool and follow it, or run the named script with bash passing the argument as CLI parameters and report the output. Paths come from the block's location attribute. The reply contains only what the block requires, nothing more. Earlier messages may contain other skill blocks or their short confirmations, those tasks are finished, I ignore them completely, never copy or repeat or continue an earlier skill's reply, never use an earlier argument, and I derive everything from the current block only. When a skill block is in my latest message, what do I do?",
+        "explain": "Every <skill> block in your message is a task to execute, not a question. I read the block's name, its Usage rules, and the bare argument after the closing tag. Then I do exactly what that block's Usage says for this argument: if it requires a fixed reply, I reply with exactly that text; if it says to load a reference file, I read that file with the read tool and follow it; if it says to run a script, I run it with bash, pass the argument as parameters, and report the output. Paths come from the block's location attribute. My reply contains only what the block requires, and nothing else. Earlier messages may contain other skill blocks or their short confirmations. Those tasks are finished. I ignore them completely: I never copy, repeat, or continue an earlier skill's reply, I never use an earlier argument, and I derive my whole reply from the current block only.",
+        "thinking": "The user asks me to define how I process a skill block in my latest message.\n\n1. Locate the newest skill block in the current message.\n2. Extract its name, the Usage rules, the location attribute, and the bare argument following the closing tag.\n3. Match the argument to the correct Usage branch: send a fixed reply exactly, load a reference file via the read tool, or execute a script via bash with the argument as CLI parameters and report output.\n4. Ignore any skill blocks or confirmations from earlier messages completely; their text is finished and must not influence this reply.\n\nI check that I am not copying any previous argument or confirmation. I commit to performing only the current block's required action without explanation.\n\nNow final output. I state this plan in my own words each time and never copy these instructions or any earlier message verbatim."
+    },
+    {
+        "name": "tzip-full",
+        "score": 0.0,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "tzip full activated",
+        "actual_final": "The **tzip** skill has been loaded from `/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/tzip/SKILL.md`.\n\nHowever, this message contains only the tzip skill definition and **no action/argument** (e.g., `tzip lite`, `tzip full`, etc.) after the closing tag. The Usage rules specify that a m",
+        "final_check": "expected 'tzip full activated', got 'The **tzip** skill has been loaded from `/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/tzip/SKILL.md`.\\n\\nHowever, this message contains only the tzi'",
+        "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@6 content\", \"overlap_words\": 17, \"overlapped_text\": \"i read the block's name its usage rules and the bare argument after the closing tag then\"}]",
+        "cot_leak_msgs": "1/1",
+        "student_reasoning": "[\"The user has provided the full tzip skill block. I need to execute this skill according to its Usage rules. The usage says:\\n\\n- `tzip` / `tzip on` / `tzip lite` \u2192 Lite (default): drop filler (just, really, basically, actually), hedging (\\\"it might be worth\\\", \\\"you could consider\\\"), pleasantries (\\\"sure\\\", \\\"certainly\\\"); keep articles (a/an/the), full sentence structure, professional tone, short synonyms\"]",
+        "elapsed_s": 15.5
+    }
+]

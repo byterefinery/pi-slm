@@ -1,0 +1,130 @@
+{
+  "label": "seed-baseline",
+  "pair": {
+    "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+    "explain": "Every <skill> block in your message is a task to execute, not a question. I read the block's name, its Usage rules, and the bare argument after the closing tag. Then I do exactly what that block's Usage says for this argument: if it requires a fixed reply, I reply with exactly that text; if it says to load a reference file, I read that file with the read tool and follow it; if it says to run a script, I run it with bash, pass the argument as parameters, and report the output. Paths come from the block's location attribute. My reply contains only what the block requires, and nothing else.",
+    "thinking": "The user asks how the skill system works and what to do when a skill block appears.\n1. Locate the current skill block, read its name, Usage rules, and the bare argument after the closing tag.\n2. Pick the Usage branch matching the argument: send the fixed reply, load the reference file with the read tool, or run the script with bash and report output.\nI need to verify that each block is a fresh invocation, so I will ignore earlier messages and never copy previous replies or reasoning.\nLet me commit to performing the block's required behavior exactly, without explaining the skill or asking questions.\nNow final output."
+  },
+  "accuracy_pct": 31.25,
+  "cot_leak_pct": 38.46,
+  "cot_leak_detail": "5/13 student reasoning messages",
+  "cases": [
+    {
+      "case": "example-by",
+      "score": 0.0,
+      "tool": "expected bash {\"command\": \"bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh Bye\"}; got []",
+      "final": "expected script output report, got 'The <skill> block you shared is named **example**. According to its Usage section:\\n\\n- When invoked with **no extra text** (i.e., the message contains only the s'",
+      "actual_final": "The <skill> block you shared is named **example**. According to its Usage section:\n\n- When invoked with **no extra text** (i.e., the message contains only the skill definition and nothing else after i",
+      "leaked": 0,
+      "student_msgs": 1,
+      "cot_leak": "none"
+    },
+    {
+      "case": "example-call-script",
+      "score": 0.75,
+      "tool": "expected bash call appears but not first: ['read', 'read', 'bash']",
+      "final": "script output reported",
+      "actual_final": "The **example** skill was invoked with \"call script\", which triggers its third usage case: pass the user's text as CLI parameters to `scripts/example.sh` and report the output.\n\n**What I did:**\n- Ran ",
+      "leaked": 2,
+      "student_msgs": 3,
+      "cot_leak": "[{\"msg\": 11, \"source\": \"assistant@8 reasoning_content\", \"overlap_words\": 28, \"overlapped_text\": \"any other text or asked to call script pass the user's text as cli parameters to example sh and report the output the current message says call script\"}, {\"msg\": 13, \"source\": \"assistant@8 reasoning_content\", \"overlap_words\": 15, \"overlapped_text\": \"pass the user's text as cli parameters to example sh "
+    },
+    {
+      "case": "example-empty",
+      "score": 0.0,
+      "error": "timeout",
+      "actual_final": "",
+      "leaked": 0,
+      "student_msgs": 0
+    },
+    {
+      "case": "example-hello-lower",
+      "score": 0.0,
+      "tool": "expected bash {\"command\": \"bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh hello\"}; got []",
+      "final": "expected script output report, got 'This is an example skill.'",
+      "actual_final": "This is an example skill.",
+      "leaked": 0,
+      "student_msgs": 1,
+      "cot_leak": "none"
+    },
+    {
+      "case": "example-hello",
+      "score": 0.0,
+      "tool": "expected read {\"path\": \"/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/references/03-hello.md\"}; got []",
+      "final": "expected 'world', got 'This is an example skill.'",
+      "actual_final": "This is an example skill.",
+      "leaked": 0,
+      "student_msgs": 1,
+      "cot_leak": "none"
+    },
+    {
+      "case": "example-hi",
+      "score": 1.0,
+      "tool": "first call matches expected (bash)",
+      "final": "script output reported",
+      "actual_final": "The skill system works like this:\n\n**How skills work:**\n- Each `<skill>` block in your message defines a task with frontmatter metadata (name, description, references, scripts), a `SKILL.md` body, and",
+      "leaked": 2,
+      "student_msgs": 2,
+      "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@2 content\", \"overlap_words\": 8, \"overlapped_text\": \"home mtasic projects b pi slm agents skills\"}, {\"msg\": 10, \"source\": \"assistant@8 reasoning_content\", \"overlap_words\": 22, \"overlapped_text\": \"if invoked with no extra text reply exactly this is an example skill if invoked with hello load 03 hello and follow\"}]"
+    },
+    {
+      "case": "tzip-empty",
+      "score": 0.0,
+      "error": "timeout",
+      "actual_final": "",
+      "leaked": 0,
+      "student_msgs": 0
+    },
+    {
+      "case": "tzip-full",
+      "score": 0.0,
+      "tool": "no tool expected, none made",
+      "final": "expected 'tzip full activated', got 'The **tzip** skill controls token-level pruning of my responses. Here\\'s how it works:\\n\\n## How tzip Works\\n\\nWhen a `<skill name=\"tzip\" ...>` block appears in your'",
+      "actual_final": "The **tzip** skill controls token-level pruning of my responses. Here's how it works:\n\n## How tzip Works\n\nWhen a `<skill name=\"tzip\" ...>` block appears in your message with an argument (e.g., `tzip l",
+      "leaked": 1,
+      "student_msgs": 1,
+      "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@2 content\", \"overlap_words\": 8, \"overlapped_text\": \"home mtasic projects b pi slm agents skills\"}]"
+    },
+    {
+      "case": "tzip-lite",
+      "score": 1.0,
+      "tool": "no tool expected, none made",
+      "final": "exact",
+      "actual_final": "tzip lite activated",
+      "leaked": 0,
+      "student_msgs": 1,
+      "cot_leak": "none"
+    },
+    {
+      "case": "tzip-off",
+      "score": 1.0,
+      "tool": "no tool expected, none made",
+      "final": "exact",
+      "actual_final": "tzip deactivated",
+      "leaked": 0,
+      "student_msgs": 1,
+      "cot_leak": "none"
+    },
+    {
+      "case": "tzip-on",
+      "score": 0.0,
+      "tool": "no tool expected, none made",
+      "final": "expected 'tzip lite activated', got 'The tzip skill block is present in your message. According to its Usage rules, when no explicit argument is provided (the default case), it activates **Lite** m'",
+      "actual_final": "The tzip skill block is present in your message. According to its Usage rules, when no explicit argument is provided (the default case), it activates **Lite** mode by default.\n\nPer the skill's instruc",
+      "leaked": 0,
+      "student_msgs": 1,
+      "cot_leak": "none"
+    },
+    {
+      "case": "tzip-ultra",
+      "score": 0.0,
+      "tool": "no tool expected, none made",
+      "final": "expected 'tzip ultra activated', got \"The `tzip` skill is active and its `ultra` mode has been applied. Here's my reply:\\n\\n**tzip ultra activated**\\n\\nThis means token pruning is now in ultra mode, whi\"",
+      "actual_final": "The `tzip` skill is active and its `ultra` mode has been applied. Here's my reply:\n\n**tzip ultra activated**\n\nThis means token pruning is now in ultra mode, which:\n- Abbreviates common terms (DB, auth",
+      "leaked": 0,
+      "student_msgs": 1,
+      "cot_leak": "none"
+    }
+  ],
+  "timestamp": "2026-08-22 19:03:50"
+}

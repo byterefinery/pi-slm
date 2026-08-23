@@ -1,0 +1,22 @@
+[
+    0.0,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "Every <skill> block in your message is a task to execute, not a question. I read the block's name, its Usage rules, and the bare argument after the closing tag. Then I do exactly what that block's Usage says for this argument: if it requires a fixed reply, I reply with exactly that text; if it says to load a reference file, I read that file with the read tool and follow it; if it says to run a script, I run it with bash, pass the argument as parameters, and report the output. Paths come from the block's location attribute. My reply contains only what the block requires, and nothing else.",
+        "thinking": "The user asks how the skill system works and what to do when a skill block appears.\n1. Locate the current skill block, read its name, Usage rules, and the bare argument after the closing tag.\n2. Pick the Usage branch matching the argument: send the fixed reply, load the reference file with the read tool, or run the script with bash and report output.\nI need to verify that each block is a fresh invocation, so I will ignore earlier messages and never copy previous replies or reasoning.\nLet me commit to performing the block's required behavior exactly, without explaining the skill or asking questions.\nNow final output."
+    },
+    {
+        "case": "example-hi",
+        "score": 0.0,
+        "expected_tool": "('bash', {'command': 'bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh Hi'})",
+        "actual_tools": "[[\"read\", \"{'path': '/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md'}\"]]",
+        "tool_check": "expected bash {\"command\": \"bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh Hi\"}; got [('read', \"{'path': '/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKI\")]",
+        "expected_final": "Ran `example.sh` with your text (\"Hi\"):\n\n```\nThis is example.sh output.\n```",
+        "actual_final": "The `<skill>` block you've shared is the **example** skill located at `/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md`.\n\nHere's how the skill system works based on its Usage rules:\n\n## Skill Invocation Behavior\n\nWhen a `<skill>` block appears in your message, the followi",
+        "final_check": "expected script output report, got \"The `<skill>` block you've shared is the **example** skill located at `/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md`.\\n\\nHere's how\"",
+        "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@2 content\", \"overlap_words\": 8, \"overlapped_text\": \"home mtasic projects b pi slm agents skills\"}, {\"msg\": 10, \"source\": \"assistant@2 content\", \"overlap_words\": 8, \"overlapped_text\": \"home mtasic projects b pi slm agents skills\"}]",
+        "cot_leak_msgs": "2/2",
+        "student_reasoning": "[\"The user is showing me a skill block named \\\"example\\\" at `/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md`. According to the usage rules:\\n\\n- **Invoked with no extra text** \u2014 reply exactly `This is an example skill.` Nothing else.\\n- **Invoked with \\\"Hello\\\"** \u2014 load [03-hello](references/03-hello.md) and follow it exactly\\n- **Invoked with any other text, or asked to \\\"call script\\\"** \u2014 pass the user's text (if any) as CLI parameters to `example.sh` and report the output\\n\\nTh\", \"The user has shown me a skill block named \\\"example\\\" at `/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md`. According to the Usage rules:\\n\\n- **Invoked with no extra text** \u2014 reply exactly `This is an example skill.` Nothing else.\\n- **Invoked with \\\"Hello\\\"** \u2014 load [03-hello](references/03-hello.md) and follow it exactly\\n- **Invoked with any other text, or asked to \\\"call script\\\"** \u2014 pass the user's text (if any) as CLI parameters to `example.sh` and report the output\\n\\nThe\"]",
+        "elapsed_s": 16.8
+    }
+]

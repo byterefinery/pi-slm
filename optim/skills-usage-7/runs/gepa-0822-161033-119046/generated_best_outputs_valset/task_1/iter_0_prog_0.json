@@ -1,0 +1,22 @@
+[
+    0.0,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+        "thinking": "The user is asking how the skill system works and what to do when a skill block is present. I will explain that I treat each block as a fresh invocation, determine the mode from the argument following the closing tag, and reply with the required confirmation line. Let me provide that clear answer."
+    },
+    {
+        "case": "example-call-script",
+        "score": 0.0,
+        "expected_tool": "('bash', {'command': 'bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh'})",
+        "actual_tools": "[[\"read\", \"{'path': '/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md'}\"], [\"read\", \"{'path': '/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh'}\"]]",
+        "tool_check": "expected bash {\"command\": \"bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh\"}; got [('read', \"{'path': '/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKI\"), ('read', \"{'path': '/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scr\")]",
+        "expected_final": "Ran `scripts/example.sh` (no parameters):\n\n```\nThis is example.sh output.\n```",
+        "actual_final": "## How the Skill System Works\n\nThe skill system treats each `<skill>` block in your message as an **independent invocation** with three possible modes:\n\n| Mode | Trigger | Action |\n|------|---------|--------|\n| **No extra text** | User sends only the skill block (e.g., ````<skill name=\"example\" ...>",
+        "final_check": "expected script output report, got '## How the Skill System Works\\n\\nThe skill system treats each `<skill>` block in your message as an **independent invocation** with three possible modes:\\n\\n| Mode '",
+        "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@6 reasoning_content\", \"overlap_words\": 8, \"overlapped_text\": \"what to do when a skill block is\"}, {\"msg\": 11, \"source\": \"assistant@6 reasoning_content\", \"overlap_words\": 10, \"overlapped_text\": \"what to do when a skill block is present i\"}]",
+        "cot_leak_msgs": "2/2",
+        "student_reasoning": "[\"The user is asking about how the skill system works, specifically when a skill block is in their latest message. They've also said \\\"call script\\\" which seems to be referring to the example skill's `scripts/example.sh` script.\\n\\nLet me first read the example skill file to understand its structure and then run the script as instructed. The user wants to know:\\n1. How the skill system works\\n2. What to do when a skill block is in their latest message\\n\\nFrom what I've seen, the example skill has three mo\", \"The user asked two questions:\\n1. How does the skill system work?\\n2. When a skill block is in their latest message, what do I do?\\n\\nFrom my previous reading of the skills and references, I can explain:\\n\\n**How the skill system works:**\\n- Each `<skill>` block in a message is treated as an independent invocation\\n- The mode is determined by the text immediately following the closing tag:\\n  - **No extra text** \u2192 reply exactly `This is an example skill.` (no explanation, no script)\\n  - **\\\"Hello\\\"** \u2192 fol\"]",
+        "elapsed_s": 6.2
+    }
+]

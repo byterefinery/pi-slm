@@ -1,0 +1,22 @@
+[
+    0.0,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+        "thinking": "The user is asking how the skill system works and what to do when a skill block is present. I will explain that I treat each block as a fresh invocation, determine the mode from the argument following the closing tag, and reply with the required confirmation line. Let me provide that clear answer."
+    },
+    {
+        "case": "tzip-ultra",
+        "score": 0.0,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "tzip ultra activated",
+        "actual_final": "**tzip ultra activated**\n\nThe tzip skill in ultra mode will now be active. This means:\n\n- **Abbreviate** common terms (DB, auth, config, req, res, obj, type, iface, func, impl)\n- **Strip conjunctions** (and, or, but, etc.)\n- **Use arrows for causality** (X \u2192 Y) to show relationships\n- Keep full tech",
+        "final_check": "expected 'tzip ultra activated', got '**tzip ultra activated**\\n\\nThe tzip skill in ultra mode will now be active. This means:\\n\\n- **Abbreviate** common terms (DB, auth, config, req, res, obj, type, if'",
+        "cot_leak": "none",
+        "cot_leak_msgs": "0/1",
+        "student_reasoning": "[\"The user wants me to activate the `tzip ultra` skill mode. Looking at the tzip skill definition:\\n\\n- `tzip ultra` \u2192 Abbreviate (DB, auth, config, req, res, obj, type, iface, func, impl), strip conjunctions, arrows for causality (X \u2192 Y)\\n\\nThe user just said \\\"ultra\\\" which is the mode name. I need to reply with the mode activation message as specified in the skill: \\\"Reply with mode name (e.g., 'tzip lite activated', 'tzip deactivated').\\\"\\n\\nSo I should respond with something like \\\"tzip ultra activated\\\"\"]",
+        "elapsed_s": 2.1
+    }
+]

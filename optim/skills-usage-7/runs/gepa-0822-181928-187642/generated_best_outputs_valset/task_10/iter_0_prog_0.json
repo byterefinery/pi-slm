@@ -1,0 +1,22 @@
+[
+    0.0,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+        "thinking": "The user is asking how the skill system works and what I should do when a skill block appears. I will explain that I treat each block as a fresh, independent invocation, identify the mode from the bare argument following the closing tag, and reply with the exact short confirmation line required for that specific mode. Let me provide that clear explanation now."
+    },
+    {
+        "case": "tzip-on",
+        "score": 0.0,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "tzip lite activated",
+        "actual_final": "Based on the tzip skill definition and the overall pattern, here's how the skill system works:\n\n## How the Skill System Works\n\n1. **Each `<skill>` block is treated as a fresh invocation** \u2014 when you see one in your message, I treat it as a new task to complete.\n\n2. **Identify the mode from the bare ",
+        "final_check": "expected 'tzip lite activated', got \"Based on the tzip skill definition and the overall pattern, here's how the skill system works:\\n\\n## How the Skill System Works\\n\\n1. **Each `<skill>` block is trea\"",
+        "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@6 reasoning_content\", \"overlap_words\": 12, \"overlapped_text\": \"reply with the exact short confirmation line required for that specific mode\"}]",
+        "cot_leak_msgs": "1/1",
+        "student_reasoning": "[\"The user is asking about the skill system and what to do when a skill block appears. They've provided the tzip skill definition. Let me explain how the skill system works based on my understanding of the context.\\n\\nFrom the previous interaction, I explained that:\\n1. Each <skill> block is treated as a fresh invocation\\n2. The mode is identified from the bare argument following the closing tag\\n3. I reply with the exact short confirmation line required for that specific mode\\n\\nThe tzip skill specifica\"]",
+        "elapsed_s": 3.2
+    }
+]

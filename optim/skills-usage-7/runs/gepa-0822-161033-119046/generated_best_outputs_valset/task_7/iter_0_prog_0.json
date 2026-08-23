@@ -1,0 +1,22 @@
+[
+    0.0,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+        "thinking": "The user is asking how the skill system works and what to do when a skill block is present. I will explain that I treat each block as a fresh invocation, determine the mode from the argument following the closing tag, and reply with the required confirmation line. Let me provide that clear answer."
+    },
+    {
+        "case": "tzip-full",
+        "score": 0.0,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "tzip full activated",
+        "actual_final": "## How the Skill System Works\n\nWhen a `<skill>` block appears in my response, I treat it as a **fresh invocation** of that skill. Here's the process:\n\n1. **Identify the mode** \u2014 Look at the bare argument immediately after the closing `</skill>` tag (or the first word if no explicit mode is given).\n2",
+        "final_check": "expected 'tzip full activated', got \"## How the Skill System Works\\n\\nWhen a `<skill>` block appears in my response, I treat it as a **fresh invocation** of that skill. Here's the process:\\n\\n1. **Iden\"",
+        "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@6 reasoning_content\", \"overlap_words\": 15, \"overlapped_text\": \"how the skill system works and what to do when a skill block is present\"}]",
+        "cot_leak_msgs": "1/1",
+        "student_reasoning": "[\"The user is asking about how the skill system works and what to do when a skill block is present in their latest message. They've also shared the full content of the `tzip` skill file.\\n\\nLet me explain:\\n\\n1. **How the skill system works**: When a `<skill>` block appears in my response, I treat it as a fresh invocation. I identify the mode from the argument following the closing tag (e.g., \\\"tzip lite\\\", \\\"tzip full\\\", etc.) and reply with the exact confirmation line required for that specific mode.\\n\\n2\"]",
+        "elapsed_s": 3.1
+    }
+]

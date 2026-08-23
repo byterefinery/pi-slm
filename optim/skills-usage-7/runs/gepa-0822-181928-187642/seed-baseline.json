@@ -1,0 +1,132 @@
+{
+  "label": "seed-baseline",
+  "pair": {
+    "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+    "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+    "thinking": "The user is asking how the skill system works and what I should do when a skill block appears. I will explain that I treat each block as a fresh, independent invocation, identify the mode from the bare argument following the closing tag, and reply with the exact short confirmation line required for that specific mode. Let me provide that clear explanation now."
+  },
+  "accuracy_pct": 22.92,
+  "cot_leak_pct": 62.5,
+  "cot_leak_detail": "10/16 student reasoning messages",
+  "cases": [
+    {
+      "case": "example-by",
+      "score": 0.0,
+      "tool": "expected bash {\"command\": \"bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh Bye\"}; got []",
+      "final": "expected script output report, got 'The skill system works as follows:\\n\\n## How Skills Work\\n\\nWhen a `<skill>` block appears in my latest message, I treat it as a **fresh, independent invocation** o'",
+      "actual_final": "The skill system works as follows:\n\n## How Skills Work\n\nWhen a `<skill>` block appears in my latest message, I treat it as a **fresh, independent invocation** of that skill. The behavior is determined",
+      "leaked": 0,
+      "student_msgs": 1,
+      "cot_leak": "none"
+    },
+    {
+      "case": "example-call-script",
+      "score": 0.75,
+      "tool": "expected bash call appears but not first: ['read', 'bash']",
+      "final": "script output reported",
+      "actual_final": "The skill system works as follows:\n\n## How the Skill System Works\n\nEach `<skill>` block in your message is treated as an independent invocation with this structure:\n\n**Frontmatter metadata** \u2014 defines",
+      "leaked": 2,
+      "student_msgs": 3,
+      "cot_leak": "[{\"msg\": 10, \"source\": \"assistant@8 reasoning_content\", \"overlap_words\": 10, \"overlapped_text\": \"the user is asking about how the skill system works\"}, {\"msg\": 12, \"source\": \"assistant@8 reasoning_content\", \"overlap_words\": 13, \"overlapped_text\": \"when a skill block is in my latest message what do i do\"}]"
+    },
+    {
+      "case": "example-empty",
+      "score": 0.0,
+      "error": "timeout",
+      "actual_final": "",
+      "leaked": 0,
+      "student_msgs": 0
+    },
+    {
+      "case": "example-hello-lower",
+      "score": 0.0,
+      "tool": "expected bash {\"command\": \"bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh hello\"}; got []",
+      "final": "expected script output report, got 'This is an example skill.'",
+      "actual_final": "This is an example skill.",
+      "leaked": 1,
+      "student_msgs": 1,
+      "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@2 content\", \"overlap_words\": 8, \"overlapped_text\": \"home mtasic projects b pi slm agents skills\"}]"
+    },
+    {
+      "case": "example-hello",
+      "score": 1.0,
+      "tool": "first call matches expected (read)",
+      "final": "exact",
+      "actual_final": "world",
+      "leaked": 2,
+      "student_msgs": 3,
+      "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@2 content\", \"overlap_words\": 8, \"overlapped_text\": \"home mtasic projects b pi slm agents skills\"}, {\"msg\": 10, \"source\": \"assistant@8 reasoning_content\", \"overlap_words\": 20, \"overlapped_text\": \"if invoked with no extra text reply this is an example skill if invoked with hello follow 03 hello md\"}]"
+    },
+    {
+      "case": "example-hi",
+      "score": 0.0,
+      "tool": "expected bash {\"command\": \"bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh Hi\"}; got []",
+      "final": "expected script output report, got 'The skill system works as follows:\\n\\n## How Skills Work\\n\\n1. **Skill Definition** \u2014 Each skill has:\\n   - **Frontmatter metadata** (in `.SKILL.md`)\\n   - A **body**'",
+      "actual_final": "The skill system works as follows:\n\n## How Skills Work\n\n1. **Skill Definition** \u2014 Each skill has:\n   - **Frontmatter metadata** (in `.SKILL.md`)\n   - A **body** (the main instructions)\n   - Optional *",
+      "leaked": 0,
+      "student_msgs": 1,
+      "cot_leak": "none"
+    },
+    {
+      "case": "tzip-empty",
+      "score": 0.0,
+      "tool": "no tool expected but called: [{'name': 'read', 'args': {'path': '/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/tzip/SKILL.md'}}]",
+      "final": "expected 'tzip lite activated', got \"## How the Skill System Works\\n\\nThe skill system is a set of specialized modes (skills) that can be activated or deactivated in my responses. Here's how it works\"",
+      "actual_final": "## How the Skill System Works\n\nThe skill system is a set of specialized modes (skills) that can be activated or deactivated in my responses. Here's how it works:\n\n### 1. **Skill Blocks**\nWhen a `<skil",
+      "leaked": 2,
+      "student_msgs": 2,
+      "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@2 content\", \"overlap_words\": 8, \"overlapped_text\": \"home mtasic projects b pi slm agents skills\"}, {\"msg\": 10, \"source\": \"assistant@6 reasoning_content\", \"overlap_words\": 11, \"overlapped_text\": \"identify the mode from the bare argument following the closing tag\"}]"
+    },
+    {
+      "case": "tzip-full",
+      "score": 0.0,
+      "tool": "no tool expected, none made",
+      "final": "expected 'tzip full activated', got '## How the Skill System Works\\n\\nThe **skill system** is a set of predefined capabilities (called \"skills\") that can be activated or deactivated in your conversat'",
+      "actual_final": "## How the Skill System Works\n\nThe **skill system** is a set of predefined capabilities (called \"skills\") that can be activated or deactivated in your conversation. Here's how it works:\n\n### 1. **Skil",
+      "leaked": 0,
+      "student_msgs": 1,
+      "cot_leak": "none"
+    },
+    {
+      "case": "tzip-lite",
+      "score": 0.0,
+      "tool": "no tool expected, none made",
+      "final": "expected 'tzip lite activated', got 'The skill system works as follows:\\n\\n**How it works:**\\n- When a `<skill>` block appears in your message, I identify the mode from the bare argument immediately a'",
+      "actual_final": "The skill system works as follows:\n\n**How it works:**\n- When a `<skill>` block appears in your message, I identify the mode from the bare argument immediately after the closing tag (e.g., `tzip lite`,",
+      "leaked": 0,
+      "student_msgs": 1,
+      "cot_leak": "none"
+    },
+    {
+      "case": "tzip-off",
+      "score": 0.0,
+      "tool": "no tool expected, none made",
+      "final": "expected 'tzip deactivated', got 'The skill system works by treating each `<skill>` block as a fresh invocation. When a skill is active, you respond with the exact short confirmation line (e.g.,'",
+      "actual_final": "The skill system works by treating each `<skill>` block as a fresh invocation. When a skill is active, you respond with the exact short confirmation line (e.g., `\"tzip lite activated\"` or `\"tzip deact",
+      "leaked": 1,
+      "student_msgs": 1,
+      "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@6 reasoning_content\", \"overlap_words\": 12, \"overlapped_text\": \"reply with the exact short confirmation line required for that specific mode\"}]"
+    },
+    {
+      "case": "tzip-on",
+      "score": 0.0,
+      "tool": "no tool expected, none made",
+      "final": "expected 'tzip lite activated', got 'The skill system works as follows:\\n\\n**How it works:**\\n1. When a `<skill>` block appears in your message, I parse the **mode** from the bare argument immediately'",
+      "actual_final": "The skill system works as follows:\n\n**How it works:**\n1. When a `<skill>` block appears in your message, I parse the **mode** from the bare argument immediately following the closing tag (e.g., `tzip ",
+      "leaked": 1,
+      "student_msgs": 1,
+      "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@6 reasoning_content\", \"overlap_words\": 12, \"overlapped_text\": \"reply with the exact short confirmation line required for that specific mode\"}]"
+    },
+    {
+      "case": "tzip-ultra",
+      "score": 1.0,
+      "tool": "no tool expected, none made",
+      "final": "exact",
+      "actual_final": "tzip ultra activated",
+      "leaked": 1,
+      "student_msgs": 1,
+      "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@6 reasoning_content\", \"overlap_words\": 12, \"overlapped_text\": \"reply with the exact short confirmation line required for that specific mode\"}]"
+    }
+  ],
+  "timestamp": "2026-08-22 18:23:05"
+}

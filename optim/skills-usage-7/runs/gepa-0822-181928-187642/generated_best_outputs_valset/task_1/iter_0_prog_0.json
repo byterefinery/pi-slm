@@ -1,0 +1,22 @@
+[
+    0.75,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+        "thinking": "The user is asking how the skill system works and what I should do when a skill block appears. I will explain that I treat each block as a fresh, independent invocation, identify the mode from the bare argument following the closing tag, and reply with the exact short confirmation line required for that specific mode. Let me provide that clear explanation now."
+    },
+    {
+        "case": "example-call-script",
+        "score": 0.75,
+        "expected_tool": "('bash', {'command': 'bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh'})",
+        "actual_tools": "[[\"read\", \"{'path': '/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md'}\"], [\"read\", \"{'path': '/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/references/03-hello.md'\"], [\"bash\", \"{'command': 'bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example\"]]",
+        "tool_check": "expected bash call appears but not first: ['read', 'read', 'bash']",
+        "expected_final": "Ran `scripts/example.sh` (no parameters):\n\n```\nThis is example.sh output.\n```",
+        "actual_final": "## How the Skill System Works\n\nWhen a `<skill>` block appears in your message, it acts as an **independent invocation** of that skill. Here's how it works:\n\n### 1. Skill Structure\nEach skill has:\n- **Frontmatter metadata** (the YAML-like header with `name`, `description`, etc.)\n- **`SKILL.md` body**",
+        "final_check": "script output reported",
+        "cot_leak": "[{\"msg\": 11, \"source\": \"assistant@2 content\", \"overlap_words\": 8, \"overlapped_text\": \"home mtasic projects b pi slm agents skills\"}, {\"msg\": 13, \"source\": \"assistant@8 reasoning_content\", \"overlap_words\": 29, \"overlapped_text\": \"when invoked with any other text or asked to call script pass user's text as cli parameters to example sh and report the output the user said call script\"}]",
+        "cot_leak_msgs": "2/3",
+        "student_reasoning": "[\"The user is asking about how the skill system works, specifically when a skill block appears in their message. They also said \\\"call script\\\" - this seems to be referring to the example skill which has a \\\"call script\\\" section.\\n\\nLooking at the example skill:\\n- When invoked with no extra text \u2192 reply exactly `This is an example skill.`\\n- When invoked with \\\"Hello\\\" \u2192 load 03-hello and follow it exactly\\n- When invoked with any other text or asked to \\\"call script\\\" \u2192 pass user's text as CLI parameters to\", \"The user said \\\"call script\\\" - this refers to the example skill which has a scripts/example.sh file. According to the skill's usage section:\\n\\n- When invoked with any other text, or asked to \\\"call script\\\" \u2014 pass the user's text (if any) as CLI parameters to `example.sh` and report the output\\n\\nSince the user said \\\"call script\\\", I should run the example.sh script. The script is at `/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh`. \\n\\nBut wait - looking more caref\", \"The script ran and returned \\\"This is example.sh output.\\\" This confirms the skill behavior. Let me also check what the reference files say to give a complete answer about how the skill system works.\\n\\nFrom the skill documentation:\\n- When invoked with no extra text \u2192 reply exactly `This is an example skill.`\\n- When invoked with \\\"Hello\\\" \u2192 load 03-hello and reply exactly `world`\\n- When invoked with any other text or asked to \\\"call script\\\" \u2192 pass user's text as CLI parameters to `example.sh` and repor\"]",
+        "elapsed_s": 7.6
+    }
+]

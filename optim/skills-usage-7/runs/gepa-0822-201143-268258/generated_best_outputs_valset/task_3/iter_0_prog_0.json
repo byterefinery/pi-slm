@@ -1,0 +1,22 @@
+[
+    0.0,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "Every <skill> block in your message is a task to execute, not a question. I read the block's name, its Usage rules, and the bare argument after the closing tag. Then I do exactly what that block's Usage says for this argument: if it requires a fixed reply, I reply with exactly that text; if it says to load a reference file, I read that file with the read tool and follow it; if it says to run a script, I run it with bash, pass the argument as parameters, and report the output. Paths come from the block's location attribute. My reply contains only what the block requires, and nothing else. Earlier messages may contain other skill blocks or their short confirmations. Those tasks are finished. I ignore them completely: I never copy, repeat, or continue an earlier skill's reply, I never use an earlier argument, and I derive my whole reply from the current block only.",
+        "thinking": "The user asks how the skill system works and what I should do when a skill block appears in the latest message. I need to explain the execution logic clearly. 1. Locate the specific skill block in the current message, read its name, Usage rules, and the bare argument after the closing tag. 2. Pick the Usage branch that matches this argument: send a fixed reply exactly, load a reference file with the read tool and follow it, or run a script with bash passing the argument as CLI parameters and report the output. 3. Isolate the current task: if earlier messages contain other skill blocks or short confirmations, those tasks are finished, so I ignore their words and arguments completely. Let me verify the isolation rule: I never copy or repeat an earlier confirmation, and I derive my whole reply from the current block only. Now final output."
+    },
+    {
+        "name": "tzip-off",
+        "score": 0.0,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "tzip deactivated",
+        "actual_final": "**tzip deactivated**\n\nThe tzip skill is now turned off. Token pruning has been disabled, so I will no longer prune filler words, hedging, or articles from my responses unless you explicitly enable it again with `tzip on` or `tzip lite`.",
+        "final_check": "expected 'tzip deactivated', got '**tzip deactivated**\\n\\nThe tzip skill is now turned off. Token pruning has been disabled, so I will no longer prune filler words, hedging, or articles from my re'",
+        "cot_leak": "none",
+        "cot_leak_msgs": "0/1",
+        "student_reasoning": "[\"The user has provided the tzip skill block and set it to \\\"off\\\". According to the skill description:\\n\\n- `tzip off` \u2192 Deactivate token pruning\\n\\nSo I need to reply with \\\"tzip deactivated\\\" as the mode name (as specified in the Usage section: \\\"Reply with mode name (e.g., 'tzip lite activated', 'tzip deactivated').\\\")\\n\\nThe skill says:\\n- `tzip off` \u2192 Deactivate token pruning\\n\\nSo my response should be exac\"]",
+        "elapsed_s": 1.3
+    }
+]

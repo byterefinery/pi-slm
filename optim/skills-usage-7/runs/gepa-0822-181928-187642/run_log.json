@@ -1,0 +1,162 @@
+[
+  {
+    "i": 0,
+    "selected_program_candidate": 0,
+    "subsample_ids": [
+      1,
+      10,
+      9
+    ],
+    "n_tasks": 1,
+    "tasks": [
+      {
+        "parent_idx": 0,
+        "subsample_ids": [
+          1,
+          10,
+          9
+        ],
+        "subsample_scores": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "new_subsample_scores": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    ],
+    "subsample_scores": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "new_subsample_scores": [
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  {
+    "i": 1,
+    "selected_program_candidate": 0,
+    "subsample_ids": [
+      5,
+      11,
+      2
+    ],
+    "n_tasks": 1,
+    "tasks": [
+      {
+        "parent_idx": 0,
+        "subsample_ids": [
+          5,
+          11,
+          2
+        ],
+        "subsample_scores": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "new_subsample_scores": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "subsample_scores": [
+      0.0,
+      0.0,
+      0.5
+    ],
+    "new_subsample_scores": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "i": 2,
+    "selected_program_candidate": 0,
+    "subsample_ids": [
+      3,
+      7,
+      8
+    ],
+    "n_tasks": 1,
+    "tasks": [
+      {
+        "parent_idx": 0,
+        "subsample_ids": [
+          3,
+          7,
+          8
+        ],
+        "subsample_scores": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "new_subsample_scores": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "subsample_scores": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "new_subsample_scores": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "i": 3,
+    "selected_program_candidate": 0,
+    "subsample_ids": [
+      4,
+      0,
+      6
+    ],
+    "n_tasks": 1,
+    "tasks": [
+      {
+        "parent_idx": 0,
+        "subsample_ids": [
+          4,
+          0,
+          6
+        ],
+        "subsample_scores": [
+          0.25,
+          0.0,
+          0.0
+        ],
+        "new_subsample_scores": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "subsample_scores": [
+      0.25,
+      0.0,
+      0.0
+    ],
+    "new_subsample_scores": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+]

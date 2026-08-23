@@ -1,0 +1,22 @@
+[
+    0.5,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+        "thinking": "The user is asking how the skill system works and what to do when a skill block is present. I will explain that I treat each block as a fresh invocation, determine the mode from the argument following the closing tag, and reply with the required confirmation line. Let me provide that clear answer."
+    },
+    {
+        "case": "example-empty",
+        "score": 0.5,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "This is an example skill.",
+        "actual_final": "## How the Skill System Works\n\nThe skill system treats each `<skill>` block as an **independent invocation**. Here's what happens:\n\n### 1. Detection\nWhen I see a `<skill name=\"X\" ...>...</skill>` block, I treat it as a fresh call with no state from previous skills.\n\n### 2. Mode Determination\nI look ",
+        "final_check": "expected exactly 'This is an example skill.', got \"## How the Skill System Works\\n\\nThe skill system treats each `<skill>` block as an **independent invocation**. Here's what happens:\\n\\n### 1. Detection\\nWhen I see \"",
+        "cot_leak": "[{\"msg\": 8, \"source\": \"assistant@6 reasoning_content\", \"overlap_words\": 9, \"overlapped_text\": \"what to do when a skill block is present\"}]",
+        "cot_leak_msgs": "1/1",
+        "student_reasoning": "[\"The user is asking about how the skill system works. They want to understand:\\n1. How the skill system works in general\\n2. What to do when a skill block is present in their latest message\\n\\nFrom my previous response, I explained that each <skill> block is treated as a fresh invocation and I reply with specific confirmation lines based on the mode detected from the text after the closing tag.\\n\\nLet me provide a clear explanation of how the skill system works. The key points are:\\n- Each `<skill>` blo\"]",
+        "elapsed_s": 4.0
+    }
+]

@@ -1,0 +1,22 @@
+[
+    0.0,
+    {
+        "ask": "How does skill system work? When a skill block is in my latest message, what do I do?",
+        "explain": "I treat every <skill> block as a fresh, independent invocation. I identify the mode by reading the bare argument in the text immediately following the current block's closing tag. I reply with the exact short confirmation line required for that specific mode.",
+        "thinking": "The user is asking how the skill system works and what to do when a skill block is present. I will explain that I treat each block as a fresh invocation, determine the mode from the argument following the closing tag, and reply with the required confirmation line. Let me provide that clear answer."
+    },
+    {
+        "case": "tzip-off",
+        "score": 0.0,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "tzip deactivated",
+        "actual_final": "The tzip skill is currently set to **off** (deactivated). This means token pruning is disabled \u2014 the assistant will now respond with full filler and hedging as normal.\n\n**Summary of what happens when a skill block is present:**\n1. I read the `<skill name=\"...\" location=\"...\">` block\n2. I identify th",
+        "final_check": "expected 'tzip deactivated', got 'The tzip skill is currently set to **off** (deactivated). This means token pruning is disabled \u2014 the assistant will now respond with full filler and hedging as '",
+        "cot_leak": "none",
+        "cot_leak_msgs": "0/1",
+        "student_reasoning": "[\"The user has provided the tzip skill definition and set it to \\\"off\\\". The skill description says:\\n\\n- `tzip off` \u2192 Deactivate token pruning\\n\\nSo when the skill is \\\"off\\\", I should deactivate token pruning. This means I need to reply with a confirmation that tzip has been deactivated.\\n\\nThe user's message shows `<skill name=\\\"tzip\\\" location=\\\"...\\\" >` followed by `off`. This indicates they want me to set tzip to off mode.\\n\\nAccording to the skill description:\\n- \\\"tzip off \u2192 Deactivate token pruning\\\"\\n- Repl\"]",
+        "elapsed_s": 2.1
+    }
+]

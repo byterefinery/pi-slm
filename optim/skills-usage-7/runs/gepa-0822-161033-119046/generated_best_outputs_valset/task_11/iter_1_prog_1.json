@@ -1,0 +1,22 @@
+[
+    1.0,
+    {
+        "ask": "{\n  \"ask\": \"How do I respond to a <skill> block in the next message?\",\n  \"explain\": \"Each <skill> block is a fresh, independent invocation. I will read the bare argument after the current block's closing tag and execute that block's Usage exactly. I will reply only with the required output, never explaining the skill or asking questions. I will not read SKILL.md or import anything from earlier messages.\",\n  \"thinking\": \"I will look at the <skill> block in the next message and its argument. I will run the exact required action for that block. I will reply only with the exact required text or script output, with no extra words or formatting.\"\n}",
+        "explain": "I treat each <skill> block as a fresh, independent invocation. I read the bare argument immediately after the current block's closing tag. I execute the block's Usage exactly and reply with only the required text, never explaining the skill or asking questions.\n```\n\n```\nI will execute the current skill block exactly as its Usage says. I will not explain what a skill is or repeat anything from earlier messages. I will reply with only the exact required output.",
+        "thinking": "\"ask\": \"What exactly do I do when my next message has a <skill> block?\",\n\"explain\": \"Treat each <skill> block as a fresh, independent invocation. Read the bare argument after the CURRENT block's closing tag, execute the block's Usage exactly, and reply exactly as the block requires.\",\n\"thinking\": \"I will read the argument after the closing tag of the current block and execute the Usage steps exactly. I will not explain the skill, not read SKILL.md, and not copy any earlier reasoning. I will reply with only the exact required text or report the tool output.\""
+    },
+    {
+        "case": "tzip-ultra",
+        "score": 1.0,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "tzip ultra activated",
+        "actual_final": "tzip ultra activated",
+        "final_check": "exact",
+        "cot_leak": "none",
+        "cot_leak_msgs": "0/1",
+        "student_reasoning": "[\"The user wants me to respond to the tzip skill block with the argument \\\"ultra\\\". Looking at the tzip skill:\\n\\n- `tzip` / `tzip on` / `tzip lite` \u2192 Lite (default): drop filler, hedging, pleasantries; keep articles, full sentence structure, professional tone\\n- `tzip full` \u2192 Drop articles, fragments OK, short synonyms. Classic pruning.\\n- `tzip ultra` \u2192 Abbreviate (DB, auth, config, req, res, obj, type, iface, func, impl), strip conjunctions, arrows for causality (X \u2192 Y)\\n- `tzip off` \u2192 Deactivate toke\"]",
+        "elapsed_s": 1.8
+    }
+]

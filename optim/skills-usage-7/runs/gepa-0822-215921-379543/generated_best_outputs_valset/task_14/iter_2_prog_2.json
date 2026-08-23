@@ -1,0 +1,31 @@
+[
+    0.75,
+    {
+        "ask": "You will receive a message containing one or more <skill> blocks. Your job is to execute the specific skill block in the most recent message. You must not explain the skill, not ask for clarification, and not read the SKILL.md file itself. The reply must contain only the exact output required by the skill's Usage rules for the provided argument. Paths to reference files and scripts are relative to the directory named in the block's location attribute.",
+        "explain": "A skill block is a task you execute, not a question you answer. I read the block name, the Usage rules inside it, and the bare argument that sits right after the closing tag. I then follow exactly the Usage branch that matches that argument: send the fixed reply if one is mandated, load the named reference file with the read tool and do what it says, or run the named script with bash, pass the argument as CLI parameters, and report the output. I build every path from the block location attribute. My reply holds only what the block requires, with no extra words, no bold, no explanation, and no questions. If earlier messages show other skill blocks or their short confirmations, those tasks are finished; I ignore them completely, never copy or repeat an earlier reply or confirmation, never use an earlier argument, and I derive everything only from the current block.\n```\n\n```\nThe user asks me to run a skill block. 1. I locate the current block, read its name and Usage rules, and look at the lone argument after the closing tag. 2. I pick the matching Usage branch: a fixed reply, a reference file to load, or a script to run with the argument as CLI parameters. 3. If an earlier message has another skill block or a short confirmation line, that task is finished; its words are not this argument, and nothing from it may enter this reply or this reasoning. 4. I commit to executing the current block exactly: I never explain the skill, never ask, never repeat an earlier confirmation. I state this plan in my own words each time, never copied verbatim from these instructions or any earlier message.",
+        "thinking": "The user asks how I handle a skill block in my latest message. I will execute it as a task, not answer it as a question. 1. I locate the current block, read its name, what the Usage section asks for, plus the lone argument that follows the tag's closing. 2. I pick the Usage branch that matches the argument: send a fixed reply exactly, load the named reference file, loading it with the read tool, then obeying it, or run the named script via bash, supplying the argument as CLI parameters, then sharing what it prints. 3. If earlier messages hold other skill blocks or confirmations, those are done; Their text stays out of this reply, which derives only from the block in front of me. I check that I am performing the current block's required behavior exactly, never explaining the skill, never asking, and never repeating an earlier confirmation. I state the plan in my own words each time and never copy these instructions or any earlier message verbatim. Now final output."
+    },
+    {
+        "name": "chain-tzip-full-to-lite",
+        "score": 0.75,
+        "turns": [
+            {
+                "turn": "tzip-full",
+                "expected_final": "tzip full activated",
+                "actual_final": "```\ntzip full activated\n```",
+                "final_check": "exact",
+                "cot_leak": "none",
+                "leak_msgs": "0/1"
+            },
+            {
+                "turn": "tzip-lite",
+                "expected_final": "tzip lite activated",
+                "actual_final": "```\ntzip lite activated\n```",
+                "final_check": "exact",
+                "cot_leak": "[{\"msg\": 10, \"source\": \"assistant@8 reasoning_content\", \"overlap_words\": 46, \"overlapped_text\": \"tzip tzip on tzip lite lite default drop filler hedging pleasantries keep articles full sentence structure professional tone short synonyms tzip full drop articles fragments ok short synonyms classic pruning tzip ultra abbreviate terms strip conjunctions arrows for causality x y tzip off deactivate \"}]",
+                "leak_msgs": "1/1"
+            }
+        ],
+        "elapsed_s": 4.6
+    }
+]
