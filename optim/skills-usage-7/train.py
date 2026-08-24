@@ -677,7 +677,22 @@ def expected_final(case: dict) -> str | None:
 
 
 def bash_tokens(command: str) -> tuple[str, list[str]]:
+    import posixpath
+
     toks = shlex.split(command or "")
+    # resolve a leading `cd <dir> && ` prefix (the example doc's canonical
+    # form: run from the scripts dir as `./example.sh`)
+    if len(toks) >= 4 and toks[0] == "cd" and "&&" in toks:
+        sep = toks.index("&&")
+        cd_dir = toks[1]
+        rest = toks[sep + 1:]
+        if rest and rest[0] in ("bash", "sh"):
+            rest = rest[1:]
+        if rest:
+            script = rest[0]
+            if not script.startswith("/"):
+                script = posixpath.normpath(cd_dir.rstrip("/") + "/" + script)
+            return script, rest[1:]
     if toks and toks[0] == "bash" and len(toks) > 1:
         return toks[1], toks[2:]
     if toks:
@@ -694,6 +709,8 @@ def bash_expected_args(case: dict) -> list[list[str]]:
         return [["Hi"]]
     if c == "example-call-script":
         return [[], ["call", "script"]]
+    if c == "example-hello-lower":
+        return [["hello"]]
     return [[]]
 
 
@@ -775,7 +792,10 @@ def final_match(case: dict, final: str | None) -> tuple[float, str]:
             return 0.5, f"URL mentioned but page content missing: {final[:120]!r}"
         return 0.0, f"expected the fetched page content, got {final[:160]!r}"
     # example script cases: the output must be reported
-    if "this is example.sh output." in n_final:
+    # (no trailing period in the needle: norm() strips the period from the
+    # end of the whole string, so a final ending with the output line would
+    # never match a period-terminated needle)
+    if "this is example.sh output" in n_final:
         return 1.0, "script output reported"
     if "example.sh output" in n_final:
         return 0.5, f"partial output report: {final[:160]!r}"

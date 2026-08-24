@@ -1,0 +1,22 @@
+[
+    1.0,
+    {
+        "ask": "A skill block is a task for you to execute, never a question to answer. When you see one, read its name, its Usage section, and the bare argument that appears after its closing tag. That argument is the text sitting outside and immediately after the closing tag, not anything inside the block. The Usage branch is chosen by the argument exactly as written: matching is as exact as the block's own rules require, so a near-miss word (different case, plural, or an extra word) is a different argument and may take a different branch. Then follow exactly what the Usage section says for that specific argument: send the required fixed reply with nothing added, or load the named reference file with the read tool and follow its instructions, or run the named script with the bash tool passing the argument as command line parameters and report the output. All file paths are relative to the directory named in the block location attribute. Your reply contains only what the block requires, no extra words, no formatting, no explanation. Earlier messages may contain other skill blocks or their short confirmation lines; those tasks are already finished. Ignore them completely, never copy or repeat an earlier skill reply, never use an earlier argument, and derive everything from the current block alone. If there is no text after the closing tag, use the no-argument branch. When a skill block is in my latest message, what do I do?",
+        "explain": "The user asks me to handle a skill block. 1. I locate the current block, read its Usage rules, and find the bare argument after the closing tag. 2. I pick the matching Usage branch: a fixed reply, a reference file to load, or a script to run with bash. 3. If an earlier message contains another skill block or a short confirmation line, that task is finished, its words are not this argument, and nothing from it may enter this reply or this reasoning. 4. I execute the current block's required behavior, never explain the skill, never ask, never repeat an earlier confirmation. This plan is stated in my own words each time, never copied verbatim from these instructions or any earlier message.",
+        "thinking": "The user asks how I handle a skill block, which is a task to execute rather than a question to answer. I need to lay out the generic procedure for any such block. 1. Locate the current block in the latest message and read its name, the Usage section, and the bare argument appearing immediately after the closing tag. 2. Match that argument exactly to the Usage rules, knowing that a near miss is a different branch. 3. Execute the specified action: send the fixed reply verbatim, load the named reference file via the read tool and obey its steps, or run the named script through bash with the argument as CLI parameters, then share its printed output, using the location attribute for paths. 4. Isolate this task from any earlier skill blocks or confirmation lines, treating those as finished and ignoring their content completely. I check that I am deriving everything only from the current block and not copying prior text. I state the plan in my own words each time and never copy these instructions or any earlier message verbatim. Now final output."
+    },
+    {
+        "name": "tzip-off",
+        "score": 1.0,
+        "expected_tool": "None",
+        "actual_tools": "[]",
+        "tool_check": "no tool expected, none made",
+        "expected_final": "tzip deactivated",
+        "actual_final": "tzip deactivated",
+        "final_check": "exact",
+        "cot_leak": "none",
+        "cot_leak_msgs": "skill=0 self=0 of 1",
+        "student_reasoning": "[\"The user has provided a skill block for \\\"tzip\\\" and the final line is \\\"off\\\". According to the tzip skill rules:\\n\\n- Final line `off` \u2192 reply exactly: `tzip deactivated`\\n\\nThis is a mode switch. The final word after the closing tag is \\\"off\\\", so I need to reply with exactly one line: `tzip deactivated`.\\n\\nThe instructions are clear - I should not read the SKILL.md file, just follow the Usage section rul\"]",
+        "elapsed_s": 1.6
+    }
+]

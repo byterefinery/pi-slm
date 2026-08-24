@@ -3,13 +3,13 @@
   "skill": "example",
   "argument": "hello",
   "student_model": "LiquidAI/LFM2.5-2.6B",
-  "generated_by": "pi coding agent, isolated temp dir, --mode json, Qwen/Qwen3.8-27B thinking high, 1 attempt + case-sensitivity note appended to system prompt",
+  "generated_by": "updated 2026-08-23 for the rewritten example SKILL.md (invocation classification, direct script run from scripts/, new reply format); canonical transcript, not a captured run",
   "user": {
     "role": "user",
     "content": [
       {
         "type": "text",
-        "text": "<skill name=\"example\" location=\"/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md\">\nReferences are relative to /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example.\n\n# example\n\nA minimal skill that demonstrates the shape of an agent skill without doing anything special.\n\n## Overview\n\n`example` exists to show what a skill is made of \u2014 frontmatter metadata, a SKILL.md body, a helper script in `scripts/`, and on-demand docs in `references/` \u2014 with the least possible behavior. Its only jobs are replying with a fixed message or running `example.sh`.\n\n## Usage\n\n- **Invoked with no extra text** \u2014 reply exactly `This is an example skill.` Nothing else. No explanations, no script.\n- **Invoked with \"Hello\"** \u2014 do not guess the response. Load [03-hello](references/03-hello.md) and follow it exactly; the instructions for this case live there and nowhere else.\n- **Invoked with any other text, or asked to \"call script\"** \u2014 pass the user's text (if any) as CLI parameters to `example.sh` and report the output; running with no parameters is fine:\n\n  ```bash\n  bash scripts/example.sh any given text\n  ```\n\nScript paths are relative to this skill's directory. The script echoes a fixed line regardless of the parameters; the parameters only demonstrate how the agent forwards input to a script.\n\n## References\n\n- [01-structure](references/01-structure.md) \u2014 What each part of this skill is for\n- [02-invocation](references/02-invocation.md) \u2014 How invocation and script calls behave\n- [03-hello](references/03-hello.md) \u2014 Full instructions for the \"Invoked with 'Hello'\" scenario\n</skill>\n\nhello"
+        "text": "<skill name=\"example\" location=\"/home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/SKILL.md\">\nReferences are relative to /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example.\n\n# example\n\nA minimal skill that demonstrates the shape of an agent skill without doing anything special.\n\n## Overview\n\n`example` exists to show what a skill is made of — frontmatter metadata, a SKILL.md body, a helper script in `scripts/`, and on-demand docs in `references/` — with the least possible behavior. Its only jobs are replying with a fixed message or running `example.sh`.\n\n## Usage\n\n- **Invoked with no extra text** — reply exactly `This is an example skill.` Nothing else. No explanations, no script.\n- **Invoked with \"Hello\"** — do not guess the response. Load [03-hello](references/03-hello.md) and follow it exactly; the instructions for this case live there and nowhere else.\n- **Invoked with any other text, or asked to \"call script\"** — pass the user's text (if any) as CLI parameters to `example.sh` and report the output; running with no parameters is fine:\n\n  ```bash\n  bash scripts/example.sh any given text\n  ```\n\nScript paths are relative to this skill's directory. The script echoes a fixed line regardless of the parameters; the parameters only demonstrate how the agent forwards input to a script.\n\n## References\n\n- [01-structure](references/01-structure.md) — What each part of this skill is for\n- [02-invocation](references/02-invocation.md) — How invocation and script calls behave\n- [03-hello](references/03-hello.md) — Full instructions for the \"Invoked with 'Hello'\" scenario\n</skill>\n\nhello"
       }
     ]
   },
@@ -24,12 +24,12 @@
           "function": {
             "name": "bash",
             "arguments": {
-              "command": "bash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh hello"
+              "command": "cd /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts && ./example.sh hello"
             }
           }
         }
       ],
-      "reasoning_content": "The user has launched the example skill with \"hello\". According to the skill's instructions, the skill block arguments are matched case-sensitively, and the case of \"Hello\" requires the uppercase H spelling, exactly \"Hello\". Any other text, including case variations like \"hello\", is \"any other text\" and should be passed to scripts/example.sh.\n\nThe user typed \"hello\" (lowercase h). Therefore, this is \"any other text\" and should be passed as a CLI parameter to example.sh.\n\nIn other words, I should run the following:\n```bash\nbash scripts/example.sh hello\n```\n\nThe script's path is relative to the skill's directory: /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example\n\nTherefore, the command becomes:\n```bash\nbash /home/mtasic/projects-b/pi-slm/.agents/skills-byterefinery/example/scripts/example.sh hello\n```\n\nAnd then report the output.\n"
+      "reasoning_content": "Classify: the leftover text is \"hello\" — not exactly \"Hello\" (case differs), so the Hello branch does not apply. It is other text: run the script directly from its scripts/ directory passing \"hello\" as the only CLI parameter, then report the output."
     },
     {
       "role": "tool",
@@ -38,8 +38,8 @@
     },
     {
       "role": "assistant",
-      "content": "I passed your text to the script as CLI parameters. Output:\n\n```\nThis is example.sh output.\n```",
-      "reasoning_content": "The script was executed and the following was output: \"This is example.sh output.\"\n\nI'll report the output as instructed.\n"
+      "content": "Ran `example.sh hello`. Output:\n```\nThis is example.sh output.\n```",
+      "reasoning_content": "The script printed its fixed line; report the run and the output."
     }
   ]
 }
