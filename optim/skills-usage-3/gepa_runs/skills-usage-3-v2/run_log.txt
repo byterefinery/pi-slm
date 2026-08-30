@@ -1,3 +1,0 @@
-Iteration 0: Base program full valset score: 1.0 over 15 / 15 examples
-Loading gepa state from run dir
-Iteration 0: Base program full valset score: 1.0 over 15 / 15 examples

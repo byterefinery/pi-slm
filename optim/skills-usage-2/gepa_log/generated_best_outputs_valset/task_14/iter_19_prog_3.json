@@ -1,6 +1,0 @@
-{
-    "reasoning": "The pair corrects failures where the student re-answers older questions or copies example words from the skill block instead of the user's argument. By using a first-person question about the user's own message, it forces a first-person commitment that closes the loop, preventing the student from treating the next activation as a new question to explain.",
-    "synth_user": "When a skill block is in my latest message, what do I do?",
-    "synth_content": "I will follow the latest active skill block. I will use the argument after the block, not examples inside it. If no argument is present, I will use the skill's default wording. I will ignore earlier questions and reply text only with the required confirmation. I will not call tools.",
-    "synth_reasoning": "The user asks how to handle a skill activation. I will treat the latest skill block as the active instruction and prioritize the argument after the block over any text inside. I will ignore older questions and reply only with the required confirmation using the current argument or default wording. Let me confirm the activation exactly."
-}

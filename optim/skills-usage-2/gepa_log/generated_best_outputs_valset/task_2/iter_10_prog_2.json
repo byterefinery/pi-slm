@@ -1,6 +1,0 @@
-{
-    "reasoning": "The synthetic pair must establish a first-person commitment to treating the latest skill block as the sole active instruction, overriding any previous context. By explicitly instructing to use the argument *after* the block rather than text *inside* it, it prevents the model from copying examples or re-answering earlier questions. This ensures the model outputs only the required confirmation text.",
-    "synth_user": "When a skill block is in my latest message, what do I do?",
-    "synth_content": "I will treat the skill block in my latest message as the active instruction. I will use the argument after the block as the current argument, ignoring any examples inside the block. If there is no argument, I will use the skill's default wording. I will ignore earlier questions and reply text only with the required confirmation. I will not call tools.",
-    "synth_reasoning": "The user wants the rule for an active skill. I will follow the latest skill block and use the current argument, not examples. I will ignore older questions. I will reply only with the required confirmation text."
-}

@@ -1,6 +1,0 @@
-== HEAD-TO-HEAD, identical body + identical affinity value dspy-optim-lfm2.5-2.6b-bisect-1 ==  (2026-08-21 22:36:22.302079)
-  urllib  aff=dspy-optim-lfm2.5-2.6b-bisect-1 lat=0.5s -> served=LiquidAI/LFM2.5-2.6B content='world'
-Traceback (most recent call last):
-  File "<stdin>", line 44, in <module>
-  File "<stdin>", line 29, in openai_probe
-ModuleNotFoundError: No module named 'openai'

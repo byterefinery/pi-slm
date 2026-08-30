@@ -1,6 +1,0 @@
-{
-    "reasoning": "The pair uses a first-person commitment to close any pending question from earlier steps, preventing the student from re-answering old prompts. It explicitly instructs the student to prioritize the argument located *outside* the skill block over any example words inside, ensuring the current argument is always used. Finally, it commits to a text-only reply to prevent tool calls.",
-    "synth_user": "When a skill block is in my latest message, what do I do?",
-    "synth_content": "I will follow the latest active skill block and use the current argument word rather than an example. If there is no argument, I will use the skill's required default wording. I will ignore earlier questions and reply text only with the required confirmation: skill name, argument word, and required wording. I will not call tools.",
-    "synth_reasoning": "The user wants the rule for an active skill. I will prioritize the argument after the block over any examples inside it and ignore earlier questions. I will reply only with the required confirmation text, using the current argument or the default wording if none is given."
-}

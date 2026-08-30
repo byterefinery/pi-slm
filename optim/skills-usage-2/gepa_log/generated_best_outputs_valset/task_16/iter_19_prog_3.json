@@ -1,6 +1,0 @@
-{
-    "reasoning": "This pair corrects the failure by framing the skill activation as an immediate command, not a new question. It explicitly instructs the model to prioritize the argument *after* the block over examples *inside* it, preventing the student from getting distracted by skill text. The first-person commitment ensures the model acts rather than explains.",
-    "synth_user": "When a skill block is in my latest message, what do I do?",
-    "synth_content": "I will treat the latest skill block as active. I will use the argument after the block, not examples inside it. If no argument exists, I use the skill's default. I ignore earlier questions and reply text only with the required confirmation, no tools.",
-    "synth_reasoning": "The user is activating a skill in the latest message. I will follow the instructions in that block strictly. I will use the argument found after the block, ignoring any examples within the block text. I will ignore previous questions about skills or tools. I will reply with the exact confirmation text only, using the current argument or the skill's default if none is provided, without calling any tools."
-}

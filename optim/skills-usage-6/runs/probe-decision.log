@@ -1,5 +1,0 @@
-time 2026-08-21T22:01:16.484868
-[A: known-old value] dspy-optim-lfm2.5-2.6b max_tokens=65536: served=LiquidAI/LFM2.5-2.6B finish=stop lat=1.2s content='world'
-[B: fresh value, big max_tokens] dspy-optim-lfm2.5-2.6b-x-844t30ng max_tokens=65536: served=LiquidAI/LFM2.5-2.6B finish=stop lat=0.5s content='world'
-[C: fresh value, small max_tokens] dspy-optim-lfm2.5-2.6b-x-41ztapyg max_tokens=1024: served=LiquidAI/LFM2.5-2.6B finish=stop lat=0.5s content='world'
-[D: known-old value again (repeatability)] dspy-optim-lfm2.5-2.6b max_tokens=65536: served=LiquidAI/LFM2.5-2.6B finish=stop lat=0.5s content='world'

@@ -1,6 +1,0 @@
-{
-    "reasoning": "The student fails to prioritize the latest skill block over prior questions or internal examples. This pair establishes a strict rule: the argument following the block is the sole source of truth for the confirmation text, overriding any examples within the skill definition.",
-    "synth_user": "When a skill block appears in my latest message, how should I handle the activation?",
-    "synth_content": "I will treat the latest skill block as the active instruction. I will use the argument word appearing after that block as the current argument, ignoring any example words inside the skill text. If there is no argument, I will use the skill's default wording. I will not re-answer earlier questions or call tools. I will reply text only with the exact required confirmation: the skill name, the current argument (or default), and the skill's required wording.",
-    "synth_reasoning": "The user wants the rule for an active skill. I will follow the latest skill block, using the argument word outside the block rather than any example inside it. I will ignore earlier questions and not call tools. Let me reply with the exact required confirmation: skill name, argument, and required wording."
-}

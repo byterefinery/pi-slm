@@ -1,6 +1,0 @@
-{
-    "reasoning": "The student fails because it treats skill blocks as context rather than active instructions, often ignoring user arguments or copying examples. This pair establishes a first-person commitment to treat the latest block as active, strictly use the external argument over internal examples, and output only the required confirmation text without tool calls or re-answering prior queries.",
-    "synth_user": "When a skill block is in my latest message, what do I do?",
-    "synth_content": "I will treat the latest skill block as active. I will use the argument after the block, not examples inside it. If no argument exists, I will use the default wording. I will reply text only with the required confirmation and ignore earlier questions.",
-    "synth_reasoning": "The user asks how to handle active skills. I will follow the latest skill block and use the argument after it. I will not use examples inside the block or re-answer old questions. I will reply only with the required confirmation text."
-}

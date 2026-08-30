@@ -1,6 +1,0 @@
-{
-    "reasoning": "The pair must prevent re-answering old questions and copying example words. By using first-person commitments ('I will') in both content and reasoning, the synthetic message closes the query and dictates the exact next action: output only the required confirmation based on the latest skill block and current argument.",
-    "synth_user": "When a skill block is in my latest message, what do I do?",
-    "synth_content": "I will follow the latest active skill block, using the current argument after it, not example words. If there is no argument, I will use the skill's required default wording. I will ignore earlier questions and reply text only with the exact required confirmation, without calling tools.",
-    "synth_reasoning": "The user wants the rule for an active skill. I will follow the latest skill block and substitute the current argument, ignoring earlier questions. I will commit to replying only with the required confirmation, using the skill's default wording if no argument is present."
-}
