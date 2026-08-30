@@ -16,6 +16,19 @@
  *      left untouched — they already contain the injected messages, and pi
  *      loads them into the agent state automatically at startup.
  *
+ * System prompt override: a message with role "system" (any position in
+ * the array) does NOT become a conversation message. Instead, while it is
+ * present in the file, its content acts as pi's OVERRIDE system prompt
+ * (exactly like --system-prompt or SYSTEM.md) for every prompt of the
+ * session (new and resumed alike; the file is re-read on each prompt).
+ * Like pi's own override, it replaces the default prompt body (intro,
+ * tools, guidelines) while pi still appends its standard tail: the
+ * append-system-prompt text, the <project_context> context files, the
+ * skills section, and the current working directory line. When pi-slm.json
+ * has a "system" message, it takes precedence over --system-prompt /
+ * SYSTEM.md. Without a "system" message, pi's system prompt is used
+ * unchanged.
+ *
  * Implementation notes: pi snapshots the agent's in-memory message state
  * from the session BEFORE the session_start event fires, so in a brand-new
  * session the injected messages are missing from the agent state for the
@@ -23,16 +36,25 @@
  * The `context` hook compensates: it re-prepends the persisted slm prefix
  * to the LLM context on every call where it is missing. Resumed sessions
  * already have the prefix in their state, so nothing is injected there.
+ * The system override is applied via the before_agent_start hook
+ * (returns { systemPrompt }), which replaces the system prompt for the
+ * whole agent run. Because pi does not export its prompt builder, the
+ * override is assembled the same way pi assembles one (mirrors the
+ * customPrompt branch of buildSystemPrompt in
+ * packages/coding-agent/src/core/system-prompt.ts, pi 0.84.3), reusing
+ * pi's exported formatSkillsForPrompt for the skills section.
  *
  * Supported roles (OpenAI chat format):
  *
+ *   { "role": "system",    "content": "..." }          // optional, system prompt override
  *   { "role": "user",      "content": "..." }
  *   { "role": "assistant", "content": "...", "reasoning_content": "...",
  *     "tool_calls": [{ "id": "...", "function": { "name": "...", "arguments": "..." } }] }
  *   { "role": "tool",      "tool_call_id": "...", "name": "...", "content": "...",
  *     "is_error": false }
  *
- * The file is read once at session start. Lookup order:
+ * Conversation messages are read once at session start; the "system"
+ * message is re-read on every prompt (live edits apply). Lookup order:
  *   1. <cwd>/pi-slm.json
  *   2. <extension directory>/pi-slm.json
  *
@@ -44,7 +66,8 @@
  *
  * Usage:  pi -e /path/to/pi-slm.ts
  */
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { BuildSystemPromptOptions, ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { formatSkillsForPrompt } from "@earendil-works/pi-coding-agent";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -67,7 +90,10 @@ interface SlmJsonMessage {
 }
 
 interface SlmPayload {
-  messages: unknown[];
+  /** Conversation messages (user/assistant/tool), in file order. */
+  messages: SlmJsonMessage[];
+  /** Content of the "system" message, or null when absent. */
+  system: string | null;
   source: string;
 }
 
@@ -93,25 +119,60 @@ function textOf(content: SlmJsonMessage["content"] | unknown): string {
   return "";
 }
 
-/** Loads and parses pi-slm.json from the first existing candidate path. */
-function loadPayload(extDir: string): SlmPayload | null {
+/** First existing pi-slm.json candidate path, or null. */
+function findPayloadFile(extDir: string): string | null {
   const candidates = [resolve(process.cwd(), JSON_NAME), resolve(extDir, JSON_NAME)];
   for (const file of candidates) {
-    if (!existsSync(file)) continue;
-    try {
-      const parsed = JSON.parse(readFileSync(file, "utf8")) as { messages?: SlmJsonMessage[] };
-      if (!Array.isArray(parsed.messages) || parsed.messages.length === 0) {
-        console.error(`[pi-slm] ${file}: "messages" must be a non-empty array`);
-        return null;
-      }
-      return { messages: parsed.messages, source: file };
-    } catch (err: any) {
-      console.error(`[pi-slm] ${file}: failed to parse: ${err?.message ?? err}`);
+    if (existsSync(file)) return file;
+  }
+  return null;
+}
+
+/**
+ * Loads and parses pi-slm.json from the first existing candidate path.
+ * "system" messages are extracted into payload.system (never appended to
+ * the conversation); user/assistant/tool messages keep their file order.
+ */
+function loadPayload(extDir: string): SlmPayload | null {
+  const file = findPayloadFile(extDir);
+  if (!file) {
+    console.error(`[pi-slm] ${JSON_NAME} not found in ${process.cwd()} or ${extDir} — nothing injected`);
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(readFileSync(file, "utf8")) as { messages?: SlmJsonMessage[] };
+    if (!Array.isArray(parsed.messages)) {
+      console.error(`[pi-slm] ${file}: "messages" must be an array`);
       return null;
     }
+    let system: string | null = null;
+    const messages: SlmJsonMessage[] = [];
+    for (let i = 0; i < parsed.messages.length; i++) {
+      const m = parsed.messages[i];
+      if (m?.role === "system") {
+        const text = textOf(m.content);
+        if (!text) {
+          console.error(`[pi-slm] messages[${i}]: "system" message has no text content — ignoring`);
+          continue;
+        }
+        if (system === null) {
+          system = text;
+        } else {
+          console.error(`[pi-slm] messages[${i}]: multiple "system" messages — using the first one`);
+        }
+        continue;
+      }
+      messages.push(m);
+    }
+    if (messages.length === 0 && system === null) {
+      console.error(`[pi-slm] ${file}: "messages" must contain at least one conversation message or a "system" message`);
+      return null;
+    }
+    return { messages, system, source: file };
+  } catch (err: any) {
+    console.error(`[pi-slm] ${file}: failed to parse: ${err?.message ?? err}`);
+    return null;
   }
-  console.error(`[pi-slm] ${JSON_NAME} not found in ${process.cwd()} or ${extDir} — nothing injected`);
-  return null;
 }
 
 const ZERO_USAGE = {
@@ -260,6 +321,44 @@ function convertPayload(
   return converted;
 }
 
+/**
+ * Builds a system prompt the same way pi does for an OVERRIDE system prompt
+ * (--system-prompt / SYSTEM.md): the given prompt replaces the default
+ * prompt body, while pi's standard tail is still appended — the
+ * append-system-prompt text, the <project_context> context files, the
+ * skills section (when the read tool is active), and the cwd line.
+ *
+ * Mirrors the customPrompt branch of buildSystemPrompt() in
+ * packages/coding-agent/src/core/system-prompt.ts (pi 0.84.3). That
+ * function is not exported by the package, so it is reproduced here using
+ * the exported BuildSystemPromptOptions and formatSkillsForPrompt.
+ */
+function buildOverrideSystemPrompt(options: BuildSystemPromptOptions, customPrompt: string): string {
+  const promptCwd = options.cwd.replace(/\\/g, "/");
+  const appendSection = options.appendSystemPrompt ? `\n\n${options.appendSystemPrompt}` : "";
+  const contextFiles = options.contextFiles ?? [];
+  const skills = options.skills ?? [];
+
+  let prompt = customPrompt;
+  if (appendSection) {
+    prompt += appendSection;
+  }
+  if (contextFiles.length > 0) {
+    prompt += "\n\n<project_context>\n\n";
+    prompt += "Project-specific instructions and guidelines:\n\n";
+    for (const { path: filePath, content } of contextFiles) {
+      prompt += `<project_instructions path="${filePath}">\n${content}\n</project_instructions>\n\n`;
+    }
+    prompt += "</project_context>\n";
+  }
+  const customPromptHasRead = !options.selectedTools || options.selectedTools.includes("read");
+  if (customPromptHasRead && skills.length > 0) {
+    prompt += formatSkillsForPrompt(skills);
+  }
+  prompt += `\nCurrent working directory: ${promptCwd}\n`;
+  return prompt;
+}
+
 /** True if the LLM context already starts with the injected slm prefix. */
 function hasSlmPrefix(messages: any[], slmPrefix: any[]): boolean {
   if (slmPrefix.length === 0) return true;
@@ -278,6 +377,34 @@ export default function (pi: ExtensionAPI) {
   // sessions, which already contain it in the session file).
   let slmPrefix: any[] | null = null;
 
+  // While pi-slm.json contains a "system" message, its content acts as pi's
+  // override system prompt (--system-prompt / SYSTEM.md) for every agent
+  // run (new and resumed sessions alike — the file is re-read on each
+  // prompt, so live edits apply; removing the "system" message restores
+  // pi's own system prompt).
+  pi.on("before_agent_start", async (event) => {
+    if (!findPayloadFile(extDir)) return; // no payload file: nothing to do, no noise
+    const payload = loadPayload(extDir);
+    if (!payload?.system) return;
+
+    const options = event.systemPromptOptions;
+    // Assemble exactly like pi does for an override prompt, so context
+    // files, skills and the cwd line are preserved. (If the structured
+    // options are ever missing, fall back to the raw override.)
+    const systemPrompt =
+      options && typeof options.cwd === "string"
+        ? buildOverrideSystemPrompt(options, payload.system)
+        : payload.system;
+
+    if (process.env.PI_SLM_QUIET !== "1") {
+      console.error(
+        `[pi-slm] overriding system prompt with "system" message from ${payload.source} ` +
+          `(${payload.system.length} chars)`,
+      );
+    }
+    return { systemPrompt };
+  });
+
   // Fired for every session runtime, before the user's first message exists
   // (verified for interactive and print/JSON/RPC modes alike).
   pi.on("session_start", async (_event, ctx) => {
@@ -292,6 +419,12 @@ export default function (pi: ExtensionAPI) {
 
     const payload = loadPayload(extDir);
     if (!payload) return;
+
+    // System-only payload: nothing to persist; the before_agent_start hook
+    // applies the system prompt override.
+    if (payload.messages.length === 0) {
+      return;
+    }
 
     const converted = convertPayload(payload, ctx.model as ModelRef | undefined, Date.now());
     if (!converted) return;
