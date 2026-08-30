@@ -1,6 +1,10 @@
 {
   "messages": [
     {
+      "role": "system",
+      "content": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files."
+    },
+    {
       "role": "user",
       "content": "Remember this marker phrase exactly as written, character for character: QUARTZ-DELPHIN-9. I will ask you to recall it later in this conversation."
     },

@@ -61,8 +61,11 @@
  * pi-slm.json format:
  * { "messages": [ ...any number of the messages above, in order... ] }
  *
- * A debug line is printed to stderr on injection (suppress with
- * PI_SLM_QUIET=1).
+ * Diagnostics: with PI_SLM_DEBUG=1, status lines are printed to stderr
+ * (injection at session start, system prompt override, context prepend).
+ * By default the extension is completely silent — nothing is printed.
+ * Error conditions (unparseable payload, invalid messages) are always
+ * reported.
  *
  * Usage:  pi -e /path/to/pi-slm.ts
  */
@@ -396,7 +399,7 @@ export default function (pi: ExtensionAPI) {
         ? buildOverrideSystemPrompt(options, payload.system)
         : payload.system;
 
-    if (process.env.PI_SLM_QUIET !== "1") {
+    if (process.env.PI_SLM_DEBUG === "1") {
       console.error(
         `[pi-slm] overriding system prompt with "system" message from ${payload.source} ` +
           `(${payload.system.length} chars)`,
@@ -436,7 +439,7 @@ export default function (pi: ExtensionAPI) {
     }
     slmPrefix = converted;
 
-    if (process.env.PI_SLM_QUIET !== "1") {
+    if (process.env.PI_SLM_DEBUG === "1") {
       console.error(
         `[pi-slm] injected ${converted.length} message(s) from ${payload.source} at session start — user can now ask questions`,
       );
@@ -455,7 +458,7 @@ export default function (pi: ExtensionAPI) {
     if (!messages.some((m) => m.role === "user")) return; // nothing to anchor on
     if (hasSlmPrefix(messages, slmPrefix)) return;
 
-    if (process.env.PI_SLM_QUIET !== "1") {
+    if (process.env.PI_SLM_DEBUG === "1") {
       console.error(
         `[pi-slm] prepended ${slmPrefix.length} message(s) to LLM context ` +
           `(${messages.length} -> ${messages.length + slmPrefix.length} context messages)`,
