@@ -68,7 +68,7 @@ def init_dataset(train: float=0.6, val: float=0.2, test: float=0.2, shuffle: boo
         Random(0).shuffle(dataset)
 
     # subset
-    dataset = dataset[:100]
+    # dataset = dataset[:100]
     tot_num = len(dataset)
 
     # 60%, 20%, 20%
@@ -168,10 +168,11 @@ reflection_lm = create_lm(*TEACHER_MODEL)
 
 dspy.configure(lm=lm)
 
-train_set, val_set, test_set = init_dataset(0.6, 0.2, 0.2, shuffle=False)
-# print(f'{len(train_set)=}')
-# print(f'{len(val_set)=}')
-# print(f'{len(test_set)=}')
+# train_set, val_set, test_set = init_dataset(0.6, 0.2, 0.2, shuffle=False)
+train_set, val_set, test_set = init_dataset(0.0, 0.0, 1.0, shuffle=False)
+print(f'{len(train_set)=}')
+print(f'{len(val_set)=}')
+print(f'{len(test_set)=}')
 
 train_set = [
     dspy.Example({
@@ -248,8 +249,8 @@ def metric(example, prediction, trace=None, pred_name=None, pred_trace=None) -> 
 
 pi_module = PiModule()
 
-# with dspy.context(lm=lm):
 with dspy.context(lm=reflection_lm):
+# with dspy.context(lm=lm):
     evaluate = dspy.Evaluate(
         devset=test_set,
         metric=metric,
@@ -257,6 +258,24 @@ with dspy.context(lm=reflection_lm):
         display_table=False,
         display_progress=True,
         provide_traceback=True,
+        save_as_json=f'eval-{STUDENT_MODEL[0].replace("/", "_")}-{STUDENT_MODEL[1]}-judged-by-{TEACHER_MODEL[0].replace("/", "_")}-{TEACHER_MODEL[1]}.json',
+        # save_as_json=f'eval-{STUDENT_MODEL[0].replace("/", "_")}-{STUDENT_MODEL[1]}-judged-by-{STUDENT_MODEL[0].replace("/", "_")}-{STUDENT_MODEL[1]}.json',
     )
 
     evaluate(pi_module)
+'''
+
+optimizer = dspy.GEPA(
+    metric=metric,
+    reflection_lm=reflection_lm,
+    auto='light',
+    num_threads=1,
+)
+
+optimized_pi_module = optimizer.compile(
+    pi_module,
+    seed_candidate='Optimize first user prompt.',
+    trainset=train_set,
+    valset=val_set,
+)
+'''
