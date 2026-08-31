@@ -6,12 +6,11 @@
 # ///
 
 # ruff: noqa: I001, EXE001
-import re
-from teich.converter import _pi_reasoning_content
 import os
 from copy import deepcopy
 from pathlib import Path
 from random import Random
+from typing import Literal
 from tempfile import TemporaryDirectory
 
 import dspy
@@ -69,7 +68,7 @@ def init_dataset(train: float=0.6, val: float=0.2, test: float=0.2, shuffle: boo
         Random(0).shuffle(dataset)
 
     # subset
-    dataset = dataset[:10]
+    dataset = dataset[:100]
     tot_num = len(dataset)
 
     # 60%, 20%, 20%
@@ -103,10 +102,22 @@ def get_final_assistant_message(step: dict) -> dict:
 
 class FinalPiResponse(dspy.Signature):
     """Get final `pi` coding agent harness response."""
+
     filename: str = dspy.InputField(desc='Filename of session file of `pi` coding agent harness')
     steps: list[dict] = dspy.InputField(desc='Execution trace of `pi` coding agent harness')
-    final_reasoning_content: dict = dspy.OutputField(desc='Final reasoning_content (thinking) of `pi` coding agent harness')
-    final_content: dict = dspy.OutputField(desc='Final content of `pi` coding agent harness')
+    final_reasoning_content: str = dspy.OutputField(desc='Final reasoning_content (thinking) of `pi` coding agent harness')
+    final_content: str = dspy.OutputField(desc='Final content of `pi` coding agent harness')
+
+
+class PredictionQualityAndFeedbackPiResponse(dspy.Signature):
+    """Quick, conservative and precise quality of predcition with short feedback."""
+
+    expected_reasoning_content: str = dspy.InputField(desc='Expected reasoning_content (thinking) of `pi` coding agent harness')
+    expected_content: str = dspy.InputField(desc='Expected content of `pi` coding agent harness')
+    predicted_reasoning_content: str = dspy.InputField(desc='Preidcted reasoning_content (thinking) of `pi` coding agent harness')
+    preidcted_content: str = dspy.InputField(desc='Preidcted content of `pi` coding agent harness')
+    quality: Literal['very low', 'low', 'medium', 'high', 'very high'] = dspy.OutputField(desc='Quality of prediction; preidcted vs expected')
+    feedback: str = dspy.OutputField(desc='Feedback of prediction; preidcted vs expected')
 
 
 class PiModule(dspy.Module):
@@ -119,7 +130,7 @@ class PiModule(dspy.Module):
 
         with TemporaryDirectory(delete=False) as temp_dir_name: # type: ignore
             session_path: str = os.path.join(temp_dir_name, filename) # type: ignore
-            print(f'{session_path=}')
+            # print(f'{session_path=}')
 
             # check and fix session cwd
             assert steps[0]['type'] == 'session'
@@ -131,7 +142,7 @@ class PiModule(dspy.Module):
             with jsonlines.open(session_path, mode='w') as writer:
                 writer.write_all(steps)
 
-            final_answer = pi(
+            _ = pi(
                 model=STUDENT_MODEL[0],
                 thinking=STUDENT_MODEL[1],
                 prompt='summarize',
@@ -157,18 +168,10 @@ reflection_lm = create_lm(*TEACHER_MODEL)
 
 dspy.configure(lm=lm)
 
-pi_module = PiModule()
-
-# for filename, steps in train_set.items():
-#     steps = steps[:-1] # skip last, predict last
-#     result = pi_module(filename=filename, steps=steps)
-#     print(result)
-#     break
-
 train_set, val_set, test_set = init_dataset(0.6, 0.2, 0.2, shuffle=False)
-print(f'{len(train_set)=}')
-print(f'{len(val_set)=}')
-print(f'{len(test_set)=}')
+# print(f'{len(train_set)=}')
+# print(f'{len(val_set)=}')
+# print(f'{len(test_set)=}')
 
 train_set = [
     dspy.Example({
@@ -204,28 +207,56 @@ test_set = [
 ]
 
 
-def metric(example, prediction, trace=None, pred_name=None, pred_trace=None) -> float:
+def metric(example, prediction, trace=None, pred_name=None, pred_trace=None) -> dspy.Prediction:
     assert example['_steps'], example
     assert 'final_reasoning_content' in prediction, prediction
     assert 'final_content' in prediction, prediction
-    # correct_answer = int(example['answer'])
 
-    # try:
-    #     llm_answer = int(prediction.answer)
-    # except ValueError as e:
-    #     return 0
+    signature = PredictionQualityAndFeedbackPiResponse
+    predict_prediction_quality_and_criticism = dspy.Predict(signature)
+    expected_message = get_final_assistant_message(example['_steps'][-1])
 
-    # return int(correct_answer == llm_answer)
-    return 0.5
+    expected_reasoning_content = expected_message['reasoning_content']
+    expected_content = expected_message['content']
+    predicted_reasoning_content = prediction['final_reasoning_content']
+    preidcted_content = prediction['final_content']
+
+    result = predict_prediction_quality_and_criticism(
+        expected_reasoning_content=expected_reasoning_content,
+        expected_content=expected_content,
+        predicted_reasoning_content=predicted_reasoning_content,
+        preidcted_content=preidcted_content,
+    )
+    print(f'{result=}')
+
+    match result.quality:
+        case 'very low':
+            score = 0.0
+        case 'low':
+            score = 0.25
+        case 'medium':
+            score = 0.5
+        case 'high':
+            score = 0.75
+        case 'very high':
+            score = 1.0
+        case _:
+            score = 0.0
+
+    return dspy.Prediction(score=score, feedback=result.feedback)
 
 
-evaluate = dspy.Evaluate(
-    devset=test_set,
-    metric=metric,
-    num_threads=1,
-    display_table=True,
-    display_progress=True,
-    provide_traceback=True,
-)
+pi_module = PiModule()
 
-evaluate(pi_module)
+# with dspy.context(lm=lm):
+with dspy.context(lm=reflection_lm):
+    evaluate = dspy.Evaluate(
+        devset=test_set,
+        metric=metric,
+        num_threads=1,
+        display_table=False,
+        display_progress=True,
+        provide_traceback=True,
+    )
+
+    evaluate(pi_module)

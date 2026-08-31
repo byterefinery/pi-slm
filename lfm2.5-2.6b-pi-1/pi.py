@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 
-def pi(model: str, thinking: str, prompt: str, tools: str='"read,write,edit,bash"', temp: bool=True, session: str | None=None) -> str:
+def pi(model: str, thinking: str, prompt: str, tools: str='"read,write,edit,bash"', temp: bool=True, session: str | None=None, debug: bool=False) -> str:
     cmd = [
         'pi',
         '--model', model,
@@ -31,7 +31,9 @@ def pi(model: str, thinking: str, prompt: str, tools: str='"read,write,edit,bash
         '-p',
     ]
 
-    print(f'{cmd=}')
+    if debug:
+        print(f'{cmd=}')
+
     proc_kwargs = {}
     temp_dir: TemporaryDirectory | None = None
 
