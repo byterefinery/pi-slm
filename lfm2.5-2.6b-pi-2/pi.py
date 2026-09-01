@@ -2,7 +2,7 @@ import subprocess
 from tempfile import TemporaryDirectory
 
 
-def pi(model: str, thinking: str, prompt: str, tools: str='"read,write,edit,bash"', temp: bool=True, session: str | None=None, debug: bool=False) -> str:
+def pi(model: str, thinking: str, prompt: str, tools: str='read,write,edit,bash', skills: list[str]=[], extensions: list[str]=[], cwd: str | None=None, temp: bool=False, session: str | None=None, session_dir: str | None=None, session_id: str | None=None, debug: bool=False) -> str:
     cmd = [
         'pi',
         '--model', model,
@@ -19,10 +19,34 @@ def pi(model: str, thinking: str, prompt: str, tools: str='"read,write,edit,bash
             tools,
         ]
 
+    for skill in skills:
+        cmd += [
+            '--skill',
+            skill,
+        ]
+
+    for extension in extensions:
+        cmd += [
+            '--extension',
+            extension,
+        ]
+
     if session:
         cmd += [
             '--session',
             session,
+        ]
+
+    if session_dir:
+        cmd += [
+            '--session-dir',
+            session_dir,
+        ]
+
+    if session_id:
+        cmd += [
+            '--session-id',
+            session_id,
         ]
 
     cmd += [
@@ -36,7 +60,9 @@ def pi(model: str, thinking: str, prompt: str, tools: str='"read,write,edit,bash
     proc_kwargs = {}
     temp_dir: TemporaryDirectory | None = None
 
-    if temp:
+    if cwd:
+        proc_kwargs['cwd'] = cwd
+    elif temp:
         temp_dir = TemporaryDirectory()
         proc_kwargs['cwd'] = temp_dir.name
 

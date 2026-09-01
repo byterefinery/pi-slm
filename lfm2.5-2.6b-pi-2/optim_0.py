@@ -16,10 +16,36 @@ from pi import pi # type: ignore
 from gepa_models import create_lm # type: ignore
 
 
+STUDENT_MODEL = ("LiquidAI/LFM2.5-2.6B", "high")
+TEACHER_MODEL = ("Qwen/Qwen3.8-27B", "low")
+JUDGE_MODEL = ("Qwen/Qwen3.8-27B", "none")
+REFLECTION_MODEL = ("Qwen/Qwen3.8-27B", "none")
+
+
+judge_lm = create_lm(*JUDGE_MODEL)
+reflection_lm = create_lm(*REFLECTION_MODEL)
+
 # pi(Qwen, skill, arg) -> trace_qwen: list
 # pi(LFM, injected, skill, arg) -> trace_lfm: list
 # metrics(trace_qwen, trace_lfm) -> score, feedback
+#
+# print(pi(STUDENT_MODEL[0], STUDENT_MODEL[1], '1 + 2', temp=True))
+# print(pi(TEACHER_MODEL[0], TEACHER_MODEL[1], 'read `../pi-slm.json`', temp=False))
 
+'''
+messages = [
+    {
+        "role": "system",
+        "content": "You are a helpful assistant"
+    },
+    {
+        "role": "user",
+        "content": "What is the capital of France?"
+    }
+]
+
+print(judge_lm(messages))
+'''
 
 def evaluate(candidate: str) -> tuple[float, dict]:
     # print(f'evaluate {candidate=}')
@@ -34,7 +60,7 @@ def evaluate(candidate: str) -> tuple[float, dict]:
 
         feedback = {
             'Error': None,
-            'Output': 'You found right operation structur and value.',
+            'Output': 'You found right operation structure and value.',
         }
     else:
         score = 0.0
@@ -47,15 +73,8 @@ def evaluate(candidate: str) -> tuple[float, dict]:
     return score, feedback
 
 
-STUDENT_MODEL = ("LiquidAI/LFM2.5-2.6B", "high")
-TEACHER_MODEL = ("Qwen/Qwen3.8-27B", "none")
-
-lm = create_lm(*STUDENT_MODEL)
-reflection_lm = create_lm(*TEACHER_MODEL)
-
-# candidate = {'operation': 'sum'}
 result = optimize_anything(
-    seed_candidate='{"operation": ""}',
+    seed_candidate=open('../pi-slm.json', 'r').read(),
     evaluator=evaluate,
     objective="Optimize for correct operations passed in a object. Do not generate code, just pass right object.",
     config=GEPAConfig(
