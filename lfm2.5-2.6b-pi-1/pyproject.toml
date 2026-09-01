@@ -8,5 +8,6 @@ dependencies = [
     "gepa>=0.1.4",
     "jsonlines>=4.0.0",
     "openai>=3.6.0",
+    "seaborn[stats]>=0.13.2",
     "teich>=0.3.6",
 ]
