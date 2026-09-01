@@ -6,10 +6,12 @@
 # ///
 
 # ruff: noqa: I001, EXE001
+import json
+
 import gepa.optimize_anything as oa
 from gepa.optimize_anything import optimize_anything, GEPAConfig, EngineConfig, ReflectionConfig
 
-from jsonl import load_jsonl
+from jsonl import load_jsonl # type: ignore
 from pi import pi # type: ignore
 from gepa_models import create_lm # type: ignore
 
@@ -19,33 +21,26 @@ from gepa_models import create_lm # type: ignore
 # metrics(trace_qwen, trace_lfm) -> score, feedback
 
 
-def evaluate(candidate: dict) -> tuple[float, dict]:
-    if isinstance(candidate, dict) and 'operation' in candidate and isinstance(candidate['operation'], str) and candidate['operation'] == 'sum':
+def evaluate(candidate: str) -> tuple[float, dict]:
+    # print(f'evaluate {candidate=}')
+
+    try:
+        candidate = json.loads(candidate)
+    except ValueError:
+        pass
+
+    if isinstance(candidate, dict) and candidate.get('operation') == 'add':
         score = 1.0
 
         feedback = {
             'Error': None,
-            'Output': 'You found right operation',
-        }
-    elif isinstance(candidate, dict):
-        score = 0.5
-
-        feedback = {
-            'Error': 'I expect `{"operation": "..."}`. Operations are: "add", "sub", "mul", "div"',
-            'Output': None,
-        }
-    elif not isinstance(candidate, dict):
-        score = 0.0
-
-        feedback = {
-            'Error': 'You did not use dict and right operation in it. I expect `{"operation": "..."}`.',
-            'Output': None,
+            'Output': 'You found right operation structur and value.',
         }
     else:
         score = 0.0
 
         feedback = {
-            'Error': 'You did not use right candiate type and its operation.',
+            'Error': 'I expect `{"operation": <value>}`. Operations are: "add", "sub", "mul", "div".',
             'Output': None,
         }
 
@@ -60,12 +55,13 @@ reflection_lm = create_lm(*TEACHER_MODEL)
 
 # candidate = {'operation': 'sum'}
 result = optimize_anything(
+    seed_candidate='{"operation": ""}',
     evaluator=evaluate,
     objective="Optimize for correct operations passed in a object. Do not generate code, just pass right object.",
     config=GEPAConfig(
         engine=EngineConfig(
             parallel=False,
-            max_metric_calls=100,
+            max_metric_calls=10,
         ),
         reflection=ReflectionConfig(
             reflection_lm=reflection_lm,
