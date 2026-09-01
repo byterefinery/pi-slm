@@ -258,7 +258,7 @@ with dspy.context(lm=reflection_lm):
         display_table=False,
         display_progress=True,
         provide_traceback=True,
-        save_as_json=f'eval-{STUDENT_MODEL[0].replace("/", "_")}-{STUDENT_MODEL[1]}-judged-by-{TEACHER_MODEL[0].replace("/", "_")}-{TEACHER_MODEL[1]}.json',
+        # save_as_json=f'eval-{STUDENT_MODEL[0].replace("/", "_")}-{STUDENT_MODEL[1]}-judged-by-{TEACHER_MODEL[0].replace("/", "_")}-{TEACHER_MODEL[1]}.json',
         # save_as_json=f'eval-{STUDENT_MODEL[0].replace("/", "_")}-{STUDENT_MODEL[1]}-judged-by-{STUDENT_MODEL[0].replace("/", "_")}-{STUDENT_MODEL[1]}.json',
     )
 
