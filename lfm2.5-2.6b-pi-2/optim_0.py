@@ -281,7 +281,9 @@ result = optimize_anything(
     config=GEPAConfig(
         engine=EngineConfig(
             run_dir='./gepa_runs',
-            parallel=False,
+            display_progress_bar=True,
+            parallel=True,
+            max_workers=2,
             max_metric_calls=10,
         ),
         reflection=ReflectionConfig(
