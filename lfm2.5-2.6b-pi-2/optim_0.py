@@ -9,7 +9,9 @@
 import os
 import json
 import shutil
-from uuid import uuid4
+# from uuid import uuid4
+from pathlib import Path
+from copy import deepcopy
 from tempfile import TemporaryDirectory
 
 import rich
@@ -18,7 +20,7 @@ import gepa.optimize_anything as oa
 from gepa.optimize_anything import optimize_anything, GEPAConfig, EngineConfig, ReflectionConfig
 
 from pi import pi # type: ignore
-from jsonl import load_jsonl, loads_jsonl # type: ignore
+# from jsonl import load_jsonl, loads_jsonl # type: ignore
 from gepa_models import create_lm # type: ignore
 
 
@@ -81,28 +83,40 @@ def run_isolated_pi(override_file_content: dict | None=None, *args, **kwargs) ->
     with TemporaryDirectory(delete=False) as td, TemporaryDirectory(delete=False) as tsd: # type: ignore no-matching-overload
         # print(f'{td=}')
         # print(f'{tsd=}')
+        print(f'{td=} {tsd=}')
 
-        os.makedirs(os.path.join(str(td), '.agents', 'skills'))
+        os.makedirs(Path(str(td)) / '.pi' / 'agent')
+        os.makedirs(Path(str(td)) / '.agents' / 'skills')
 
         for dst, src in SKILLS.items():
-            shutil.copytree(src, os.path.join(str(td), dst), dirs_exist_ok=True)
+            shutil.copytree(src, Path(str(td)) / dst, dirs_exist_ok=True)
+
+        # .pi
+        shutil.copy(Path.home() / '.pi' / 'agent' / 'models.json', Path(str(td)) / '.pi' / 'agent' / 'models.json')
+        # shutil.copy(Path.home() / '.pi' / 'agent' / 'settings.json', Path(str(td)) / '.pi' / 'agent' / 'settings.json')
 
         # pi-slm.ts
         if override_file_content and 'pi-slm.ts' in override_file_content:
-            with open(os.path.join(str(td), 'pi-slm.ts'), 'w') as f:
+            with open(Path(str(td)) / 'pi-slm.ts', 'w') as f:
                 f.write(override_file_content['pi-slm.ts'])
         else:
-            shutil.copy('../pi-slm.ts', os.path.join(str(td), 'pi-slm.ts'))
+            shutil.copy('../pi-slm.ts', Path(str(td)) / 'pi-slm.ts')
 
         # pi-slm.json
         if override_file_content and 'pi-slm.json' in override_file_content:
-            with open(os.path.join(str(td), 'pi-slm.json'), 'w') as f:
+            with open(Path(str(td)) / 'pi-slm.json', 'w') as f:
                 f.write(override_file_content['pi-slm.json'])
         else:
-            shutil.copy('../pi-slm.json', os.path.join(str(td), 'pi-slm.json'))
+            shutil.copy('../pi-slm.json', Path(str(td)) / 'pi-slm.json')
 
         # run pi
-        pi_output: str = pi(*args, cwd=td, session_dir=tsd, **kwargs)
+        pi_output: str = pi(
+            *args,
+            session_dir=tsd,
+            cwd=td,
+            env=deepcopy(os.environ) | {'PI_CODING_AGENT_DIR': Path(str(td)) / '.pi' / 'agent'},
+            **kwargs,
+        )
 
         # pi names session files `<timestamp>_<session_id>.jsonl`, so the name cannot be guessed —
         # the fresh session dir contains exactly one file, and that is the session file.
@@ -151,6 +165,7 @@ def evaluate(candidate: str) -> tuple[float, dict]:
                 debug=True,
             )
         except Exception as e:
+            raise e
             score = 0.0
 
             feedback = {
@@ -178,6 +193,7 @@ def evaluate(candidate: str) -> tuple[float, dict]:
                 }
             )
         except Exception as e:
+            raise e
             score = 0.0
 
             feedback = {

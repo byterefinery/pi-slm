@@ -2,7 +2,7 @@ import subprocess
 from tempfile import TemporaryDirectory
 
 
-def pi(model: str, thinking: str, prompt: str, tools: str='read,write,edit,bash', skills: list[str]=[], extensions: list[str]=[], cwd: str | None=None, temp: bool=False, session: str | None=None, session_dir: str | None=None, session_id: str | None=None, debug: bool=False) -> str:
+def pi(model: str, thinking: str, prompt: str, tools: str='read,write,edit,bash', skills: list[str]=[], extensions: list[str]=[], session: str | None=None, session_dir: str | None=None, session_id: str | None=None, cwd: str | None=None, temp: bool=False, env: dict | None=None, debug: bool=False) -> str:
     cmd = [
         'pi',
         '--model', model,
@@ -65,6 +65,9 @@ def pi(model: str, thinking: str, prompt: str, tools: str='read,write,edit,bash'
     elif temp:
         temp_dir = TemporaryDirectory()
         proc_kwargs['cwd'] = temp_dir.name
+
+    if env:
+        proc_kwargs['env'] = env
 
     proc = subprocess.run( # type: ignore # noqa
         cmd,
