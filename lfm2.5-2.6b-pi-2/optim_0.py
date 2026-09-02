@@ -282,8 +282,8 @@ result = optimize_anything(
         engine=EngineConfig(
             run_dir='./gepa_runs',
             display_progress_bar=True,
-            parallel=True,
-            max_workers=2,
+            parallel=False,
+            # max_workers=2,
             max_metric_calls=10,
         ),
         reflection=ReflectionConfig(
