@@ -2,17 +2,23 @@
 #
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["dspy", "gepa[full]", "datasets", "openai", "teich", "jsonlines"]
+# dependencies = ["dspy", "gepa[full]", "datasets", "openai", "teich", "jsonlines", "rich", "tqdm"]
 # ///
 
 # ruff: noqa: I001, EXE001
+import os
 import json
+import shutil
+from uuid import uuid4
+from tempfile import TemporaryDirectory
 
+import rich
+from tqdm import tqdm
 import gepa.optimize_anything as oa
 from gepa.optimize_anything import optimize_anything, GEPAConfig, EngineConfig, ReflectionConfig
 
-from jsonl import load_jsonl # type: ignore
 from pi import pi # type: ignore
+from jsonl import load_jsonl, loads_jsonl # type: ignore
 from gepa_models import create_lm # type: ignore
 
 
@@ -21,6 +27,11 @@ TEACHER_MODEL = ("Qwen/Qwen3.8-27B", "low")
 JUDGE_MODEL = ("Qwen/Qwen3.8-27B", "none")
 REFLECTION_MODEL = ("Qwen/Qwen3.8-27B", "none")
 
+SKILLS = {
+    '.agents/skills/example': '../.agents/skills-byterefinery/example',
+    '.agents/skills/tzip': '../.agents/skills-byterefinery/tzip',
+    '.agents/skills/webfetch': '../.agents/skills/webfetch',
+}
 
 judge_lm = create_lm(*JUDGE_MODEL)
 reflection_lm = create_lm(*REFLECTION_MODEL)
@@ -47,36 +58,149 @@ messages = [
 print(judge_lm(messages))
 '''
 
+
+def extract_json(response: str):
+    # Strip markdown code blocks if the LLM wrapped the JSON
+    cleaned = response.replace('```json', '').replace('```', '').strip()
+    data = json.loads(cleaned)
+    return data
+
+
+EXAMPLES = []
+
+
+for dst, src in tqdm(list(SKILLS.items())[:1]):
+    rich.print(f'Skill: {dst=}')
+
+    while True:
+        try:
+            train_input_examples = pi(
+                TEACHER_MODEL[0],
+                TEACHER_MODEL[1],
+                (
+                    f'Read whole skill, analyze it, and produce examples how skill can be invoked: {src}\n'
+                    'Output should be just JSON (list of objects `[{"user_content": "/skill:SKILL_NAME SKILL_ARG"}, ...]`).\n'
+                    'Produce 10 examples of skill usage. Do not treat skill as programming tool because it has free form of language.\n'
+                    'For skill `webfetch` use URLs: https://tangledgroup.com/ , https://byterefinery.com/ .\n'
+                    'Final output should be just JSON.\n'
+                ),
+                temp=False,
+            )
+
+            train_input_examples = extract_json(train_input_examples)
+        except Exception as e:
+            rich.print(f'{e=}')
+            continue
+
+        break
+
+    EXAMPLES.extend(train_input_examples)
+    rich.print(train_input_examples)
+    print()
+
+
+def run_isolated_pi(*args, **kwargs) -> tuple[str, str]:
+    with TemporaryDirectory(delete=False) as td, TemporaryDirectory(delete=False) as tsd: # type: ignore no-matching-overload
+        print(f'{td=}')
+        print(f'{tsd=}')
+
+        os.makedirs(os.path.join(str(td), '.agents', 'skills'))
+
+        for dst, src in SKILLS.items():
+            shutil.copytree(src, os.path.join(str(td), dst), dirs_exist_ok=True)
+
+        shutil.copy('../pi-slm.ts', os.path.join(str(td), 'pi-slm.ts'))
+        shutil.copy('../pi-slm.json', os.path.join(str(td), 'pi-slm.json'))
+        # pi_output: str = pi(TEACHER_MODEL[0], TEACHER_MODEL[1], example['user_content'], cwd=td, session_dir=tsd, debug=True)
+        pi_output: str = pi(*args, cwd=td, session_dir=tsd, **kwargs)
+
+        # pi names session files `<timestamp>_<session_id>.jsonl`, so the name cannot be guessed —
+        # the fresh session dir contains exactly one file, and that is the session file.
+        session_files = [
+            os.path.join(str(tsd), name)
+            for name in os.listdir(str(tsd))
+            if os.path.isfile(os.path.join(str(tsd), name))
+        ]
+        assert len(session_files) == 1, f'Expected exactly one session file in {tsd!r}, found: {session_files!r}'
+        session_file_path: str = session_files[0]
+
+        with open(session_file_path, 'r') as f:
+            pi_session_content = f.read()
+
+    return pi_output, pi_session_content
+
+
 def evaluate(candidate: str) -> tuple[float, dict]:
-    # print(f'evaluate {candidate=}')
+    global EXAMPLES
+    score = 0.0
+    feedback = {}
 
     try:
-        candidate = json.loads(candidate)
-    except ValueError:
-        pass
-
-    if isinstance(candidate, dict) and candidate.get('operation') == 'add':
-        score = 1.0
-
-        feedback = {
-            'Error': None,
-            'Output': 'You found right operation structure and value.',
-        }
-    else:
+        candidate: list[dict] = json.loads(candidate)
+    except Exception as e:
+        # raise e
         score = 0.0
 
         feedback = {
-            'Error': 'I expect `{"operation": <value>}`. Operations are: "add", "sub", "mul", "div".',
             'Output': None,
+            'Error': f'Could not deserialize candidate JSON: {e}'
         }
+
+        return score, feedback
+
+    for example in tqdm(EXAMPLES):
+        if example.get('session_content'):
+            continue
+
+        '''
+        with TemporaryDirectory(delete=False) as td, TemporaryDirectory(delete=False) as tsd: # type: ignore no-matching-overload
+            print(f'{td=}')
+            print(f'{tsd=}')
+
+            os.makedirs(os.path.join(str(td), '.agents', 'skills'))
+
+            for dst, src in SKILLS.items():
+                shutil.copytree(src, os.path.join(str(td), dst), dirs_exist_ok=True)
+
+            shutil.copy('../pi-slm.ts', os.path.join(str(td), 'pi-slm.ts'))
+            shutil.copy('../pi-slm.json', os.path.join(str(td), 'pi-slm.json'))
+            pi(TEACHER_MODEL[0], TEACHER_MODEL[1], example['user_content'], cwd=td, session_dir=tsd, debug=True)
+
+            # pi names session files `<timestamp>_<session_id>.jsonl`, so the name cannot be guessed —
+            # the fresh session dir contains exactly one file, and that is the session file.
+            session_files = [
+                os.path.join(str(tsd), name)
+                for name in os.listdir(str(tsd))
+                if os.path.isfile(os.path.join(str(tsd), name))
+            ]
+            assert len(session_files) == 1, f'Expected exactly one session file in {tsd!r}, found: {session_files!r}'
+            session_file_path: str = session_files[0]
+
+            with open(session_file_path, 'r') as f:
+                session_content = f.read()
+
+            example['session_content'] = session_content
+        '''
+        _, example['session_content'] = run_isolated_pi(TEACHER_MODEL[0], TEACHER_MODEL[1], example['user_content'], debug=True)
+
+    # setup student env for pi
+    student_produced_examples = []
 
     return score, feedback
 
 
+with open('../pi-slm.json', 'r') as f:
+    seed_candidate: str = f.read()
+
+
 result = optimize_anything(
-    seed_candidate=open('../pi-slm.json', 'r').read(),
+    seed_candidate=seed_candidate,
     evaluator=evaluate,
-    objective="Optimize for correct operations passed in a object. Do not generate code, just pass right object.",
+    objective=(
+        "Optimize for student model performing like teacher model inside Pi coding agent. "
+        "This is done by optimizing injected messages (keep same structure, just change `content` and/or `reasoning_content`), then asking Pi, and comparing responses after that point between student and teacher models."
+        "Do not optimize system role message. Optimize only user/assistant messages. "
+    ),
     config=GEPAConfig(
         engine=EngineConfig(
             parallel=False,
