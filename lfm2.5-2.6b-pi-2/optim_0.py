@@ -46,7 +46,7 @@ def extract_json(response: str):
     return data
 
 
-for dst, src in tqdm(list(SKILLS.items())[:1]):
+for dst, src in tqdm(list(SKILLS.items())):
     rich.print(f'Skill: {dst=}')
 
     while True:
@@ -137,7 +137,7 @@ def evaluate(candidate: str) -> tuple[float, dict]:
         return score, feedback
 
     # teacher
-    for example in tqdm(EXAMPLES[:1]):
+    for example in tqdm(EXAMPLES):
         if example.get('session_content'):
             continue
 
@@ -146,9 +146,9 @@ def evaluate(candidate: str) -> tuple[float, dict]:
                 model=TEACHER_MODEL[0],
                 thinking=TEACHER_MODEL[1],
                 prompt=example['user_content'],
+                extensions=['pi-slm.ts'],
                 debug=True,
             )
-
         except Exception as e:
             score = 0.0
 
@@ -164,12 +164,13 @@ def evaluate(candidate: str) -> tuple[float, dict]:
     # student
     student_sessions_content = []
 
-    for example in tqdm(EXAMPLES[:1]):
+    for example in tqdm(EXAMPLES):
         try:
             _, student_session_content = run_isolated_pi(
                 model=STUDENT_MODEL[0],
                 thinking=STUDENT_MODEL[1],
                 prompt=example['user_content'],
+                extensions=['pi-slm.ts'],
                 debug=True,
                 override_file_content={
                     'pi-slm.json': json.dumps(candidate),
@@ -279,6 +280,7 @@ result = optimize_anything(
     ),
     config=GEPAConfig(
         engine=EngineConfig(
+            run_dir='./gepa_runs',
             parallel=False,
             max_metric_calls=10,
         ),
