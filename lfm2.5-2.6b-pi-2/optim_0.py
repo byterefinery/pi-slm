@@ -35,6 +35,7 @@ SKILLS = {
 
 EXAMPLES = []
 
+
 judge_lm = create_lm(*JUDGE_MODEL)
 reflection_lm = create_lm(*REFLECTION_MODEL)
 
@@ -196,7 +197,7 @@ def evaluate(candidate: str) -> tuple[float, dict]:
     verdicts: list[dict] = []
 
     # accumulate
-    for teacher_session, student_session in zip(teacher_sessions_content, student_sessions_content):
+    for teacher_session, student_session in tqdm(list(zip(teacher_sessions_content, student_sessions_content))):
         while True:
             try:
                 messages = [
@@ -281,7 +282,7 @@ result = optimize_anything(
     config=GEPAConfig(
         engine=EngineConfig(
             run_dir='./gepa_runs',
-            display_progress_bar=True,
+            # display_progress_bar=True,
             parallel=False,
             # max_workers=2,
             max_metric_calls=10,
