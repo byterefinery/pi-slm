@@ -33,30 +33,10 @@ SKILLS = {
     '.agents/skills/webfetch': '../.agents/skills/webfetch',
 }
 
+EXAMPLES = []
+
 judge_lm = create_lm(*JUDGE_MODEL)
 reflection_lm = create_lm(*REFLECTION_MODEL)
-
-# pi(Qwen, skill, arg) -> trace_qwen: list
-# pi(LFM, injected, skill, arg) -> trace_lfm: list
-# metrics(trace_qwen, trace_lfm) -> score, feedback
-#
-# print(pi(STUDENT_MODEL[0], STUDENT_MODEL[1], '1 + 2', temp=True))
-# print(pi(TEACHER_MODEL[0], TEACHER_MODEL[1], 'read `../pi-slm.json`', temp=False))
-
-'''
-messages = [
-    {
-        "role": "system",
-        "content": "You are a helpful assistant"
-    },
-    {
-        "role": "user",
-        "content": "What is the capital of France?"
-    }
-]
-
-print(judge_lm(messages))
-'''
 
 
 def extract_json(response: str):
@@ -64,9 +44,6 @@ def extract_json(response: str):
     cleaned = response.replace('```json', '').replace('```', '').strip()
     data = json.loads(cleaned)
     return data
-
-
-EXAMPLES = []
 
 
 for dst, src in tqdm(list(SKILLS.items())[:1]):
@@ -99,19 +76,31 @@ for dst, src in tqdm(list(SKILLS.items())[:1]):
     print()
 
 
-def run_isolated_pi(*args, **kwargs) -> tuple[str, str]:
+def run_isolated_pi(override_file_content: dict | None=None, *args, **kwargs) -> tuple[str, str]:
     with TemporaryDirectory(delete=False) as td, TemporaryDirectory(delete=False) as tsd: # type: ignore no-matching-overload
-        print(f'{td=}')
-        print(f'{tsd=}')
+        # print(f'{td=}')
+        # print(f'{tsd=}')
 
         os.makedirs(os.path.join(str(td), '.agents', 'skills'))
 
         for dst, src in SKILLS.items():
             shutil.copytree(src, os.path.join(str(td), dst), dirs_exist_ok=True)
 
-        shutil.copy('../pi-slm.ts', os.path.join(str(td), 'pi-slm.ts'))
-        shutil.copy('../pi-slm.json', os.path.join(str(td), 'pi-slm.json'))
-        # pi_output: str = pi(TEACHER_MODEL[0], TEACHER_MODEL[1], example['user_content'], cwd=td, session_dir=tsd, debug=True)
+        # pi-slm.ts
+        if override_file_content and 'pi-slm.ts' in override_file_content:
+            with open(os.path.join(str(td), 'pi-slm.ts'), 'w') as f:
+                f.write(override_file_content['pi-slm.ts'])
+        else:
+            shutil.copy('../pi-slm.ts', os.path.join(str(td), 'pi-slm.ts'))
+
+        # pi-slm.json
+        if override_file_content and 'pi-slm.json' in override_file_content:
+            with open(os.path.join(str(td), 'pi-slm.json'), 'w') as f:
+                f.write(override_file_content['pi-slm.json'])
+        else:
+            shutil.copy('../pi-slm.json', os.path.join(str(td), 'pi-slm.json'))
+
+        # run pi
         pi_output: str = pi(*args, cwd=td, session_dir=tsd, **kwargs)
 
         # pi names session files `<timestamp>_<session_id>.jsonl`, so the name cannot be guessed —
@@ -131,7 +120,6 @@ def run_isolated_pi(*args, **kwargs) -> tuple[str, str]:
 
 
 def evaluate(candidate: str) -> tuple[float, dict]:
-    global EXAMPLES
     score = 0.0
     feedback = {}
 
@@ -148,43 +136,130 @@ def evaluate(candidate: str) -> tuple[float, dict]:
 
         return score, feedback
 
-    for example in tqdm(EXAMPLES):
+    # teacher
+    for example in tqdm(EXAMPLES[:1]):
         if example.get('session_content'):
             continue
 
-        '''
-        with TemporaryDirectory(delete=False) as td, TemporaryDirectory(delete=False) as tsd: # type: ignore no-matching-overload
-            print(f'{td=}')
-            print(f'{tsd=}')
+        try:
+            _, teacher_session_content = run_isolated_pi(
+                model=TEACHER_MODEL[0],
+                thinking=TEACHER_MODEL[1],
+                prompt=example['user_content'],
+                debug=True,
+            )
 
-            os.makedirs(os.path.join(str(td), '.agents', 'skills'))
+        except Exception as e:
+            score = 0.0
 
-            for dst, src in SKILLS.items():
-                shutil.copytree(src, os.path.join(str(td), dst), dirs_exist_ok=True)
+            feedback = {
+                'Output': None,
+                'Error': f'Could not run teacher model in pi:\n{example=}\n{e}'
+            }
 
-            shutil.copy('../pi-slm.ts', os.path.join(str(td), 'pi-slm.ts'))
-            shutil.copy('../pi-slm.json', os.path.join(str(td), 'pi-slm.json'))
-            pi(TEACHER_MODEL[0], TEACHER_MODEL[1], example['user_content'], cwd=td, session_dir=tsd, debug=True)
+            return score, feedback
 
-            # pi names session files `<timestamp>_<session_id>.jsonl`, so the name cannot be guessed —
-            # the fresh session dir contains exactly one file, and that is the session file.
-            session_files = [
-                os.path.join(str(tsd), name)
-                for name in os.listdir(str(tsd))
-                if os.path.isfile(os.path.join(str(tsd), name))
-            ]
-            assert len(session_files) == 1, f'Expected exactly one session file in {tsd!r}, found: {session_files!r}'
-            session_file_path: str = session_files[0]
+        example['session_content'] = teacher_session_content
 
-            with open(session_file_path, 'r') as f:
-                session_content = f.read()
+    # student
+    student_sessions_content = []
 
-            example['session_content'] = session_content
-        '''
-        _, example['session_content'] = run_isolated_pi(TEACHER_MODEL[0], TEACHER_MODEL[1], example['user_content'], debug=True)
+    for example in tqdm(EXAMPLES[:1]):
+        try:
+            _, student_session_content = run_isolated_pi(
+                model=STUDENT_MODEL[0],
+                thinking=STUDENT_MODEL[1],
+                prompt=example['user_content'],
+                debug=True,
+                override_file_content={
+                    'pi-slm.json': json.dumps(candidate),
+                }
+            )
+        except Exception as e:
+            score = 0.0
 
-    # setup student env for pi
-    student_produced_examples = []
+            feedback = {
+                'Output': None,
+                'Error': f'Could not run student model in pi:\n{example=}\n{e=}'
+            }
+
+            return score, feedback
+
+        student_sessions_content.append(student_session_content)
+
+    # rich.print(student_sessions_content)
+
+    # judge
+    teacher_sessions_content = [n['session_content'] for n in EXAMPLES if n.get('session_content')]
+    assert len(teacher_sessions_content) == len(student_sessions_content)
+    verdicts: list[dict] = []
+
+    # accumulate
+    for teacher_session, student_session in zip(teacher_sessions_content, student_sessions_content):
+        while True:
+            try:
+                messages = [
+                    {
+                        'role': 'system',
+                        'content': 'You are a helpful assistant.',
+                    },
+                    {
+                        'role': 'user',
+                        'content': (
+                            'Compare teacher pi session file with student pi session file.\n'
+                            f'<teacher_session>\n{teacher_session}\n</teacher_session>\n'
+                            f'<student_session>\n{student_session}\n</student_session>\n'
+                            'Rate student with quality (string) and descriptive critique (string). '
+                            'Rate student with following quality (string): "very low", "low", "medium", "high", "very high". '
+                            'Output is just JSON with structure: `{"quality": QUALITY, "critique": CRITIQUE}`. '
+                            'Final output is just JSON. '
+                        )
+                    }
+                ]
+
+                # print(f'{messages=}')
+                verdict: str = judge_lm(messages)
+                verdict: dict = extract_json(verdict)
+            except Exception as e:
+                print(f'{e=}')
+                continue
+
+            if not ('quality' in verdict and 'critique' in verdict):
+                print('Missing quality/critique in verdict, trying again...')
+                continue
+
+            break
+
+        match verdict['quality']:
+            case 'very low':
+                verdict['score'] = 0.0
+            case 'low':
+                verdict['score'] = 0.25
+            case 'medium':
+                verdict['score'] = 0.5
+            case 'high':
+                verdict['score'] = 0.75
+            case 'very high':
+                verdict['score'] = 1.0
+            case _:
+                verdict['score'] = 0.0
+
+        print(f'{verdict=}')
+        verdicts.append(verdict)
+
+    # collapse
+    for verdict in verdicts:
+        score += verdict['score']
+
+        if 'critique' not in feedback:
+            feedback['Critique'] = []
+
+        assert isinstance(feedback['Critique'], list)
+        feedback['Critique'].append(verdict['critique'])
+
+    score = score / len(verdicts)
+    feedback['Output'] = None
+    feedback['Error'] = None
 
     return score, feedback
 
@@ -198,8 +273,9 @@ result = optimize_anything(
     evaluator=evaluate,
     objective=(
         "Optimize for student model performing like teacher model inside Pi coding agent. "
-        "This is done by optimizing injected messages (keep same structure, just change `content` and/or `reasoning_content`), then asking Pi, and comparing responses after that point between student and teacher models."
+        "This is done by optimizing injected messages (keep same structure, just change `content` and/or `reasoning_content`), then asking Pi, and comparing responses after that point between student and teacher models. "
         "Do not optimize system role message. Optimize only user/assistant messages. "
+        "Preserve student `reasoning_content` writing style while optimizing it. Student model is sensitive to reasoning/thinking content. "
     ),
     config=GEPAConfig(
         engine=EngineConfig(
