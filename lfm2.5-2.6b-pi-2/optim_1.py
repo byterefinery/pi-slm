@@ -6,15 +6,14 @@
 # ///
 
 # ruff: noqa: I001, EXE001
-from huggingface_hub.cli.sandbox import sandbox_cli
 import os
 import json
-import shutil
-from pathlib import Path
-from copy import deepcopy
+# import shutil
+# from pathlib import Path
+# from copy import deepcopy
 from random import Random
 from typing import TypedDict
-from tempfile import TemporaryDirectory
+# from tempfile import TemporaryDirectory
 
 import rich
 from tqdm import tqdm
@@ -216,7 +215,7 @@ train_set = get_teacher_samples()
 train_set = train_set * 1
 Random(0).shuffle(train_set)
 rich.print(f'{len(train_set)=}')
-1 / 0
+# 1 / 0
 
 # optimize `pi-slm.json`
 with open('../pi-slm.json', 'r') as f:

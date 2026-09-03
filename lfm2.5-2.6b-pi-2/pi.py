@@ -9,40 +9,10 @@ from tempfile import TemporaryDirectory
 
 def pi(model: str, thinking: str, prompt: str, tools: str='read,write,edit,bash', skills: list[str]=[], extensions: list[str]=[], session: str | None=None, session_dir: str | None=None, session_id: str | None=None, cwd: str | None=None, temp: bool=False, env: dict | None=None, sandbox: bool=False, debug: bool=False) -> str:
     if sandbox:
-        '''
-        # FIXME: whole sandbox logic
-        cmd = [
-            'podman',
-            'run',
-            '-it',
-            '--rm',
-            '--userns=keep-id',
-            '-v', 'npm-cache:/home/node/.npm:Z',
-            # '-v', '~/.pi:/home/node/.pi:ro',
-        ]
-
-        if session_dir:
-            cmd += [
-                '-v', f'{session_dir}:{session_dir}:Z',
-            ]
-
-        if cwd:
-            cmd += [
-                '-v', f'{cwd}:{cwd}:Z',
-                '-v', f'{cwd}:/workspace:Z',
-                '--workdir', '/workspace',
-            ]
-
-        cmd += [
-            'docker.io/node:latest',
-            'npx',
-            '-y',
-            '@earendil-works/pi-coding-agent',
-        ]
-        '''
         cmd = [
             'firejail',
             '--noprofile',
+            '--private',
             '--quiet',
             '--deterministic-exit-code',
             # '--blacklist=/home/',
