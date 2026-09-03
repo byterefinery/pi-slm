@@ -165,7 +165,7 @@ def evaluate(candidate: str) -> tuple[float, dict]:
                 debug=True,
             )
         except Exception as e:
-            raise e
+            # raise e
             score = 0.0
 
             feedback = {
@@ -193,7 +193,7 @@ def evaluate(candidate: str) -> tuple[float, dict]:
                 }
             )
         except Exception as e:
-            raise e
+            # raise e
             score = 0.0
 
             feedback = {
