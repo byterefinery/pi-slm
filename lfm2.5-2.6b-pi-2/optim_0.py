@@ -9,9 +9,9 @@
 import os
 import json
 import shutil
-# from uuid import uuid4
 from pathlib import Path
 from copy import deepcopy
+from random import Random
 from tempfile import TemporaryDirectory
 
 import rich
@@ -20,7 +20,6 @@ import gepa.optimize_anything as oa
 from gepa.optimize_anything import optimize_anything, GEPAConfig, EngineConfig, ReflectionConfig
 
 from pi import pi # type: ignore
-# from jsonl import load_jsonl, loads_jsonl # type: ignore
 from gepa_models import create_lm # type: ignore
 
 
@@ -68,15 +67,17 @@ for dst, src in tqdm(list(SKILLS.items())):
             )
 
             train_input_examples = extract_json(train_input_examples)
+            EXAMPLES.extend(train_input_examples)
         except Exception as e:
             rich.print(f'{e=}')
             continue
 
         break
 
-    EXAMPLES.extend(train_input_examples)
-    rich.print(train_input_examples)
-    print()
+
+Random(0).shuffle(EXAMPLES)
+rich.print(EXAMPLES)
+print()
 
 
 def run_isolated_pi(override_file_content: dict | None=None, *args, **kwargs) -> tuple[str, str]:
@@ -269,14 +270,15 @@ def evaluate(candidate: str) -> tuple[float, dict]:
     for verdict in verdicts:
         score += verdict['score']
 
-        if 'critique' not in feedback:
-            feedback['Critique'] = []
+        if 'Critiques' not in feedback:
+            feedback['Critiques'] = [] # list[tuple[score, quality, critique]]
 
-        assert isinstance(feedback['Critique'], list)
-        feedback['Critique'].append(verdict['critique'])
+        assert isinstance(feedback['Critiques'], list)
+        item: tuple[float, str, str] = (verdict['score'], verdict['quality'], verdict['critique'])
+        feedback['Critiques'].append(item)
 
     score = score / len(verdicts)
-    feedback['Output'] = None
+    feedback['Output'] = 'Individual sample\'s critique is in "Critiques" list as tuple of: score, quality, and critique.'
     feedback['Error'] = None
 
     return score, feedback
@@ -298,7 +300,6 @@ result = optimize_anything(
     config=GEPAConfig(
         engine=EngineConfig(
             run_dir='./gepa_runs',
-            # display_progress_bar=True,
             parallel=False,
             # max_workers=2,
             max_metric_calls=10,
