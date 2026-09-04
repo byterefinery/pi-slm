@@ -27,10 +27,12 @@ from gepa_models import create_lm # type: ignore
 TEACHER_SAMPLES_PATH = 'teacher-samples.json'
 STUDENT_SAMPLES_PATH = 'student-samples.json'
 
+STUDNT_REASONING_RULES = open('REASONING_LFM2_5_2_6B.md').read()
+
 STUDENT_MODEL = ("LiquidAI/LFM2.5-2.6B", "high")
 TEACHER_MODEL = ("Qwen/Qwen3.8-27B", "low")
-JUDGE_MODEL = ("Qwen/Qwen3.8-27B", "none")
-REFLECTION_MODEL = ("Qwen/Qwen3.8-27B", "none")
+JUDGE_MODEL = ("Qwen/Qwen3.8-27B", "low")
+REFLECTION_MODEL = ("Qwen/Qwen3.8-27B", "low")
 
 SKILLS = {
     '.agents/skills/example': '../.agents/skills-byterefinery/example',
@@ -286,7 +288,11 @@ result = optimize_anything(
         "Optimize for student model performing like teacher model inside Pi coding agent. "
         "This is done by optimizing injected messages (keep same structure, just change `content` and/or `reasoning_content`), then asking Pi, and comparing responses after that point between student and teacher models. "
         "Do not optimize system role message. Optimize only user/assistant messages. "
-        "Preserve student `reasoning_content` writing style while optimizing it. Student model is sensitive to reasoning/thinking content. "
+        "Preserve student `reasoning_content` writing style while optimizing it. Student model is sensitive to reasoning/thinking content."
+    ),
+    background=(
+        "These are rules for student model reasoning content:\n"
+        f"<STUDNT_REASONING_RULES>\n{STUDNT_REASONING_RULES}\n</STUDNT_REASONING_RULES>"
     ),
     config=GEPAConfig(
         engine=EngineConfig(
@@ -294,7 +300,7 @@ result = optimize_anything(
             display_progress_bar=True,
             parallel=False,
             # max_workers=2,
-            max_metric_calls=500,
+            max_metric_calls=1_000,
         ),
         reflection=ReflectionConfig(
             reflection_lm=reflection_lm,
