@@ -71,16 +71,18 @@ def get_teacher_samples() -> list[Sample]:
                 train_input_examples, _ = run_isolated_pi(
                     model=TEACHER_MODEL[0],
                     thinking=TEACHER_MODEL[1],
-                    prompt= (
-                        f'Read whole skill, analyze it, and produce examples how skill can be invoked: {src}\n'
-                        'Output should be just JSON (list of objects `[{"user_content": "/skill:SKILL_NAME SKILL_ARG"}, ...]`).\n'
-                        'Produce 10 examples of requested skill usage. Do not over-complicate skill usage examples. Do not treat skill as programming tool because it has free-form of language.\n'
-                        'In case when skill `examples` is used, it is demo skill to see how skill directly is used, also its references, and how to use scripts.\n'
-                        'In case when skill `webfetch`, use URLs: https://tangledgroup.com/ , https://byterefinery.com/ .\n'
-                        'In case when skill `tzip` is used, it is skill that activates a mode (skill has list of this modes). It does not work on any files. Instead it is in-context token compressor that LLM knows how to use.\n'
-                        'Work only in current directory. Do not access user home directory.\n'
-                        'Final output should be just JSON.\n'
-                    ),
+                    prompt= f'''\
+Read whole skill, analyze it, and produce examples how skill can be invoked: {src}
+
+Output should be just JSON (list of objects `[{"user_content": "/skill:SKILL_NAME SKILL_ARG"}, ...]`).
+Produce 10 examples of requested skill usage. Do not over-complicate skill usage examples. Do not treat skill as programming tool because it has free-form of language.
+In case when skill `examples` is used, it is demo skill to see how skill directly is used, also its references, and how to use scripts.
+In case when skill `webfetch`, use URLs: https://tangledgroup.com/ , https://byterefinery.com/ .
+In case when skill `tzip` is used, it is skill that activates a mode (skill has list of this modes). It does not work on any files. Instead it is in-context token compressor that LLM knows how to use.
+Work only in current directory. Do not access user home directory.
+
+Final output should be just JSON.
+''',
                     sandbox=True,
                     debug=True,
                     copy_skills=SKILLS,
@@ -213,16 +215,24 @@ def evaluate(candidate: str, example: dict) -> tuple[float, dict]:
                 },
                 {
                     'role': 'user',
-                    'content': (
-                        'Compare teacher pi session file with student pi session file.\n'
-                        f'<teacher_session>\n{teacher_session}\n</teacher_session>\n'
-                        f'<student_session>\n{student_session}\n</student_session>\n'
-                        "Especially, compare final assistant message in student and teacher sessions because these are their final answers. "
-                        'Rate student with quality (string) and descriptive critique (string). '
-                        'Rate student with following quality (string): "very low", "low", "medium", "high", "very high". '
-                        'Output is just JSON with structure: `{"quality": QUALITY, "critique": CRITIQUE}`.\n'
-                        'Final output is just JSON. '
-                    )
+                    'content': f'''\
+Compare teacher pi session file with student pi session file.
+
+<teacher_session>
+{teacher_session}
+</teacher_session>
+
+<student_session>
+{student_session}
+</student_session>
+
+Especially, compare final assistant message in student and teacher sessions because these are their final answers.
+Rate student with quality (string) and descriptive critique (string).
+Rate student with following quality (string): "very low", "low", "medium", "high", "very high".
+Output is just JSON with structure: `{"quality": QUALITY, "critique": CRITIQUE}`.
+
+Final output is just JSON.
+''',
                 }
             ]
 
@@ -284,16 +294,17 @@ result = optimize_anything(
     seed_candidate=seed_candidate,
     evaluator=evaluate,
     dataset=train_set,
-    objective=(
-        "Optimize for student model performing like teacher model inside Pi coding agent. "
-        "This is done by optimizing injected messages (keep same structure, just change `content` and/or `reasoning_content`), then asking Pi, and comparing responses after that point between student and teacher models. "
-        "Do not optimize system role message. Optimize only user/assistant messages. "
-        "Preserve student `reasoning_content` writing style while optimizing it. Student model is sensitive to reasoning/thinking content."
-    ),
-    background=(
-        "These are rules for student model reasoning content:\n"
-        f"<STUDNT_REASONING_RULES>\n{STUDNT_REASONING_RULES}\n</STUDNT_REASONING_RULES>"
-    ),
+    objective="""\
+Optimize for student model performing like teacher model inside Pi coding agent.
+This is done by optimizing injected messages (keep same structure, just change `content` and/or `reasoning_content`), then asking Pi, and comparing responses after that point between student and teacher models.
+Do not optimize system role message. Optimize only user/assistant messages.
+Preserve student `reasoning_content` writing style while optimizing it. Student model is sensitive to reasoning/thinking content.
+Student `reasoning_content` should not include anything that is any skill specific - it should be skill agnostic.
+""",
+    background=f"""\
+These are rules for student model reasoning content:
+<STUDNT_REASONING_RULES>\n{STUDNT_REASONING_RULES}\n</STUDNT_REASONING_RULES>
+""",
     config=GEPAConfig(
         engine=EngineConfig(
             run_dir='./gepa_runs',
