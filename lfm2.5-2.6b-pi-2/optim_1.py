@@ -99,6 +99,10 @@ def get_teacher_samples() -> list[Sample]:
                 rich.print(f'{e=}')
                 continue
 
+            if not all(sample['input'].startswith('/skill:') for sample in samples):
+                rich.print('All samples need to start with "/skill:"')
+                continue
+
             break
 
     for sample in tqdm(samples):
@@ -268,7 +272,7 @@ rich.print([n["input"] for n in train_set])
 student_samples = get_student_samples()
 rich.print(f'{len(student_samples)=}')
 rich.print([n["input"] for n in student_samples])
-1 / 0
+# 1 / 0
 
 # optimize `pi-slm.json`
 with open('../pi-slm.json', 'r') as f:
@@ -290,7 +294,7 @@ result = optimize_anything(
             display_progress_bar=True,
             parallel=False,
             # max_workers=2,
-            max_metric_calls=100,
+            max_metric_calls=500,
         ),
         reflection=ReflectionConfig(
             reflection_lm=reflection_lm,
