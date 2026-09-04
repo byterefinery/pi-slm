@@ -141,7 +141,7 @@ def evaluate(candidate: str, example: dict) -> tuple[float, dict]:
                 debug=True,
                 copy_skills=SKILLS,
                 override_file_content={
-                    'pi-slm.json': json.dumps(candidate),
+                    'pi-slm.json': candidate,
                 }
             )
         except Exception as e:

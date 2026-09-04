@@ -142,13 +142,24 @@ def run_isolated_pi(copy_skills: dict={}, override_file_content: dict | None=Non
             shutil.copy('../pi-slm.json', Path(str(td)) / 'pi-slm.json')
 
         # run pi
+        env = {
+            "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+            "HOME": os.environ["HOME"],
+            "USER": os.environ.get("USER", ""),
+            "LOGNAME": os.environ.get("LOGNAME", os.environ.get("USER", "")),
+            "LANG": os.environ.get("LANG", "C.UTF-8"),
+            "LC_ALL": os.environ.get("LC_ALL", "C.UTF-8"),
+            "TERM": os.environ.get("TERM", "dumb"),
+            "TMPDIR": "/tmp",
+            "PI_CODING_AGENT_DIR": Path(str(td)) / '.pi' / 'agent',
+            "PI_SKIP_VERSION_CHECK": "1",
+        }
+
         pi_output: str = pi(
             *args,
             session_dir=tsd,
             cwd=td,
-            env=deepcopy(os.environ) | {
-                'PI_CODING_AGENT_DIR': Path(str(td)) / '.pi' / 'agent'
-            },
+            env=env,
             **kwargs,
         )
 
