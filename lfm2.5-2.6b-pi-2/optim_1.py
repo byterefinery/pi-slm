@@ -74,7 +74,7 @@ def get_teacher_samples() -> list[Sample]:
                     prompt= f'''\
 Read whole skill, analyze it, and produce examples how skill can be invoked: {src}
 
-Output should be just JSON (list of objects `[{"user_content": "/skill:SKILL_NAME SKILL_ARG"}, ...]`).
+Output should be just JSON (list of objects `[{{"user_content": "/skill:SKILL_NAME SKILL_ARG"}}, ...]`).
 Produce 10 examples of requested skill usage. Do not over-complicate skill usage examples. Do not treat skill as programming tool because it has free-form of language.
 In case when skill `examples` is used, it is demo skill to see how skill directly is used, also its references, and how to use scripts.
 In case when skill `webfetch`, use URLs: https://tangledgroup.com/ , https://byterefinery.com/ .
@@ -229,7 +229,7 @@ Compare teacher pi session file with student pi session file.
 Especially, compare final assistant message in student and teacher sessions because these are their final answers.
 Rate student with quality (string) and descriptive critique (string).
 Rate student with following quality (string): "very low", "low", "medium", "high", "very high".
-Output is just JSON with structure: `{"quality": QUALITY, "critique": CRITIQUE}`.
+Output is just JSON with structure: `{{"quality": QUALITY, "critique": CRITIQUE}}`.
 
 Final output is just JSON.
 ''',
