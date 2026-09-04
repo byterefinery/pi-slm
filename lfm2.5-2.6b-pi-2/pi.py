@@ -3,25 +3,26 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from copy import deepcopy
+# from copy import deepcopy
 from tempfile import TemporaryDirectory
 
 
 def pi(model: str, thinking: str, prompt: str, tools: str='read,write,edit,bash', skills: list[str]=[], extensions: list[str]=[], session: str | None=None, session_dir: str | None=None, session_id: str | None=None, cwd: str | None=None, temp: bool=False, env: dict | None=None, sandbox: bool=False, debug: bool=False) -> str:
+    cmd = []
+
     if sandbox:
-        cmd = [
+        cmd += [
             'firejail',
             '--noprofile',
             '--private',
             '--quiet',
             '--deterministic-exit-code',
-            # '--blacklist=/home/',
             'pi'
         ]
-    else:
-        cmd = [
-            'pi',
-        ]
+
+    cmd += [
+        'pi',
+    ]
 
     cmd += [
         '--model', model,

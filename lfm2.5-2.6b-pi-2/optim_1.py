@@ -11,7 +11,7 @@ import json
 # import shutil
 # from pathlib import Path
 # from copy import deepcopy
-from random import Random
+# from random import Random
 from typing import TypedDict
 # from tempfile import TemporaryDirectory
 
@@ -24,6 +24,7 @@ from pi import pi, run_isolated_pi # type: ignore
 from utils import extract_json # type: ignore
 from gepa_models import create_lm # type: ignore
 
+
 STUDENT_MODEL = ("LiquidAI/LFM2.5-2.6B", "high")
 TEACHER_MODEL = ("Qwen/Qwen3.8-27B", "low")
 JUDGE_MODEL = ("Qwen/Qwen3.8-27B", "none")
@@ -34,6 +35,7 @@ SKILLS = {
     '.agents/skills/tzip': '../.agents/skills-byterefinery/tzip',
     '.agents/skills/webfetch': '../.agents/skills/webfetch',
 }
+
 
 judge_lm = create_lm(*JUDGE_MODEL)
 reflection_lm = create_lm(*REFLECTION_MODEL)
@@ -125,6 +127,7 @@ def get_teacher_samples() -> list[Sample]:
 def evaluate(candidate: str, example: dict) -> tuple[float, dict]:
     score = 0.0
     feedback = {}
+    # return score, feedback
     print(f'evaluate {len(candidate)=}, {example["input"]=}')
 
     # teacher/student pi sessions
@@ -212,8 +215,8 @@ def evaluate(candidate: str, example: dict) -> tuple[float, dict]:
 
 # train_set
 train_set = get_teacher_samples()
-train_set = train_set * 1
-Random(0).shuffle(train_set)
+# train_set = train_set * 1
+# Random(0).shuffle(train_set)
 rich.print(f'{len(train_set)=}')
 # 1 / 0
 
