@@ -24,6 +24,8 @@ from pi import pi, run_isolated_pi # type: ignore
 from utils import extract_json # type: ignore
 from gepa_models import create_lm # type: ignore
 
+TEACHER_SAMPLES_PATH = 'teacher-samples.json'
+STUDENT_SAMPLES_PATH = 'student-samples.json'
 
 STUDENT_MODEL = ("LiquidAI/LFM2.5-2.6B", "high")
 TEACHER_MODEL = ("Qwen/Qwen3.8-27B", "low")
@@ -51,8 +53,6 @@ class Sample(TypedDict):
 
 
 def get_teacher_samples() -> list[Sample]:
-    TEACHER_SAMPLES_PATH = 'teacher-samples.json'
-
     if os.path.exists(TEACHER_SAMPLES_PATH):
         with open(TEACHER_SAMPLES_PATH, 'r') as f:
             samples = json.load(f)
@@ -72,8 +72,10 @@ def get_teacher_samples() -> list[Sample]:
                     prompt= (
                         f'Read whole skill, analyze it, and produce examples how skill can be invoked: {src}\n'
                         'Output should be just JSON (list of objects `[{"user_content": "/skill:SKILL_NAME SKILL_ARG"}, ...]`).\n'
-                        'Produce 10 examples of skill usage. Do not over-complicate skill usage examples. Do not treat skill as programming tool because it has free-form of language.\n'
-                        'For skill `webfetch` use URLs: https://tangledgroup.com/ , https://byterefinery.com/ .\n'
+                        'Produce 10 examples of requested skill usage. Do not over-complicate skill usage examples. Do not treat skill as programming tool because it has free-form of language.\n'
+                        'In case when skill `examples` is used, it is demo skill to see how skill directly is used, also its references, and how to use scripts.\n'
+                        'In case when skill `webfetch`, use URLs: https://tangledgroup.com/ , https://byterefinery.com/ .\n'
+                        'In case when skill `tzip` is used, it is skill that activates a mode (skill has list of this modes). It does not work on any files. Instead it is in-context token compressor that LLM knows how to use.\n'
                         'Work only in current directory. Do not access user home directory.\n'
                         'Final output should be just JSON.\n'
                     ),
@@ -83,6 +85,7 @@ def get_teacher_samples() -> list[Sample]:
                 )
 
                 train_input_examples: list[dict] = extract_json(train_input_examples)
+                rich.print(train_input_examples)
 
                 for n in train_input_examples:
                     sample: Sample = {
@@ -124,9 +127,50 @@ def get_teacher_samples() -> list[Sample]:
     return samples
 
 
+def get_student_samples() -> list[Sample]:
+    if os.path.exists(STUDENT_SAMPLES_PATH):
+        with open(STUDENT_SAMPLES_PATH, 'r') as f:
+            samples = json.load(f)
+
+        return samples
+
+    assert os.path.exists(TEACHER_SAMPLES_PATH)
+
+    with open(TEACHER_SAMPLES_PATH, 'r') as f:
+        samples = json.load(f)
+
+    for sample in samples:
+        sample['answer'] = ''
+
+    for sample in tqdm(samples):
+        while True:
+            try:
+                _, session_content = run_isolated_pi(
+                    model=STUDENT_MODEL[0],
+                    thinking=STUDENT_MODEL[1],
+                    prompt=sample['input'],
+                    # extensions=['pi-slm.ts'],
+                    sandbox=True,
+                    debug=True,
+                    copy_skills=SKILLS,
+                )
+            except Exception as e:
+                rich.print(f'{e=}')
+                continue
+
+            break
+
+        sample['answer'] = session_content
+
+    with open(STUDENT_SAMPLES_PATH, 'w') as f:
+        json.dump(samples, f)
+
+    return samples
+
+
 def evaluate(candidate: str, example: dict) -> tuple[float, dict]:
-    score = 0.0
-    feedback = {}
+    # score = 0.0
+    # feedback = {}
     # return score, feedback
     print(f'evaluate {len(candidate)=}, {example["input"]=}')
 
@@ -214,11 +258,17 @@ def evaluate(candidate: str, example: dict) -> tuple[float, dict]:
     return score, feedback
 
 # train_set
-train_set = get_teacher_samples()
-# train_set = train_set * 1
+teacher_samples = get_teacher_samples()
+train_set = teacher_samples
 # Random(0).shuffle(train_set)
 rich.print(f'{len(train_set)=}')
+rich.print([n["input"] for n in train_set])
 # 1 / 0
+
+student_samples = get_student_samples()
+rich.print(f'{len(student_samples)=}')
+rich.print([n["input"] for n in student_samples])
+1 / 0
 
 # optimize `pi-slm.json`
 with open('../pi-slm.json', 'r') as f:
