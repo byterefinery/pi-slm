@@ -31,8 +31,8 @@ STUDNT_REASONING_RULES = open('REASONING_LFM2_5_2_6B.md').read()
 
 STUDENT_MODEL = ("LiquidAI/LFM2.5-2.6B", "high")
 TEACHER_MODEL = ("Qwen/Qwen3.8-27B", "low")
-JUDGE_MODEL = ("Qwen/Qwen3.8-27B", "low")
-REFLECTION_MODEL = ("Qwen/Qwen3.8-27B", "low")
+JUDGE_MODEL = ("Qwen/Qwen3.8-27B", "none")
+REFLECTION_MODEL = ("Qwen/Qwen3.8-27B", "none")
 
 SKILLS = {
     '.agents/skills/example': '../.agents/skills-byterefinery/example',
