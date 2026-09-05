@@ -309,8 +309,8 @@ These are rules for student model reasoning content:
         engine=EngineConfig(
             run_dir='./gepa_runs',
             display_progress_bar=True,
-            parallel=False,
-            # max_workers=2,
+            parallel=True,
+            max_workers=3,
             max_metric_calls=1_000,
         ),
         reflection=ReflectionConfig(
