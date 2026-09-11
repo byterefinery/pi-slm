@@ -151,20 +151,11 @@ __pycache__/
 venv/
 .venv/
 misc/
-# gepa_runs/
 
+# GEPA run artifacts
 generated_best_outputs_valset/
 gepa_state.bin
 run_log.txt
 run_log_stderr.txt
 gepa_runs/
-gepa_runs_[0-9]*/
-
-# GEPA run artifacts (optim-lfm2.5-2.6b)
-# gepa_runs
-# gepa_runs_3
-# gepa_runs_4
-# gepa_runs_5
-# gepa_runs_6
-
-optim-lfm2.5-2.6b/teacher-samples.json
+teacher-samples.json
