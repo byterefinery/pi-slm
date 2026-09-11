@@ -426,6 +426,8 @@ Just acknowledge.
 
 Preserve student `reasoning_content` writing style while optimizing it. Student model is sensitive to reasoning/thinking content.
 Student `content` and `reasoning_content` should not include anything that is any skill specific - they should be skill agnostic.
+
+When skills are used, analyze how `<skill>` tag is used by teacher and teach student to use it.
 """,
     background=f"""\
 These are rules for student model reasoning content:
