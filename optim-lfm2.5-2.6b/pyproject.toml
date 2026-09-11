@@ -4,10 +4,15 @@ version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = [
     "datasets>=5.0.1",
-    "gepa>=0.1.4",
+    "gepa[full]>=0.1.4",
+    "json5>=0.15.0",
     "jsonlines>=4.0.0",
+    "openai>=2.54.0",
+    "rich>=15.0.0",
     "ruff>=0.16.5",
     "seaborn[stats]>=0.13.2",
     "teich>=0.3.6",
+    "tenacity>=9.1.4",
+    "tqdm>=4.70.0",
     "ty>=0.0.77",
 ]

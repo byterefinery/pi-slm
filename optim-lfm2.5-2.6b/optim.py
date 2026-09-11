@@ -451,5 +451,4 @@ These are rules for student model reasoning content:
 )
 
 print()
-# print(result)
 print(result.best_candidate)
