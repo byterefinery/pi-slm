@@ -152,10 +152,9 @@ venv/
 .venv/
 misc/
 
-# GEPA run artifacts
+# GEPA run artifacts - gepa_runs
 generated_best_outputs_valset/
 gepa_state.bin
 run_log.txt
 run_log_stderr.txt
-gepa_runs/
 teacher-samples.json

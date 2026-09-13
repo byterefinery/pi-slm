@@ -211,21 +211,11 @@ def evaluate(candidate: str, example: dict) -> tuple[float, dict]:
 
     # check candidate messages
     for i, message in enumerate(candidate['messages']):
-        if i == 0 and not (message.get('role') == 'system' and message.get('content')):
-            score = 0.0
-
-            feedback = {
-                'Error': 'System role message is not valid, and/or whole messages structure is broken probably.',
-            }
-
-            return score, feedback
-
-
         if 'role' not in message:
             score = 0.0
 
             feedback = {
-                'Error': 'Message does not have "role" field.',
+                'Error': f'Message (index: {i}) does not have "role" field.',
             }
 
             return score, feedback
@@ -234,46 +224,46 @@ def evaluate(candidate: str, example: dict) -> tuple[float, dict]:
             score = 0.0
 
             feedback = {
-                'Error': 'Message does not have "content" field.',
+                'Error': f'Message (index: {i}) does not have "content" field.',
             }
 
             return score, feedback
 
-        if message['role'] == 'user' and '/skill' in message['content']:
+        if i == 0 and message['role'] != 'system':
             score = 0.0
 
             feedback = {
-                'Error': 'User role message has content that uses skill directly which is not allowed',
+                'Error': f'System message is not valid (index: {i}), and/or whole messages structure is broken probably.',
             }
 
             return score, feedback
 
-        if message['role'] == 'assistant' and '/skill' in message['content']:
-            score = 0.0
-
-            feedback = {
-                'Error': 'Assistant role message has content that uses skill directly which is not allowed',
-            }
-
-            return score, feedback
+        # if '/skill' in message['content']:
+        #     score = 0.0
+        #
+        #     feedback = {
+        #         'Error': f'Message (index: {i}) has content that uses `/skill` directly which is not allowed.',
+        #     }
+        #
+        #     return score, feedback
 
         if message['role'] == 'assistant' and 'reasoning_content' not in message:
             score = 0.0
 
             feedback = {
-                'Error': 'Assistant role message does not have "reasoning_content" field.',
+                'Error': f'Assistant message (message index: {i}) does not have "reasoning_content" field.',
             }
 
             return score, feedback
 
-        if message['role'] == 'assistant' and '/skill' in message['reasoning_content']:
-            score = 0.0
-
-            feedback = {
-                'Error': 'Assistant role message has reasoning content that uses skill directly which is not allowed',
-            }
-
-            return score, feedback
+        # if message['role'] == 'assistant' and '/skill' in message['reasoning_content']:
+        #     score = 0.0
+        #
+        #     feedback = {
+        #         'Error': f'Assistant message (message index: {i}) has reasoning content that uses `/skill` directly which is not allowed.',
+        #     }
+        #
+        #     return score, feedback
 
     # serialize back candidate
     candidate: str = json.dumps(candidate)
